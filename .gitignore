@@ -19,6 +19,8 @@
 
 # production
 /build
+/supabase
+/docs
 
 # misc
 .DS_Store

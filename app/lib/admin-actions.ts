@@ -45,7 +45,6 @@ export async function updatePostFlags(
   if (typeof flags.guides === "boolean") payload.guides = flags.guides;
   if (Object.keys(payload).length === 0) return { ok: true };
 
-  // @ts-expect-error - Supabase Update type inference issue with partial payload
   const { error } = await supabase.from("posts").update(payload).eq("id", id);
 
   if (error) {
