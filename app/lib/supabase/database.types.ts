@@ -25,6 +25,8 @@ export type PostRow = {
   trending: boolean;
   guides: boolean;
   created_at: string;
+  /** SEO slug for /post/[slug]; null allowed for legacy rows */
+  slug: string | null;
 };
 
 export type PostInsert = Omit<PostRow, "id" | "created_at">;
@@ -54,7 +56,10 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      get_post_by_slug: {
+        Args: { p_slug: string };
+        Returns: PostRow[];
+      };
     };
   };
 }

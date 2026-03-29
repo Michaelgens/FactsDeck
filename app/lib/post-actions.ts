@@ -2,6 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient, isSupabaseConfigured } from "./supabase/server";
+import { getPostById } from "./posts";
+import { postPublicPath } from "./post-url";
+
+async function revalidatePostPage(postId: string) {
+  const p = await getPostById(postId);
+  if (p) revalidatePath(postPublicPath(p));
+  else revalidatePath(`/post/${postId}`);
+}
 
 /** Increment view count when user visits a post. Idempotent per session (caller should guard). */
 export async function incrementPostViews(
@@ -34,7 +42,7 @@ export async function incrementPostViews(
     return { ok: false, error: error.message };
   }
 
-  revalidatePath(`/post/${postId}`);
+  await revalidatePostPage(postId);
   revalidatePath("/admin");
   revalidatePath("/admin/articles");
   return { ok: true };
@@ -70,7 +78,7 @@ export async function incrementPostLikes(
     return { ok: false, error: error.message };
   }
 
-  revalidatePath(`/post/${postId}`);
+  await revalidatePostPage(postId);
   revalidatePath("/admin");
   revalidatePath("/admin/articles");
   return { ok: true, likes: newLikes };
@@ -106,7 +114,7 @@ export async function decrementPostLikes(
     return { ok: false, error: error.message };
   }
 
-  revalidatePath(`/post/${postId}`);
+  await revalidatePostPage(postId);
   revalidatePath("/admin");
   revalidatePath("/admin/articles");
   return { ok: true, likes: newLikes };
@@ -142,7 +150,7 @@ export async function incrementPostBookmarks(
     return { ok: false, error: error.message };
   }
 
-  revalidatePath(`/post/${postId}`);
+  await revalidatePostPage(postId);
   revalidatePath("/admin");
   revalidatePath("/admin/articles");
   return { ok: true, bookmarks: newBookmarks };
@@ -178,7 +186,7 @@ export async function decrementPostBookmarks(
     return { ok: false, error: error.message };
   }
 
-  revalidatePath(`/post/${postId}`);
+  await revalidatePostPage(postId);
   revalidatePath("/admin");
   revalidatePath("/admin/articles");
   return { ok: true, bookmarks: newBookmarks };

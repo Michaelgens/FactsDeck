@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import ReactMarkdown from "react-markdown";
@@ -47,6 +47,7 @@ import {
   Building2,
 } from "lucide-react";
 import type { Post, PostSummary } from "../lib/types";
+import { postPublicPath } from "../lib/post-url";
 import type { CategoryWithCount } from "../lib/posts";
 import { formatPublishDate } from "../lib/format-date";
 import { quickTools } from "../lib/site-config";
@@ -81,6 +82,8 @@ type PostPageClientProps = {
   content: string;
   from?: string;
   relatedArticles: PostSummary[];
+  /** Additional posts from the same related query (shown below the article; excludes sidebar items). */
+  moreArticles: PostSummary[];
   trendingPosts: Post[];
   guidePosts: Post[];
   categoriesWithCounts: CategoryWithCount[];
@@ -91,6 +94,7 @@ export default function PostPageClient({
   content,
   from,
   relatedArticles,
+  moreArticles,
   trendingPosts,
   guidePosts,
   categoriesWithCounts,
@@ -105,6 +109,11 @@ export default function PostPageClient({
   const [views, setViews] = useState(article.views);
 
   const fromLabel = from && FROM_LABELS[from] ? FROM_LABELS[from] : null;
+
+  const allRelatedArticles = useMemo(
+    () => [...relatedArticles, ...moreArticles],
+    [relatedArticles, moreArticles]
+  );
 
   const LIKED_KEY = "factsdeck-liked";
   const BOOKMARKED_KEY = "factsdeck-bookmarked";
@@ -490,6 +499,83 @@ export default function PostPageClient({
                 </div>
               </div>
             </div>
+
+            <section
+              className="mt-10"
+              aria-labelledby="related-articles-inline-heading"
+            >
+              <div className="flex flex-wrap items-end justify-between gap-2 mb-4">
+                <h2
+                  id="related-articles-inline-heading"
+                  className="font-display text-xl md:text-2xl font-bold text-gray-900 dark:text-purple-100"
+                >
+                  Related articles
+                </h2>
+                {allRelatedArticles.length > 1 && (
+                  <p className="text-xs text-gray-500 dark:text-purple-400">
+                    <span className="sm:hidden">Swipe sideways for more</span>
+                    <span className="hidden sm:inline">Scroll left or right for more</span>
+                  </p>
+                )}
+              </div>
+              {allRelatedArticles.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-gray-200 dark:border-purple-500/40 bg-gray-50/90 dark:bg-dark-800/60 p-8 md:p-10">
+                  <EmptyState
+                    icon={BookOpen}
+                    title="No related articles available"
+                    description="No related articles found yet. More related posts will be coming soon."
+                    compact
+                  />
+                  <div className="mt-6 text-center">
+                    <Link
+                      href="/post"
+                      className="inline-flex items-center gap-2 text-sm font-semibold text-purple-600 dark:text-emerald-400 hover:text-purple-700 dark:hover:text-emerald-300"
+                    >
+                      Browse all articles
+                      <ChevronRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative -mx-1">
+                  <div
+                    className="flex gap-4 overflow-x-auto overscroll-x-contain pb-4 pt-1 px-1 snap-x snap-mandatory scroll-pl-2 sm:scroll-pl-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40 dark:focus-visible:ring-purple-400/30 [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-purple-300/70 dark:[&::-webkit-scrollbar-thumb]:bg-purple-600/50"
+                    role="list"
+                    tabIndex={0}
+                  >
+                    {allRelatedArticles.map((item) => (
+                      <Link
+                        key={item.id}
+                        href={postPublicPath(item)}
+                        role="listitem"
+                        className="group flex-none w-[min(18rem,calc(100vw-3rem))] sm:w-72 snap-start flex flex-col bg-white dark:bg-gradient-to-br dark:from-dark-800 dark:to-purple-900/50 rounded-2xl overflow-hidden shadow-md border border-gray-200 dark:border-purple-500/30 hover:border-purple-300 dark:hover:border-purple-500/50 transition-colors"
+                      >
+                        <div className="relative h-36 w-full shrink-0">
+                          <Image
+                            src={item.image}
+                            alt={item.title}
+                            fill
+                            className="object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                          />
+                        </div>
+                        <div className="p-4 flex flex-col flex-1 min-h-0">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-purple-600 dark:text-purple-300 mb-1.5">
+                            {item.category}
+                          </span>
+                          <h3 className="font-display font-bold text-base text-gray-900 dark:text-purple-100 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
+                            {item.title}
+                          </h3>
+                          <div className="flex items-center justify-between mt-auto pt-3 text-xs text-gray-500 dark:text-purple-400">
+                            <span>{formatPublishDate(item.publishDate)}</span>
+                            <span>{item.readTime}</span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
           </div>
 
           <div className="lg:col-span-1 space-y-8">
@@ -526,7 +612,7 @@ export default function PostPageClient({
               <h3 className="font-display font-bold text-lg text-gray-900 dark:text-purple-200 mb-6">Related Articles</h3>
               <div className="space-y-4">
                 {relatedArticles.map((item) => (
-                  <Link key={item.id} href={`/post/${item.id}`} className="flex gap-3 group p-3 -m-3 rounded-xl hover:bg-gray-50 dark:hover:bg-purple-900/20 transition-colors">
+                  <Link key={item.id} href={postPublicPath(item)} className="flex gap-3 group p-3 -m-3 rounded-xl hover:bg-gray-50 dark:hover:bg-purple-900/20 transition-colors">
                     <Image
                       src={item.image}
                       alt={item.title}
@@ -565,7 +651,7 @@ export default function PostPageClient({
                 {trendingPosts.slice(0, 4).map((post) => (
                   <Link
                     key={post.id}
-                    href={`/post/${post.id}`}
+                    href={postPublicPath(post)}
                     className="group block"
                   >
                     <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-purple-900/20 transition-colors">
@@ -630,7 +716,7 @@ export default function PostPageClient({
               </div>
               <div className="space-y-4">
                 {guidePosts.slice(0, 4).map((post) => (
-                  <Link key={post.id} href={`/post/${post.id}`} className="group block">
+                  <Link key={post.id} href={postPublicPath(post)} className="group block">
                     <div className="p-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors">
                       <h4 className="font-semibold text-sm text-gray-900 dark:text-purple-200 mb-2 line-clamp-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                         {post.title}

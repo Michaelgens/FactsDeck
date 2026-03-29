@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 import { getAdminStats, formatCount } from "../lib/admin";
 import { getLatestPosts } from "../lib/posts";
+import { postPublicPath } from "../lib/post-url";
 
 function timeAgo(dateStr: string): string {
   const d = new Date(dateStr);
@@ -41,6 +42,7 @@ export default async function AdminDashboardPage() {
     title: p.title,
     time: timeAgo(p.publishDate),
     id: p.id,
+    href: postPublicPath(p),
   }));
   return (
     <div>
@@ -110,7 +112,7 @@ export default async function AdminDashboardPage() {
                     <BarChart3 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <Link href={`/post/${item.id}`} className="font-medium text-slate-900 dark:text-dark-100 truncate block hover:text-purple-600 dark:hover:text-purple-400">
+                    <Link href={item.href} className="font-medium text-slate-900 dark:text-dark-100 truncate block hover:text-purple-600 dark:hover:text-purple-400">
                       {item.title}
                     </Link>
                     <p className="text-sm text-slate-500 dark:text-purple-400">

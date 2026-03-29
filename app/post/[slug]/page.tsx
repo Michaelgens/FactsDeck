@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import {
-  getPostById,
+  getPostBySlugOrId,
   getPostContent,
   getRelatedPosts,
   getPartitionedPosts,
@@ -9,22 +9,28 @@ import {
 } from "../../lib/posts";
 import PostPageClient from "../../components/PostPageClient";
 import { SITE_URL, absoluteUrl } from "../../lib/seo";
+import { postPublicPath } from "../../lib/post-url";
+import { isUuid } from "../../lib/slug";
+
+/** Fresh DB read per request; avoids a cached 404 right after publishing. */
+export const dynamic = "force-dynamic";
+
+function canonicalPostUrl(post: { id: string; slug: string | null }) {
+  return `${SITE_URL.replace(/\/$/, "")}${postPublicPath(post)}`;
+}
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const post = await getPostById(id);
+  const { slug: param } = await params;
+  const post = await getPostBySlugOrId(param);
   if (!post) return { title: "Post Not Found", robots: { index: false, follow: true } };
 
-  const canonicalUrl = `${SITE_URL}/post/${id}`;
+  const canonicalUrl = canonicalPostUrl(post);
   const ogImage = post.image ? absoluteUrl(post.image) : undefined;
-  const keywordList = [
-    post.category,
-    ...(post.tags ?? []),
-  ].filter(Boolean);
+  const keywordList = [post.category, ...(post.tags ?? [])].filter(Boolean);
 
   return {
     title: post.title,
@@ -73,24 +79,31 @@ export default async function PostPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
   searchParams: Promise<{ from?: string }>;
 }) {
-  const { id } = await params;
+  const { slug: param } = await params;
   const { from } = await searchParams;
 
-  const post = await getPostById(id);
+  const post = await getPostBySlugOrId(param);
   if (!post) notFound();
 
-  const [content, relatedPosts, partitioned, categoriesWithCounts] =
-    await Promise.all([
-      getPostContent(post.content, post.contentUrl),
-      getRelatedPosts(post.id, post.category, 3),
-      getPartitionedPosts(post.id),
-      getCategoriesWithCounts(),
-    ]);
+  if (post.slug?.trim() && isUuid(param)) {
+    redirect(postPublicPath(post));
+  }
 
-  const canonicalUrl = `${SITE_URL}/post/${id}`;
+  const [content, relatedPosts, partitioned, categoriesWithCounts] = await Promise.all([
+    getPostContent(post.content, post.contentUrl),
+    /** Shared tags first, then same category, then other recent; first 3 for sidebar, rest for inline strip. */
+    getRelatedPosts(post.id, post.category, post.tags, 9),
+    getPartitionedPosts(post.id),
+    getCategoriesWithCounts(),
+  ]);
+
+  const relatedArticles = relatedPosts.slice(0, 3);
+  const moreArticles = relatedPosts.slice(3, 9);
+
+  const canonicalUrl = canonicalPostUrl(post);
   const imageUrl = post.image ? absoluteUrl(post.image) : undefined;
 
   const jsonLd = {
@@ -170,14 +183,15 @@ export default async function PostPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <PostPageClient
-      article={post}
-      content={content}
-      from={from}
-      relatedArticles={relatedPosts}
-      trendingPosts={partitioned.trending}
-      guidePosts={partitioned.guides}
-      categoriesWithCounts={categoriesWithCounts}
-    />
+        article={post}
+        content={content}
+        from={from}
+        relatedArticles={relatedArticles}
+        moreArticles={moreArticles}
+        trendingPosts={partitioned.trending}
+        guidePosts={partitioned.guides}
+        categoriesWithCounts={categoriesWithCounts}
+      />
     </>
   );
 }

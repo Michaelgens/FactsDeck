@@ -1,6 +1,8 @@
 /** Standard post data structure - all posts use this shape */
 export interface Post {
   id: string;
+  /** SEO path segment for /post/[slug]; null = legacy, use id in URL */
+  slug: string | null;
   title: string;
   excerpt: string;
   category: string;
@@ -30,5 +32,16 @@ export interface Post {
 
 export type PostSummary = Pick<
   Post,
-  "id" | "title" | "excerpt" | "category" | "image" | "readTime" | "publishDate" | "author" | "views" | "likes" | "tags"
+  | "id"
+  | "slug"
+  | "title"
+  | "excerpt"
+  | "category"
+  | "image"
+  | "readTime"
+  | "publishDate"
+  | "author"
+  | "views"
+  | "likes"
+  | "tags"
 >;

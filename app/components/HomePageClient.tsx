@@ -34,6 +34,7 @@ import {
   Heart,
 } from "lucide-react";
 import type { Post } from "../lib/types";
+import { postPublicPath } from "../lib/post-url";
 import type { CategoryWithCount } from "../lib/posts";
 import type { MarketDataItem } from "../lib/market-data";
 import { formatPublishDate } from "../lib/format-date";
@@ -65,7 +66,7 @@ function FeaturedArticleCard({ article }: { article: Post }) {
   );
   return (
     <Link
-      href={`/post/${article.id}`}
+      href={postPublicPath(article)}
       className="group block bg-white dark:bg-dark-900/50 dark:border-purple-500/30 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-200 dark:border-purple-500/30 hover:-translate-y-2"
     >
       <div className="relative">
@@ -148,7 +149,7 @@ function LatestArticleCard({ article }: { article: Post }) {
   );
   return (
     <Link
-      href={`/post/${article.id}`}
+      href={postPublicPath(article)}
       className="group block bg-white dark:bg-dark-900/50 dark:border-purple-500/30 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200 dark:border-purple-500/30 hover:-translate-y-1"
     >
       <div className="flex flex-col md:flex-row">
@@ -507,7 +508,7 @@ export default function HomePageClient({
                 {expertPickPosts.slice(0, 3).map((pick) => (
                   <Link
                     key={pick.id}
-                    href={`/post/${pick.id}`}
+                    href={postPublicPath(pick)}
                     className="group block bg-gradient-to-br from-purple-50 to-white dark:from-dark-900 dark:to-dark-850/30 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-purple-100 dark:border-purple-500/30 hover:-translate-y-2"
                   >
                     <div className="flex items-center space-x-3 mb-4">
@@ -568,7 +569,7 @@ export default function HomePageClient({
                 {trendingPosts.slice(0, 5).map((post) => (
                   <Link
                     key={post.id}
-                    href={`/post/${post.id}`}
+                    href={postPublicPath(post)}
                     className="block group cursor-pointer"
                   >
                     <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
@@ -650,7 +651,7 @@ export default function HomePageClient({
                 {guidePosts.slice(0, 5).map((guide) => (
                   <Link
                     key={guide.id}
-                    href={`/post/${guide.id}`}
+                    href={postPublicPath(guide)}
                     className="block group cursor-pointer p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-emerald-900/10 transition-colors"
                   >
                     <h4 className="font-semibold text-sm text-gray-900 dark:text-purple-200 mb-2 line-clamp-2 transition-colors group-hover:text-purple-600 dark:group-hover:text-emerald-400">

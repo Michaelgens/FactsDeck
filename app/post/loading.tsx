@@ -43,7 +43,7 @@ export default function PostListLoading() {
                   <div className="md:w-2/3 p-6 space-y-3">
                     <div className="h-6 w-20 bg-slate-200 dark:bg-dark-800 rounded-full animate-pulse" />
                     <div className="h-6 w-full bg-slate-200 dark:bg-dark-800 rounded animate-pulse" />
-                    <div className="h-4 w-4/5 bg-slate-200 dark:bg-dark-800 rounded animate-pulse" />
+                    <div className="h-4 w-[80%] bg-slate-200 dark:bg-dark-800 rounded animate-pulse" />
                     <div className="flex items-center gap-4 pt-2">
                       <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-dark-800 animate-pulse" />
                       <div className="h-4 w-32 bg-slate-200 dark:bg-dark-800 rounded animate-pulse" />

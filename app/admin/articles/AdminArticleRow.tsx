@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FileText, Pencil, Trash2 } from "lucide-react";
 import { updatePostFlags, deletePost } from "../../lib/admin-actions";
 import type { Post } from "../../lib/types";
+import { postPublicPath } from "../../lib/post-url";
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -109,7 +110,7 @@ export default function AdminArticleRow({ article }: { article: Post }) {
           <Trash2 className="h-4 w-4" />
         </button>
         <Link
-          href={`/post/${article.id}`}
+          href={postPublicPath(article)}
           className="text-sm text-purple-600 dark:text-purple-400 font-semibold hover:text-purple-700 dark:hover:text-emerald-400"
         >
           View

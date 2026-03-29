@@ -16,6 +16,8 @@ const defaultForm: PostFormData = {
   category: "Investing",
   imageUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=900&h=500&fit=crop",
   contentUrl: "",
+  bodyMarkdown: "",
+  slug: "",
   authorName: "",
   authorTitle: "Writer",
   authorImage: "https://api.dicebear.com/9.x/avataaars/svg?seed=alex",
@@ -47,6 +49,8 @@ export default function PostForm({ mode, post }: PostFormProps) {
           category: post.category,
           imageUrl: post.image,
           contentUrl: post.contentUrl ?? "",
+          bodyMarkdown: post.content ?? "",
+          slug: post.slug ?? "",
           authorName: post.author.name,
           authorTitle: post.author.title,
           authorImage: post.author.image,
@@ -201,11 +205,12 @@ export default function PostForm({ mode, post }: PostFormProps) {
             <input
               id="imageUrl"
               name="imageUrl"
-              type="url"
+              type="text"
+              inputMode="url"
               value={form.imageUrl}
               onChange={handleChange}
               className={inputClass}
-              placeholder="https://..."
+              placeholder="https://... or /image-in-public.jpg"
             />
             {form.imageUrl && (
               <img
@@ -234,14 +239,52 @@ export default function PostForm({ mode, post }: PostFormProps) {
             <input
               id="contentUrl"
               name="contentUrl"
-              type="url"
+              type="text"
+              inputMode="url"
               value={form.contentUrl}
               onChange={handleChange}
               className={inputClass}
               placeholder="https://xxx.public.blob.vercel-storage.com/article.md"
             />
             <p className="mt-2 text-sm text-slate-500 dark:text-purple-400">
-              Upload your .md file to Vercel Blob, then paste the public URL here. The article body will be rendered from this file.
+              Paste the blob URL here. Public URLs (<code className="text-xs">*.public.blob.vercel-storage.com</code>)
+              work with a normal fetch. Private store URLs need{" "}
+              <code className="text-xs">BLOB_READ_WRITE_TOKEN</code> in the server environment. If the URL
+              is empty, use the Markdown field below instead.
+            </p>
+          </div>
+          <div>
+            <label htmlFor="slug" className={labelClass}>
+              URL slug (SEO)
+            </label>
+            <input
+              id="slug"
+              name="slug"
+              type="text"
+              value={form.slug}
+              onChange={handleChange}
+              className={inputClass}
+              placeholder="auto from title, e.g. how-to-build-an-emergency-fund"
+            />
+            <p className="mt-2 text-sm text-slate-500 dark:text-purple-400">
+              Public URL: /post/your-slug — leave blank to generate from the title. Letters, numbers, and hyphens only.
+            </p>
+          </div>
+          <div>
+            <label htmlFor="bodyMarkdown" className={labelClass}>
+              Article body (Markdown, optional)
+            </label>
+            <textarea
+              id="bodyMarkdown"
+              name="bodyMarkdown"
+              rows={12}
+              value={form.bodyMarkdown}
+              onChange={handleChange}
+              className={inputClass}
+              placeholder="Paste Markdown here if you are not using a hosted .md URL above..."
+            />
+            <p className="mt-2 text-sm text-slate-500 dark:text-purple-400">
+              Used when &quot;Content (MD file URL)&quot; is empty. If both are set, the URL is fetched first.
             </p>
           </div>
         </section>
@@ -276,15 +319,16 @@ export default function PostForm({ mode, post }: PostFormProps) {
             </div>
           </div>
           <div>
-            <label htmlFor="authorImage" className={labelClass}>Avatar URL</label>
+            <label htmlFor="authorImage" className={labelClass}>Avatar image URL</label>
             <input
               id="authorImage"
               name="authorImage"
-              type="url"
+              type="text"
+              inputMode="url"
               value={form.authorImage}
               onChange={handleChange}
               className={inputClass}
-              placeholder="https://... or select an avatar below"
+              placeholder="https://... or /first.jpeg (public folder)"
             />
             <p className="mt-2 text-sm text-slate-600 dark:text-purple-300 mb-2">
               Select an avatar below to load its URL, or paste your own:
@@ -302,6 +346,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
                   { id: "8", url: "https://api.dicebear.com/9.x/avataaars/svg?seed=harper", label: "Harper" },
                   { id: "9", url: "https://api.dicebear.com/9.x/avataaars/svg?seed=taylor", label: "Taylor" },
                   { id: "10", url: "https://api.dicebear.com/9.x/avataaars/svg?seed=parker", label: "Parker" },
+                  { id: "11", url: "/first.jpeg", label: "Mike" },
                 ] as const
               ).map((avatar) => (
                 <button

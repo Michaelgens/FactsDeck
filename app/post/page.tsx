@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { getPartitionedPosts, getCategoriesWithCounts } from "../lib/posts";
 import PostListContent from "../components/PostListContent";
+import PostListLoading from "./loading";
 
 export const metadata = {
   title: "Articles | Facts Deck",
@@ -14,13 +15,7 @@ export default async function PostListPage() {
   ]);
 
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center text-slate-500 dark:text-purple-300">
-          Loading...
-        </div>
-      }
-    >
+    <Suspense fallback={<PostListLoading />}>
       <PostListContent
         partitioned={partitioned}
         categoriesWithCounts={categoriesWithCounts}

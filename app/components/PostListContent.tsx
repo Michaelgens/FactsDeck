@@ -31,6 +31,7 @@ import {
   Bookmark,
 } from "lucide-react";
 import type { Post } from "../lib/types";
+import { postPublicPath } from "../lib/post-url";
 import type { CategoryWithCount, PartitionedPosts } from "../lib/posts";
 import { quickTools } from "../lib/site-config";
 import { usePostEngagement } from "../hooks/usePostEngagement";
@@ -187,7 +188,7 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
     );
     return (
       <Link
-        href={`/post/${article.id}?from=${from}`}
+        href={`${postPublicPath(article)}?from=${from}`}
         className="group block"
       >
         {viewMode === "grid" ? (
@@ -455,7 +456,7 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
                     {paginatedItems.map((guide) => (
                       <Link
                         key={guide.id}
-                        href={`/post/${guide.id}?from=guides`}
+                        href={`${postPublicPath(guide)}?from=guides`}
                         className="group block bg-white dark:bg-dark-900/50 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200 dark:border-purple-500/30 hover:-translate-y-2"
                       >
                         <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide">
@@ -481,7 +482,7 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
                     {paginatedItems.map((post) => (
                       <Link
                         key={post.id}
-                        href={`/post/${post.id}?from=trending`}
+                        href={`${postPublicPath(post)}?from=trending`}
                         className="group flex items-center gap-4 bg-white dark:bg-dark-900/50 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200 dark:border-purple-500/30 hover:-translate-y-2"
                       >
                         <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -602,7 +603,7 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
                 {partitioned.trending.slice(0, 5).map((p) => (
                     <Link
                       key={p.id}
-                      href={`/post/${p.id}?from=trending`}
+                      href={`${postPublicPath(p)}?from=trending`}
                       className="block p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors group"
                     >
                       <p className="font-semibold text-sm text-slate-900 dark:text-purple-200 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
@@ -666,7 +667,7 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
                 {partitioned.guides.slice(0, 5).map((guide) => (
                     <Link
                       key={guide.id}
-                      href={`/post/${guide.id}?from=guides`}
+                      href={`${postPublicPath(guide)}?from=guides`}
                       className="block p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors group"
                     >
                       <h4 className="font-semibold text-sm text-slate-900 dark:text-purple-200 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors mb-1">
