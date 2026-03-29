@@ -19,6 +19,7 @@ import { subscribeEmail } from "../lib/subscriber-actions";
 
 const companyLinks = [
   { name: "About Us", href: "/about" },
+  { name: "Careers", href: "/careers" },
   { name: "Contact", href: "/contact" },
   { name: "Disclaimer", href: "/disclaimer" },
   { name: "Privacy Policy", href: "/privacy" },
@@ -215,7 +216,7 @@ export default function Footer() {
 
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 mt-8 border-t border-slate-200 dark:border-purple-500/30">
           <p className="text-slate-500 dark:text-dark-400 text-sm mb-4 md:mb-0">
-            © 2025 Facts Deck. All rights reserved.
+            © 2026 Facts Deck. All rights reserved.
           </p>
           <div className="flex space-x-6">
             <Link

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import {
   Wrench,
   Sparkles,
@@ -8,6 +8,9 @@ import {
   Calculator,
 } from "lucide-react";
 import { quickTools } from "../../lib/site-config";
+import AdvancedMortgageCalculator from "../../components/tools/AdvancedMortgageCalculator";
+import AdvancedInvestmentCalculator from "../../components/tools/AdvancedInvestmentCalculator";
+import { SITE_URL, absoluteUrl } from "../../lib/seo";
 
 const SLUG_TO_NAME: Record<string, string> = Object.fromEntries(
   quickTools.map((t) => [t.name.toLowerCase().replace(/\s+/g, "-"), t.name])
@@ -26,12 +29,230 @@ export async function generateStaticParams() {
   }));
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  if (slug === "mortgage-calculator") {
+    const canonical = absoluteUrl("/tools/mortgage-calculator");
+    const title = "Advanced Mortgage Calculator — PITI, PMI & amortization";
+    const description =
+      "Free advanced mortgage calculator: PITI, PMI drop-off, amortization schedule, refinance break-even, DTI affordability, bi-weekly vs monthly, inflation-adjusted NPV, CSV export, and email your summary.";
+    return {
+      title,
+      description,
+      keywords: [
+        "mortgage calculator",
+        "PITI calculator",
+        "PMI calculator",
+        "amortization schedule",
+        "home loan calculator",
+        "mortgage payment calculator",
+        "refinance calculator",
+        "DTI calculator",
+        "house affordability calculator",
+      ],
+      alternates: { canonical },
+      openGraph: {
+        title,
+        description,
+        url: canonical,
+        siteName: "Facts Deck",
+        type: "website",
+        locale: "en_US",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+      },
+      robots: { index: true, follow: true },
+    };
+  }
+  if (slug === "investment-calculator") {
+    const canonical = absoluteUrl("/tools/investment-calculator");
+    const title = "Advanced Investment Calculator — compound, FIRE & Monte Carlo";
+    const description =
+      "Free advanced investment calculator: compound growth with expense-ratio drag, inflation-adjusted wealth, FIRE number and years-to-target, sequence-of-returns lab, lump sum vs DCA, stress test, and Monte Carlo bands.";
+    return {
+      title,
+      description,
+      keywords: [
+        "investment calculator",
+        "compound interest calculator",
+        "FIRE calculator",
+        "retirement savings calculator",
+        "Monte Carlo investment",
+        "DCA vs lump sum",
+        "sequence of returns",
+        "expense ratio calculator",
+        "portfolio projection",
+      ],
+      alternates: { canonical },
+      openGraph: {
+        title,
+        description,
+        url: canonical,
+        siteName: "Facts Deck",
+        type: "website",
+        locale: "en_US",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+      },
+      robots: { index: true, follow: true },
+    };
+  }
+  const toolName = SLUG_TO_NAME[slug] ?? slugToTitle(slug);
+  return {
+    title: `${toolName} | Facts Deck Tools`,
+    description: `Financial tool: ${toolName}. Facts Deck — personal finance education.`,
+  };
+}
+
 export default async function ToolPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+
+  if (slug === "mortgage-calculator") {
+    const canonical = absoluteUrl("/tools/mortgage-calculator");
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": `${canonical}#calculator`,
+          name: "Advanced Mortgage Calculator",
+          description:
+            "Estimate PITI, PMI, amortization, refinance break-even, DTI-based affordability, and export schedules. Educational estimates only.",
+          url: canonical,
+          applicationCategory: "FinanceApplication",
+          operatingSystem: "Any",
+          browserRequirements: "Requires JavaScript",
+          offers: {
+            "@type": "Offer",
+            price: "0",
+            priceCurrency: "USD",
+          },
+          provider: {
+            "@type": "Organization",
+            name: "Facts Deck",
+            url: SITE_URL,
+          },
+          featureList: [
+            "Principal and interest (P&I)",
+            "PITI including taxes, insurance, HOA",
+            "PMI with cancellation estimate",
+            "Full amortization schedule and CSV export",
+            "Refinance break-even and points",
+            "DTI affordability",
+            "Email summary of results",
+          ],
+        },
+        {
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Home",
+              item: SITE_URL,
+            },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "Advanced Mortgage Calculator",
+              item: canonical,
+            },
+          ],
+        },
+      ],
+    };
+
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <AdvancedMortgageCalculator />
+      </>
+    );
+  }
+
+  if (slug === "investment-calculator") {
+    const canonical = absoluteUrl("/tools/investment-calculator");
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": `${canonical}#calculator`,
+          name: "Advanced Investment Calculator",
+          description:
+            "Project wealth with contributions, expense drag, inflation, FIRE targets, sequence-of-returns scenarios, and Monte Carlo bands. Educational estimates only.",
+          url: canonical,
+          applicationCategory: "FinanceApplication",
+          operatingSystem: "Any",
+          browserRequirements: "Requires JavaScript",
+          offers: {
+            "@type": "Offer",
+            price: "0",
+            priceCurrency: "USD",
+          },
+          provider: {
+            "@type": "Organization",
+            name: "Facts Deck",
+            url: SITE_URL,
+          },
+          featureList: [
+            "Compound growth with expense-ratio drag",
+            "Inflation-adjusted balances",
+            "FIRE number and years to goal",
+            "Sequence-of-returns comparison",
+            "Lump sum vs dollar-cost averaging",
+            "Monte Carlo percentile bands",
+            "CSV export of yearly trajectory",
+          ],
+        },
+        {
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Home",
+              item: SITE_URL,
+            },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "Advanced Investment Calculator",
+              item: canonical,
+            },
+          ],
+        },
+      ],
+    };
+
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <AdvancedInvestmentCalculator />
+      </>
+    );
+  }
+
   const toolName = SLUG_TO_NAME[slug] ?? slugToTitle(slug);
 
   return (
@@ -69,7 +290,7 @@ export default async function ToolPage({
         </h1>
 
         <p className="text-lg text-gray-600 dark:text-purple-200 leading-relaxed mb-8 max-w-lg mx-auto">
-          We&apos;re polishing our calculators and tools to give you the best experience. 
+          We&apos;re polishing our calculators and tools to give you the best experience.
           This one isn&apos;t ready yet — but our team is hard at work bringing it to life.
         </p>
 
@@ -95,7 +316,7 @@ export default async function ToolPage({
             Coming soon
           </p>
           <p className="text-gray-600 dark:text-purple-300 text-sm leading-relaxed">
-            In the meantime, browse our guides and expert insights to plan your finances. 
+            In the meantime, browse our guides and expert insights to plan your finances.
             We&apos;ll have powerful tools ready for you soon — stay tuned.
           </p>
         </div>

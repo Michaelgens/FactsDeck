@@ -387,35 +387,7 @@ export default function HomePageClient({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
           <div className="lg:col-span-3 space-y-10 sm:space-y-12">
-            <section>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-8">
-                <h2 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 dark:text-purple-200">
-                  Featured Articles
-                </h2>
-                <Link
-                  href="/post?type=featured"
-                  className="text-purple-600 dark:text-purple-400 font-semibold hover:text-purple-700 dark:hover:text-purple-300 flex items-center"
-                >
-                  View All <ChevronRight className="ml-1 h-4 w-4" />
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {featuredPosts.slice(0, 3).map((article) => (
-                  <FeaturedArticleCard key={article.id} article={article} />
-                ))}
-              </div>
-              {featuredPosts.length === 0 && (
-                <EmptyState
-                  icon={Star}
-                  title="No featured articles yet"
-                  description="Check back soon for curated picks from our editorial team."
-                  ctaLabel="Browse all articles"
-                  ctaHref="/post"
-                />
-              )}
-            </section>
-
+            {/* Latest Articles Section */}
             <section>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-8">
                 <h2 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 dark:text-purple-200">
@@ -461,6 +433,7 @@ export default function HomePageClient({
               )}
             </section>
 
+            {/* Browse by Category Section */}
             <section>
               <div className="mb-6 md:mb-8">
                 <h2 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 dark:text-purple-200">
@@ -491,6 +464,7 @@ export default function HomePageClient({
               </div>
             </section>
 
+            {/* Expert Picks Section */}
             <section>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-8">
                 <h2 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 dark:text-purple-200">
@@ -552,6 +526,36 @@ export default function HomePageClient({
                   ctaLabel="View latest articles"
                   ctaHref="/post"
                   compact
+                />
+              )}
+            </section>
+
+            {/* Featured Articles Section */}
+            <section>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-8">
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 dark:text-purple-200">
+                  Featured Articles
+                </h2>
+                <Link
+                  href="/post?type=featured"
+                  className="text-purple-600 dark:text-purple-400 font-semibold hover:text-purple-700 dark:hover:text-purple-300 flex items-center"
+                >
+                  View All <ChevronRight className="ml-1 h-4 w-4" />
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                {featuredPosts.slice(0, 3).map((article) => (
+                  <FeaturedArticleCard key={article.id} article={article} />
+                ))}
+              </div>
+              {featuredPosts.length === 0 && (
+                <EmptyState
+                  icon={Star}
+                  title="No featured articles yet"
+                  description="Check back soon for curated picks from our editorial team."
+                  ctaLabel="Browse all articles"
+                  ctaHref="/post"
                 />
               )}
             </section>

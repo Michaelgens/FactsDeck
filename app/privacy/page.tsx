@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -18,6 +19,39 @@ import {
   Phone,
   Building,
 } from "lucide-react";
+import { absoluteUrl } from "../lib/seo";
+
+const canonical = absoluteUrl("/privacy");
+
+export const metadata: Metadata = {
+  title: { absolute: "FactsDeck | Privacy Policy" },
+  description:
+    "How Facts Deck collects, uses, and protects personal information when you use our site, newsletters, and tools—aligned with our commitment to transparency and reader trust.",
+  keywords: [
+    "Facts Deck privacy",
+    "privacy policy",
+    "data protection",
+    "cookies",
+    "GDPR",
+    "CCPA",
+  ],
+  alternates: { canonical },
+  openGraph: {
+    title: "FactsDeck | Privacy Policy",
+    description:
+      "Facts Deck’s privacy policy: what we collect, how we use it, your rights, cookies, and how to contact us.",
+    url: canonical,
+    siteName: "Facts Deck",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FactsDeck | Privacy Policy",
+    description: "How Facts Deck handles personal data and respects your privacy choices.",
+  },
+  robots: { index: true, follow: true },
+};
 
 const privacySections = [
   {
@@ -38,7 +72,7 @@ const privacySections = [
     icon: Shield,
     title: "Information Sharing",
     content:
-      "We do not sell, trade, or otherwise transfer your personal information to third parties without your consent. We may share your information with trusted service providers who assist us in operating our website, provided they agree to keep this information confidential.",
+      "We do not sell your personal information to data brokers or marketing lists. We may share information with trusted service providers (for example hosting, email delivery, or analytics) who process data on our behalf under contract and only for the purposes we describe. We may also disclose information when required by law or to protect our rights and users. Where we use affiliate or partner technologies, we align disclosures with our editorial standards described on our About page.",
     color: "from-purple-500 to-purple-600",
   },
   {
@@ -92,10 +126,30 @@ const cookieTypes = [
 ];
 
 const complianceStandards = [
-  { title: "GDPR Compliance", description: "Full compliance with European General Data Protection Regulation", icon: Globe },
-  { title: "CCPA Compliance", description: "Adherence to California Consumer Privacy Act requirements", icon: Shield },
-  { title: "SOC 2 Certified", description: "Security and availability controls independently verified", icon: CheckCircle },
-  { title: "ISO 27001", description: "International standard for information security management", icon: Lock },
+  {
+    title: "GDPR-aligned practices",
+    description:
+      "Where we process data of individuals in the EEA, UK, or Switzerland, we aim to apply GDPR principles: lawful bases, transparency, access, rectification, erasure, and portability where applicable.",
+    icon: Globe,
+  },
+  {
+    title: "CCPA / CPRA awareness",
+    description:
+      "California residents may have additional rights (e.g., to know, delete, and opt out of certain sales or sharing). Contact us to exercise those rights; we describe our practices in good faith and update this policy when our processing changes.",
+    icon: Shield,
+  },
+  {
+    title: "Security measures",
+    description:
+      "We use technical and organizational measures appropriate to our size and risk to protect personal information. No online service can guarantee perfect security; see our Data Security section.",
+    icon: Lock,
+  },
+  {
+    title: "Transparency",
+    description:
+      "Our approach to trust and editorial independence—including how we handle affiliate disclosures—is summarized on our About page and is consistent with how we describe data use here.",
+    icon: CheckCircle,
+  },
 ];
 
 export default function PrivacyPage() {
@@ -121,7 +175,9 @@ export default function PrivacyPage() {
           <div className="text-center max-w-4xl mx-auto">
             <div className="flex items-center justify-center space-x-2 mb-6">
               <Lock className="h-6 w-6 text-emerald-400" />
-              <span className="text-purple-100 dark:text-purple-200 text-sm font-medium">Privacy Protected • GDPR Compliant • Secure</span>
+              <span className="text-purple-100 dark:text-purple-200 text-sm font-medium">
+                Privacy-focused • Transparent • Educational platform
+              </span>
             </div>
 
             <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-balance">
@@ -137,7 +193,14 @@ export default function PrivacyPage() {
                 <CheckCircle className="h-6 w-6 text-purple-400 dark:text-emerald-400" />
                 <span className="font-bold text-lg">Privacy Commitment</span>
               </div>
-              <p className="text-purple-100 dark:text-emerald-100">Last updated: March 9, 2026 • We never sell your personal data to third parties</p>
+              <p className="text-purple-100 dark:text-emerald-100">
+                Last updated: March 9, 2026 • We do not sell your personal information to data brokers; see
+                sharing and affiliate disclosures below and on our{" "}
+                <Link href="/about" className="underline font-semibold hover:text-white">
+                  About
+                </Link>{" "}
+                page.
+              </p>
             </div>
           </div>
         </div>
@@ -296,9 +359,12 @@ export default function PrivacyPage() {
         {/* Compliance Standards */}
         <section className="mb-20">
           <div className="text-center mb-16">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-slate-900 dark:text-purple-200 mb-6">Compliance & Certifications</h2>
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-slate-900 dark:text-purple-200 mb-6">
+              Compliance &amp; standards
+            </h2>
             <p className="text-xl text-slate-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-              We meet the highest international standards for data protection and privacy.
+              We describe our privacy practices honestly. This section is not a guarantee of certification or audit
+              outcome; it summarizes how we aim to align with common laws and expectations.
             </p>
           </div>
 

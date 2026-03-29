@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -14,13 +15,45 @@ import {
   Building,
   Phone,
 } from "lucide-react";
+import { absoluteUrl } from "../lib/seo";
+
+const canonical = absoluteUrl("/disclaimer");
+
+export const metadata: Metadata = {
+  title: { absolute: "FactsDeck | Disclaimer" },
+  description:
+    "Important legal information for Facts Deck: educational content only, no personalized advice, limitations of liability, affiliate disclosures, and how this relates to our editorial standards.",
+  keywords: [
+    "Facts Deck disclaimer",
+    "legal disclaimer",
+    "not financial advice",
+    "affiliate disclosure",
+    "terms of use",
+  ],
+  alternates: { canonical },
+  openGraph: {
+    title: "FactsDeck | Disclaimer",
+    description:
+      "Read Facts Deck’s disclaimer: general education only, risks, third-party links, and affiliate transparency.",
+    url: canonical,
+    siteName: "Facts Deck",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FactsDeck | Disclaimer",
+    description: "Educational use only, risk warnings, and legal limitations for Facts Deck.",
+  },
+  robots: { index: true, follow: true },
+};
 
 const disclaimerSections = [
   {
     icon: FileText,
     title: "Educational Content Only",
     content:
-      "The information provided on Facts Deck is for educational and informational purposes only. It should not be considered as personalized financial, investment, tax, or legal advice. We strongly recommend consulting with qualified professionals before making any financial decisions based on the information provided on our platform.",
+      "The information on Facts Deck is for general education and information only—the same scope described in our About page under “No Individual Investment Advice.” It is not personalized financial, investment, tax, or legal advice. Consult a qualified professional who knows your situation before you act.",
     color: "from-blue-500 to-blue-600",
   },
   {
@@ -60,7 +93,7 @@ const legalSections = [
   {
     title: "Affiliate Relationships",
     content:
-      "Facts Deck may receive compensation through affiliate relationships with financial institutions, brokers, or other service providers. This compensation may influence which products or services we feature, but it does not affect our editorial independence or the accuracy of our content. We always disclose affiliate relationships where applicable.",
+      "Facts Deck may participate in affiliate or partner programs, as explained on our About page (Product Recommendations). When we do, we disclose those relationships near relevant pages. Compensation does not buy favorable coverage: editorial picks and rankings follow the criteria we publish, and we do not accept payment for undisclosed endorsements. Affiliate relationships do not change our commitment to accurate, sourced content.",
   },
   {
     title: "User-Generated Content",
@@ -70,10 +103,30 @@ const legalSections = [
 ];
 
 const complianceInfo = [
-  { title: "Regulatory Compliance", description: "We comply with applicable financial content regulations and disclosure requirements.", icon: Building },
-  { title: "Privacy Protection", description: "Your personal information is protected according to our comprehensive privacy policy.", icon: Lock },
-  { title: "Content Standards", description: "All content is reviewed for accuracy and compliance with industry standards.", icon: CheckCircle },
-  { title: "Regular Updates", description: "This disclaimer is regularly reviewed and updated to reflect current practices.", icon: Calendar },
+  {
+    title: "Disclosure & laws",
+    description:
+      "We aim to follow applicable rules for financial content and advertising disclosures. Specifics depend on your jurisdiction; this site is operated for educational purposes.",
+    icon: Building,
+  },
+  {
+    title: "Privacy",
+    description:
+      "How we collect and use personal data is set out in our Privacy Policy and is consistent with the transparency commitments on our About page.",
+    icon: Lock,
+  },
+  {
+    title: "Editorial standards",
+    description:
+      "Our fact-checking, corrections, sourcing, and independence policies are described on the About page and guide how we publish—not personalized advice.",
+    icon: CheckCircle,
+  },
+  {
+    title: "Regular review",
+    description:
+      "We review this disclaimer periodically and update the “last updated” date when material changes are made.",
+    icon: Calendar,
+  },
 ];
 
 export default function DisclaimerPage() {
@@ -177,9 +230,11 @@ export default function DisclaimerPage() {
         {/* Compliance & Standards */}
         <section className="mb-20">
           <div className="text-center mb-16">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-slate-900 dark:text-purple-200 mb-6">Compliance & Standards</h2>
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-slate-900 dark:text-purple-200 mb-6">
+              Compliance &amp; standards
+            </h2>
             <p className="text-xl text-slate-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-              Our commitment to regulatory compliance and industry best practices.
+              How this disclaimer fits with our About page policies and your Privacy Policy rights.
             </p>
           </div>
 
@@ -257,7 +312,7 @@ export default function DisclaimerPage() {
           <p className="text-xl text-slate-600 dark:text-purple-200 mb-8 max-w-2xl mx-auto">
             If you have any questions about this disclaimer or need clarification on any terms, please don&apos;t hesitate to contact our legal team.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center mb-8">
             <Link
               href="/contact"
               className="inline-flex items-center justify-center bg-gradient-to-r from-purple-600 to-purple-700 text-white px-8 py-4 rounded-xl font-bold hover:from-purple-700 hover:to-purple-800 transition-all duration-300"
@@ -271,6 +326,13 @@ export default function DisclaimerPage() {
             >
               <ExternalLink className="mr-2 h-5 w-5" />
               View Privacy Policy
+            </Link>
+            <Link
+              href="/about"
+              className="inline-flex items-center justify-center border-2 border-slate-300 dark:border-purple-500/50 text-slate-700 dark:text-purple-200 px-8 py-4 rounded-xl font-bold hover:bg-slate-100 dark:hover:bg-purple-900/40 transition-all duration-300"
+            >
+              <ExternalLink className="mr-2 h-5 w-5" />
+              Editorial standards (About)
             </Link>
           </div>
           <div className="text-sm text-slate-500 dark:text-purple-300 space-y-2">
