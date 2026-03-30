@@ -10,11 +10,12 @@ const LIMITS = [10, 50, 100] as const;
 export default async function AdminArticlesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; category?: string; page?: string; limit?: string }>;
+  searchParams: Promise<{ q?: string; category?: string; page?: string; limit?: string; status?: string }>;
 }) {
   const params = await searchParams;
   const q = params.q?.trim() ?? "";
   const category = params.category?.trim() ?? "";
+  const status = params.status?.trim() ?? "";
   const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
   const limit = LIMITS.includes(Number(params.limit) as (typeof LIMITS)[number])
     ? Number(params.limit)
@@ -22,21 +23,27 @@ export default async function AdminArticlesPage({
 
   const allPosts = await getAllPosts();
 
+  const ql = q.toLowerCase();
   const filtered = allPosts.filter((p) => {
     const matchesSearch =
       !q ||
-      p.title.toLowerCase().includes(q.toLowerCase()) ||
-      p.excerpt.toLowerCase().includes(q.toLowerCase()) ||
-      p.category.toLowerCase().includes(q.toLowerCase());
-    const matchesCategory = !category || p.category === category;
-    return matchesSearch && matchesCategory;
+      p.title.toLowerCase().includes(ql) ||
+      p.excerpt.toLowerCase().includes(ql) ||
+      (p.categories ?? []).some((c) => c.toLowerCase().includes(ql)) ||
+      (p.tags ?? []).some((t) => t.toLowerCase().includes(ql));
+    const matchesCategory = !category || (p.categories ?? []).includes(category);
+    const matchesStatus =
+      !status ||
+      (status === "published" && p.published) ||
+      (status === "hidden" && !p.published);
+    return matchesSearch && matchesCategory && matchesStatus;
   });
 
   const totalCount = filtered.length;
   const start = (page - 1) * limit;
   const paginated = filtered.slice(start, start + limit);
 
-  const categories = [...new Set(allPosts.map((p) => p.category))].sort();
+  const categories = [...new Set(allPosts.flatMap((p) => p.categories ?? []))].filter(Boolean).sort();
 
   return (
     <div>
@@ -62,10 +69,10 @@ export default async function AdminArticlesPage({
         <AdminFilterBar
           action="/admin/articles"
           searchName="q"
-          searchPlaceholder="Search by title, excerpt, or category..."
+          searchPlaceholder="Search title, excerpt, tags, or categories..."
           searchDefault={q}
           limit={limit}
-          hasActiveFilters={!!(q || category)}
+          hasActiveFilters={!!(q || category || status)}
           clearHref={`/admin/articles?limit=${limit}`}
           categoryFilter={
             categories.length > 0
@@ -76,6 +83,15 @@ export default async function AdminArticlesPage({
                 }
               : undefined
           }
+          statusFilter={{
+            name: "status",
+            options: [
+              { value: "", label: "All visibility" },
+              { value: "published", label: "Published (live)" },
+              { value: "hidden", label: "Hidden (draft)" },
+            ],
+            defaultValue: status,
+          }}
         />
 
         {paginated.length === 0 ? (
@@ -84,14 +100,14 @@ export default async function AdminArticlesPage({
               <FileText className="h-8 w-8 text-purple-600 dark:text-purple-400" />
             </div>
             <h3 className="font-display font-bold text-slate-900 dark:text-dark-100 mb-2">
-              {q || category ? "No matching articles" : "No articles yet"}
+              {q || category || status ? "No matching articles" : "No articles yet"}
             </h3>
             <p className="text-slate-600 dark:text-purple-300 mb-6">
-              {q || category
+              {q || category || status
                 ? "Try different filters."
                 : "Add your first article in Supabase."}
             </p>
-            {(q || category) && (
+            {(q || category || status) && (
               <Link
                 href="/admin/articles"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 transition-colors text-sm"

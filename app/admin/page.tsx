@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { getAdminStats, formatCount } from "../lib/admin";
-import { getLatestPosts } from "../lib/posts";
+import { getAllPosts } from "../lib/posts";
 import { postPublicPath } from "../lib/post-url";
 
 function timeAgo(dateStr: string): string {
@@ -25,10 +25,8 @@ function timeAgo(dateStr: string): string {
 }
 
 export default async function AdminDashboardPage() {
-  const [stats, latestPosts] = await Promise.all([
-    getAdminStats(),
-    getLatestPosts(5),
-  ]);
+  const [stats, allPosts] = await Promise.all([getAdminStats(), getAllPosts()]);
+  const latestPosts = allPosts.slice(0, 5);
 
   const statCards = [
     { name: "Total Articles", value: String(stats.totalArticles), icon: FileText, href: "/admin/articles", color: "from-purple-500 to-purple-600" },

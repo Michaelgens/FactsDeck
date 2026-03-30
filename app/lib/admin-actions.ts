@@ -4,11 +4,14 @@ import { revalidatePath } from "next/cache";
 import { createServerClient, isSupabaseConfigured } from "./supabase/server";
 import { slugify } from "./slug";
 import { postPublicPath } from "./post-url";
+import { getPostById } from "./posts";
 
 export type PostFormData = {
   title: string;
   excerpt: string;
-  category: string;
+  categories: string[];
+  /** false = hidden / not published on the public site */
+  published: boolean;
   imageUrl: string;
   contentUrl: string;
   /** Paste Markdown here when not using a hosted .md URL */
@@ -90,12 +93,18 @@ export async function createPost(
   const slug = await ensureUniqueSlug(baseSlug);
 
   const supabase = createServerClient();
+  const categories =
+    Array.isArray(data.categories) && data.categories.length > 0
+      ? data.categories.map((c) => c.trim()).filter(Boolean)
+      : ["General"];
+
   const row = {
     id,
     slug,
     title: data.title.trim() || "Untitled",
     excerpt: data.excerpt.trim() || "",
-    category: data.category.trim() || "General",
+    categories,
+    published: Boolean(data.published),
     image_url: data.imageUrl.trim() || "/placeholder.svg",
     content: inlineContent,
     content_url: contentUrl,
@@ -140,11 +149,17 @@ export async function updatePost(
   const slug = await ensureUniqueSlug(baseSlug, id);
 
   const supabase = createServerClient();
+  const categories =
+    Array.isArray(data.categories) && data.categories.length > 0
+      ? data.categories.map((c) => c.trim()).filter(Boolean)
+      : ["General"];
+
   const row: Record<string, unknown> = {
     slug,
     title: data.title.trim() || "Untitled",
     excerpt: data.excerpt.trim() || "",
-    category: data.category.trim() || "General",
+    categories,
+    published: Boolean(data.published),
     image_url: data.imageUrl.trim() || "/placeholder.svg",
     content_url: contentUrl,
     author_name: data.authorName.trim() || "Anonymous",
@@ -177,6 +192,31 @@ export async function updatePost(
   revalidatePath("/post");
   revalidatePath(postPublicPath({ id, slug }));
   revalidatePath(`/post/${id}`);
+  return { ok: true };
+}
+
+export async function setPostPublished(
+  id: string,
+  published: boolean
+): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Supabase not configured" };
+  }
+  const supabase = createServerClient();
+  const { error } = await supabase.from("posts").update({ published }).eq("id", id);
+  if (error) {
+    console.error("[setPostPublished]", error.message);
+    return { ok: false, error: error.message };
+  }
+  const p = await getPostById(id);
+  if (p) {
+    revalidatePath(postPublicPath(p));
+    revalidatePath(`/post/${id}`);
+  }
+  revalidatePath("/admin/articles");
+  revalidatePath("/admin");
+  revalidatePath("/");
+  revalidatePath("/post");
   return { ok: true };
 }
 

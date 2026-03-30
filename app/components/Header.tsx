@@ -1,13 +1,23 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, Search, ChevronDown, Sun, Moon } from "lucide-react";
+import { Menu, X, Search, ChevronDown, Sun, Moon, Wrench } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
+import { siteTools } from "../lib/site-config";
+import { pickDailyTools, toolMatchesSearch } from "../lib/tools-utils";
 
-const navigationItems = [
-  { name: "Home", href: "/" },
+type NavDropdownItem = { name: string; href: string; subtitle: string };
+
+type NavItem = {
+  name: string;
+  href: string;
+  hasDropdown?: boolean;
+  dropdownItems?: NavDropdownItem[];
+};
+
+const navigationItemsBase: NavItem[] = [
   {
     name: "Learn",
     href: "/post",
@@ -84,6 +94,30 @@ export default function Header() {
   const handleDropdownToggle = (itemName: string) => {
     setActiveDropdown(activeDropdown === itemName ? null : itemName);
   };
+
+  const matchingTools = useMemo(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) return [];
+    return siteTools.filter((t) => toolMatchesSearch(t, q)).slice(0, 5);
+  }, [searchQuery]);
+
+  const navigationItems = useMemo(() => {
+    const picked = pickDailyTools(siteTools, 3, "nav-tools-spotlight");
+    const toolsDropdown: NavDropdownItem[] = [
+      ...picked.map((t) => ({
+        name: t.name,
+        href: `/tools/${t.slug}`,
+        subtitle: t.tagline,
+      })),
+      { name: "View all tools", href: "/tools", subtitle: "Calculators & simulators" },
+    ];
+    const items: NavItem[] = [
+      { name: "Home", href: "/" },
+      { name: "Tools", href: "/tools", hasDropdown: true, dropdownItems: toolsDropdown },
+      ...navigationItemsBase,
+    ];
+    return items;
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,15 +221,37 @@ export default function Header() {
                     type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search topics, titles, categories..."
+                    placeholder="Articles, topics & tools..."
                     className="w-full px-4 py-3 border border-slate-300 dark:border-purple-500/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-dark-850/50 dark:text-dark-100"
                     autoFocus
                   />
+                  {matchingTools.length > 0 && (
+                    <div className="mt-3 rounded-lg border border-slate-200 dark:border-purple-500/40 divide-y divide-slate-100 dark:divide-purple-500/20 overflow-hidden">
+                      <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-purple-400 flex items-center gap-1.5">
+                        <Wrench className="h-3.5 w-3.5" aria-hidden />
+                        Tools
+                      </p>
+                      {matchingTools.map((t) => (
+                        <Link
+                          key={t.slug}
+                          href={`/tools/${t.slug}`}
+                          className="block px-3 py-2.5 text-sm text-slate-800 dark:text-purple-100 hover:bg-purple-50 dark:hover:bg-emerald-900/20 transition-colors"
+                          onClick={() => {
+                            setIsSearchOpen(false);
+                            setSearchQuery("");
+                          }}
+                        >
+                          <span className="font-medium">{t.name}</span>
+                          <span className="block text-xs text-slate-500 dark:text-purple-400 mt-0.5 line-clamp-1">{t.tagline}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                   <button
                     type="submit"
                     className="mt-3 w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
                   >
-                    Search
+                    Search articles
                   </button>
                 </form>
               )}
@@ -265,7 +321,7 @@ export default function Header() {
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search topics, titles, categories..."
+                placeholder="Articles, topics & tools..."
                 className="flex-1 px-4 py-3 border border-slate-300 dark:border-purple-500/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-dark-850/50 dark:text-dark-100"
               />
               <button
@@ -275,6 +331,25 @@ export default function Header() {
                 Search
               </button>
             </div>
+            {matchingTools.length > 0 && (
+              <div className="rounded-lg border border-slate-200 dark:border-purple-500/40 divide-y divide-slate-100 dark:divide-purple-500/20 overflow-hidden">
+                <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-purple-400 flex items-center gap-1.5">
+                  <Wrench className="h-3.5 w-3.5" aria-hidden />
+                  Matching tools
+                </p>
+                {matchingTools.map((t) => (
+                  <Link
+                    key={t.slug}
+                    href={`/tools/${t.slug}`}
+                    className="block px-3 py-2.5 text-sm text-slate-800 dark:text-purple-100 hover:bg-purple-50 dark:hover:bg-emerald-900/20"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span className="font-medium">{t.name}</span>
+                    <span className="block text-xs text-slate-500 dark:text-purple-400 mt-0.5">{t.tagline}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
             <div className="space-y-4">
             {navigationItems.map((item) => (
               <div key={item.name}>

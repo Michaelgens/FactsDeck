@@ -16,6 +16,12 @@ interface AdminFilterBarProps {
     options: { value: string; label: string }[];
     defaultValue?: string;
   };
+  /** e.g. published / hidden / all */
+  statusFilter?: {
+    name: string;
+    options: { value: string; label: string }[];
+    defaultValue?: string;
+  };
 }
 
 export default function AdminFilterBar({
@@ -27,6 +33,7 @@ export default function AdminFilterBar({
   hasActiveFilters,
   clearHref,
   categoryFilter,
+  statusFilter,
 }: AdminFilterBarProps) {
   return (
     <form
@@ -62,6 +69,19 @@ export default function AdminFilterBar({
             ))}
           </select>
         </div>
+      )}
+      {statusFilter && (
+        <select
+          name={statusFilter.name}
+          defaultValue={statusFilter.defaultValue ?? ""}
+          className="px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-dark-900 border border-slate-200 dark:border-purple-500/30 text-slate-900 dark:text-dark-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all min-w-[10rem]"
+        >
+          {statusFilter.options.map((opt) => (
+            <option key={opt.value || "__all"} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
       )}
       <div className="flex gap-2 shrink-0">
         <button

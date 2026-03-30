@@ -538,7 +538,7 @@ export default function AdvancedInvestmentCalculator() {
                   </div>
 
                   <Link
-                    href="/post?category=Investing"
+                    href="/post?category=Investing&q=ETF"
                     className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 w-fit"
                   >
                     Investing guides

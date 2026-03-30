@@ -4,6 +4,15 @@ const nextConfig: NextConfig = {
   images: {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    localPatterns: [
+      // Allow images from /public (e.g. /first.jpeg)
+      {
+        pathname: "/**",
+      },
+      {
+        pathname: "/api/image-proxy/**",
+      },
+    ],
     remotePatterns: [
       {
         protocol: "https",
@@ -23,6 +32,11 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.public.blob.vercel-storage.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.private.blob.vercel-storage.com",
         pathname: "/**",
       },
     ],

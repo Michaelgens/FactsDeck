@@ -71,8 +71,6 @@ export async function subscribeEmail(
           "[subscribeEmail] 401 Unauthorized — backend has WELCOME_EMAIL_SECRET but Next.js is missing it or values differ. Set WELCOME_EMAIL_SECRET in both .env files to the same string."
         );
       }
-    } else {
-      console.log("[subscribeEmail] Welcome email API OK:", backendUrl);
     }
   } catch (err) {
     console.error(

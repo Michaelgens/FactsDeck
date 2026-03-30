@@ -29,13 +29,19 @@ import {
   PieChart,
   Heart,
   Bookmark,
+  Wrench,
+  ArrowUpRight,
 } from "lucide-react";
 import type { Post } from "../lib/types";
 import { postPublicPath } from "../lib/post-url";
+import { CategoryPills, categoryLabelList, postHasCategory, postMatchesSearch } from "../lib/post-display";
 import type { CategoryWithCount, PartitionedPosts } from "../lib/posts";
-import { quickTools } from "../lib/site-config";
+import type { SiteTool } from "../lib/site-config";
+import { siteTools } from "../lib/site-config";
+import { toolMatchesSearch } from "../lib/tools-utils";
 import { usePostEngagement } from "../hooks/usePostEngagement";
 import EmptyState from "./EmptyState";
+import { proxiedImageSrc } from "../lib/image-proxy";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Scale,
@@ -69,9 +75,14 @@ const POST_BASE = "/post";
 type PostListContentProps = {
   partitioned: PartitionedPosts;
   categoriesWithCounts: CategoryWithCount[];
+  sidebarTools: SiteTool[];
 };
 
-export default function PostListContent({ partitioned, categoriesWithCounts }: PostListContentProps) {
+export default function PostListContent({
+  partitioned,
+  categoriesWithCounts,
+  sidebarTools,
+}: PostListContentProps) {
   const searchParams = useSearchParams();
   const typeParam = searchParams.get("type") || "latest";
   const category = searchParams.get("category") || "";
@@ -87,6 +98,12 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
   useEffect(() => {
     setSearchTerm(queryParam);
   }, [queryParam]);
+
+  const matchingTools = useMemo(() => {
+    const q = searchTerm.trim();
+    if (q.length < 2) return [];
+    return siteTools.filter((t) => toolMatchesSearch(t, q));
+  }, [searchTerm]);
 
   const { items: displayItems, totalCount } = useMemo(() => {
     let data: Post[] = [];
@@ -104,20 +121,14 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
     }
 
     if (category) {
-      data = data.filter((p) => p.category === category);
+      data = data.filter((p) => postHasCategory(p, category));
     }
 
     if (type !== "guides" && type !== "trending") {
-      let filtered = data.filter(
-        (item) =>
-          !searchTerm ||
-          item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.category.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      let filtered = data.filter((item) => postMatchesSearch(item, searchTerm));
       filtered = filtered.filter(
         (item) =>
-          filterCategory === "All Categories" || item.category === filterCategory
+          filterCategory === "All Categories" || postHasCategory(item, filterCategory)
       );
       if (sortBy === "newest") {
         filtered = [...filtered].sort(
@@ -138,11 +149,7 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
       }
       data = filtered;
     } else if (searchTerm) {
-      data = data.filter(
-        (p) =>
-          p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.category.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      data = data.filter((p) => postMatchesSearch(p, searchTerm));
     }
 
     return { items: data, totalCount: data.length };
@@ -157,7 +164,7 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
   ];
   const allCategories = [
     "All Categories",
-    ...Array.from(new Set(allPostsForCategories.map((p) => p.category))).filter(Boolean),
+    ...Array.from(new Set(allPostsForCategories.flatMap((p) => categoryLabelList(p)))).sort(),
   ];
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
@@ -195,13 +202,13 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
           <div className="bg-white dark:bg-dark-900/50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-200 dark:border-purple-500/30 hover:-translate-y-2">
             <div className="relative h-48">
               <Image
-                src={article.image}
+                src={proxiedImageSrc(article.image)}
                 alt={article.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
-              <span className="absolute top-3 left-3 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-bold">
-                {article.category}
+              <span className="absolute top-3 left-3 max-w-[calc(100%-5rem)]">
+                <CategoryPills categories={categoryLabelList(article)} variant="overlay" max={3} />
               </span>
               <div className="absolute top-3 right-3">
                 <button
@@ -250,7 +257,7 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
           <div className="bg-white dark:bg-dark-900/50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200 dark:border-purple-500/30 hover:-translate-y-1 flex flex-col md:flex-row">
             <div className="md:w-1/3 relative h-48 md:min-h-[200px]">
               <Image
-                src={article.image}
+                src={proxiedImageSrc(article.image)}
                 alt={article.title}
                 fill
                 className="object-cover rounded-t-xl md:rounded-l-xl md:rounded-t-none group-hover:scale-105 transition-transform duration-300"
@@ -271,9 +278,7 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
               </div>
             </div>
             <div className="md:w-2/3 p-6">
-              <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 px-3 py-1 rounded-full text-xs font-semibold">
-                {article.category}
-              </span>
+              <CategoryPills categories={categoryLabelList(article)} max={4} />
               <h3 className="font-display font-bold text-xl text-slate-900 dark:text-purple-200 mt-3 mb-2 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
                 {article.title}
               </h3>
@@ -382,7 +387,7 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-purple-400" />
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search articles & tools..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-slate-300 dark:border-purple-500/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-500/50 bg-slate-50 dark:bg-dark-850/50 dark:text-dark-100"
@@ -419,7 +424,65 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3">
+            {matchingTools.length > 0 && (
+              <section
+                className="mb-8 rounded-2xl border border-purple-200/80 dark:border-purple-500/40 bg-gradient-to-br from-purple-50/90 to-amber-50/50 dark:from-purple-950/40 dark:to-dark-850/60 p-6 shadow-sm"
+                aria-label="Matching tools"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Wrench className="h-5 w-5 text-purple-600 dark:text-emerald-400" aria-hidden />
+                  <h2 className="font-display font-bold text-lg text-slate-900 dark:text-purple-100">
+                    Matching tools
+                  </h2>
+                </div>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 list-none p-0 m-0">
+                  {matchingTools.map((tool) => {
+                    const ToolIcon = iconMap[tool.iconKey || "Calculator"] ?? Calculator;
+                    return (
+                      <li key={tool.slug}>
+                        <Link
+                          href={`/tools/${tool.slug}`}
+                          className="flex items-center gap-3 rounded-xl bg-white/90 dark:bg-dark-900/70 border border-slate-200/80 dark:border-purple-500/30 p-4 hover:border-purple-400 dark:hover:border-emerald-500/50 hover:shadow-md transition-all group"
+                        >
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-amber-600 flex items-center justify-center flex-shrink-0">
+                            <ToolIcon className="h-5 w-5 text-white" aria-hidden />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-slate-900 dark:text-purple-100 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
+                              {tool.name}
+                            </p>
+                            <p className="text-xs text-slate-600 dark:text-purple-300/90 line-clamp-2">{tool.tagline}</p>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-purple-600 flex-shrink-0" aria-hidden />
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Link
+                  href="/tools"
+                  className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-emerald-300"
+                >
+                  Browse all tools <ChevronRight className="h-4 w-4" />
+                </Link>
+              </section>
+            )}
+
             {paginatedItems.length === 0 ? (
+              matchingTools.length > 0 ? (
+                <div className="rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-slate-50/80 dark:bg-dark-900/40 px-6 py-10 text-center">
+                  <p className="text-slate-700 dark:text-purple-200 font-medium mb-2">No articles match this search.</p>
+                  <p className="text-sm text-slate-600 dark:text-purple-300/90 max-w-md mx-auto">
+                    Try different keywords, clear filters, or use the matching tools above.
+                  </p>
+                  <Link
+                    href="/tools"
+                    className="inline-flex mt-6 text-sm font-bold text-purple-600 dark:text-emerald-400 hover:underline"
+                  >
+                    View all calculators & simulators
+                  </Link>
+                </div>
+              ) : (
               <EmptyState
                 icon={Search}
                 title="Nothing here yet"
@@ -427,6 +490,7 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
                 ctaLabel="Browse all articles"
                 ctaHref="/post"
               />
+              )
             ) : (
               <>
                 <p className="text-slate-600 dark:text-purple-200 mb-6">
@@ -459,9 +523,12 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
                         href={`${postPublicPath(guide)}?from=guides`}
                         className="group block bg-white dark:bg-dark-900/50 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200 dark:border-purple-500/30 hover:-translate-y-2"
                       >
-                        <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide">
-                          {guide.category}
-                        </span>
+                        <CategoryPills
+                          categories={categoryLabelList(guide)}
+                          variant="muted"
+                          max={3}
+                          className="[&>span]:text-[10px] [&>span]:uppercase [&>span]:tracking-wide"
+                        />
                         <h3 className="font-display font-bold text-lg text-slate-900 dark:text-purple-200 mt-2 mb-3 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
                           {guide.title}
                         </h3>
@@ -623,29 +690,48 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
             </div>
 
             <div className="bg-white dark:bg-dark-900/50 dark:border-purple-500/30 rounded-xl p-6 shadow-lg border border-slate-200">
-              <div className="flex items-center space-x-2 mb-4">
-                <Calculator className="h-5 w-5 text-purple-500" />
-                <h3 className="font-display font-bold text-slate-900 dark:text-purple-200">
-                  Quick Tools
-                </h3>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Calculator className="h-5 w-5 text-purple-500" />
+                  <h3 className="font-display font-bold text-slate-900 dark:text-purple-200">
+                    Quick Tools
+                  </h3>
+                </div>
+                <span className="text-xs font-medium text-purple-500 dark:text-purple-400/90">Spotlight</span>
               </div>
               <div className="space-y-3">
-                {quickTools.map((tool, i) => {
-                  const slug = tool.name.toLowerCase().replace(/\s+/g, "-");
+                {sidebarTools.map((tool) => {
+                  const ToolIcon = iconMap[tool.iconKey || "Calculator"] ?? Calculator;
                   return (
                     <Link
-                      key={i}
-                      href={`/tools/${slug}`}
-                      className="block flex items-center justify-between p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors group"
+                      key={tool.slug}
+                      href={`/tools/${tool.slug}`}
+                      className="block flex items-center justify-between gap-2 p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors group"
                     >
-                      <span className="font-semibold text-sm text-slate-900 dark:text-purple-200 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
-                        {tool.name}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                          <ToolIcon className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="font-semibold text-sm text-slate-900 dark:text-purple-200 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-2 text-start">
+                          {tool.name}
+                        </span>
+                      </div>
+                      <span
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200/90 dark:border-purple-500/35 bg-slate-50/90 dark:bg-dark-850/60 text-slate-400 group-hover:border-purple-300 group-hover:bg-purple-100/80 group-hover:text-purple-600 dark:group-hover:border-emerald-500/45 dark:group-hover:bg-emerald-950/30 dark:group-hover:text-emerald-400 transition-all group-hover:scale-105"
+                        aria-hidden
+                      >
+                        <ArrowUpRight className="h-4 w-4" />
                       </span>
-                      <span className="text-xs text-slate-500 dark:text-purple-200">{tool.users}</span>
                     </Link>
                   );
                 })}
               </div>
+              <Link
+                href="/tools"
+                className="mt-4 flex items-center justify-center gap-1 text-purple-600 dark:text-purple-400 font-semibold text-sm hover:text-purple-700 dark:hover:text-purple-300 transition-colors py-2"
+              >
+                All tools <ChevronRight className="h-4 w-4" />
+              </Link>
             </div>
 
             <div className="bg-white dark:bg-dark-900/50 dark:border-purple-500/30 rounded-xl p-6 shadow-lg border border-slate-200">
@@ -673,9 +759,9 @@ export default function PostListContent({ partitioned, categoriesWithCounts }: P
                       <h4 className="font-semibold text-sm text-slate-900 dark:text-purple-200 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors mb-1">
                         {guide.title}
                       </h4>
-                      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-purple-200">
-                        <span>{guide.category}</span>
-                        <span>{guide.readTime}</span>
+                      <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-purple-200">
+                        <CategoryPills categories={categoryLabelList(guide)} variant="muted" max={2} className="min-w-0" />
+                        <span className="shrink-0">{guide.readTime}</span>
                       </div>
                     </Link>
                   ))}

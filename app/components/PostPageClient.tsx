@@ -39,6 +39,7 @@ import {
   PieChart,
   Activity,
   ChevronRight,
+  ArrowUpRight,
   Scale,
   Brain,
   CreditCard,
@@ -48,9 +49,11 @@ import {
 } from "lucide-react";
 import type { Post, PostSummary } from "../lib/types";
 import { postPublicPath } from "../lib/post-url";
+import { proxiedImageSrc } from "../lib/image-proxy";
+import { CategoryPills, categoriesLabelList, categoryLabelList } from "../lib/post-display";
 import type { CategoryWithCount } from "../lib/posts";
 import { formatPublishDate } from "../lib/format-date";
-import { quickTools } from "../lib/site-config";
+import type { SiteTool } from "../lib/site-config";
 import EmptyState from "./EmptyState";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -87,6 +90,7 @@ type PostPageClientProps = {
   trendingPosts: Post[];
   guidePosts: Post[];
   categoriesWithCounts: CategoryWithCount[];
+  sidebarTools: SiteTool[];
 };
 
 export default function PostPageClient({
@@ -98,6 +102,7 @@ export default function PostPageClient({
   trendingPosts,
   guidePosts,
   categoriesWithCounts,
+  sidebarTools,
 }: PostPageClientProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -284,7 +289,7 @@ export default function PostPageClient({
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
-          <div className="flex flex-wrap items-center gap-2 mb-6">
+          <div className="flex items-center justify-between gap-3 mb-6">
             <Link
               href={fromLabel ? `/post?type=${from}` : "/"}
               className="inline-flex items-center glass-effect text-white px-4 py-2 md:px-6 md:py-3 rounded-xl md:rounded-2xl font-bold hover:bg-white/20 transition-all duration-300 backdrop-blur-lg border border-white/30 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-sm md:text-base"
@@ -294,7 +299,7 @@ export default function PostPageClient({
             </Link>
             <Link
               href="/post"
-              className="text-white/90 hover:text-white text-sm font-medium transition-colors"
+              className="text-white/90 hover:text-white text-sm font-medium transition-colors text-right"
             >
               Browse all articles →
             </Link>
@@ -303,9 +308,11 @@ export default function PostPageClient({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
             <div className="lg:col-span-2">
               <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-4 md:mb-6">
-                <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-xs md:text-sm font-bold">
-                  {article.category}
-                </span>
+                <CategoryPills
+                  categories={categoryLabelList(article)}
+                  variant="overlay"
+                  className="[&>span]:text-xs md:[&>span]:text-sm"
+                />
                 <div className="flex items-center text-purple-200 text-xs md:text-sm">
                   <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                   {formatPublishDate(article.publishDate)}
@@ -323,7 +330,7 @@ export default function PostPageClient({
               </p>
               <div className="flex items-center space-x-4 mb-6 md:mb-8">
                 <Image
-                  src={article.author.image}
+                  src={proxiedImageSrc(article.author.image)}
                   alt={article.author.name}
                   width={64}
                   height={64}
@@ -352,7 +359,7 @@ export default function PostPageClient({
             <div className="lg:col-span-1">
               <div className="relative h-48 md:h-64 lg:h-80">
                 <Image
-                  src={article.image}
+                  src={proxiedImageSrc(article.image)}
                   alt={article.title}
                   fill
                   className="object-cover rounded-2xl shadow-2xl"
@@ -437,7 +444,29 @@ export default function PostPageClient({
             <article className="bg-white dark:bg-gradient-to-br dark:from-dark-800 dark:to-purple-900/50 rounded-2xl p-6 md:p-8 lg:p-10 shadow-lg border border-gray-200 dark:border-purple-500/30 mb-8">
               <div className="article-prose max-w-none">
                 {content ? (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      img: ({ src, alt }) => {
+                        if (!src) return null;
+                        const s = typeof src === "string" ? src : String(src);
+                        return (
+                          <span className="block my-6 overflow-hidden rounded-2xl border border-gray-200 dark:border-purple-500/30 bg-white dark:bg-dark-900/40">
+                            <Image
+                              src={proxiedImageSrc(s)}
+                              alt={alt ?? ""}
+                              width={1400}
+                              height={800}
+                              sizes="(min-width: 1024px) 768px, 100vw"
+                              className="w-full h-auto"
+                            />
+                          </span>
+                        );
+                      },
+                    }}
+                  >
+                    {content}
+                  </ReactMarkdown>
                 ) : (
                   <div className="py-8">
                     <EmptyState
@@ -473,7 +502,7 @@ export default function PostPageClient({
               <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
                 <span className="inline-flex items-center justify-center rounded-full border-4 border-purple-400 dark:border-emerald-400 bg-white dark:bg-dark-900 p-1">
                   <Image
-                    src={article.author.image}
+                    src={proxiedImageSrc(article.author.image)}
                     alt={article.author.name}
                     width={96}
                     height={96}
@@ -500,6 +529,7 @@ export default function PostPageClient({
               </div>
             </div>
 
+            {/* Related Articles Section */}
             <section
               className="mt-10"
               aria-labelledby="related-articles-inline-heading"
@@ -552,16 +582,21 @@ export default function PostPageClient({
                       >
                         <div className="relative h-36 w-full shrink-0">
                           <Image
-                            src={item.image}
+                            src={proxiedImageSrc(item.image)}
                             alt={item.title}
                             fill
                             className="object-cover group-hover:scale-[1.03] transition-transform duration-300"
                           />
                         </div>
                         <div className="p-4 flex flex-col flex-1 min-h-0">
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-purple-600 dark:text-purple-300 mb-1.5">
-                            {item.category}
-                          </span>
+                          <div className="mb-1.5">
+                            <CategoryPills
+                              categories={categoriesLabelList(item.categories)}
+                              variant="muted"
+                              max={2}
+                              className="[&>span]:text-[10px] [&>span]:uppercase [&>span]:tracking-wide"
+                            />
+                          </div>
                           <h3 className="font-display font-bold text-base text-gray-900 dark:text-purple-100 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
                             {item.title}
                           </h3>
@@ -614,7 +649,7 @@ export default function PostPageClient({
                 {relatedArticles.map((item) => (
                   <Link key={item.id} href={postPublicPath(item)} className="flex gap-3 group p-3 -m-3 rounded-xl hover:bg-gray-50 dark:hover:bg-purple-900/20 transition-colors">
                     <Image
-                      src={item.image}
+                      src={proxiedImageSrc(item.image)}
                       alt={item.title}
                       width={64}
                       height={64}
@@ -624,9 +659,11 @@ export default function PostPageClient({
                       <h4 className="font-semibold text-sm text-gray-900 dark:text-purple-200 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
                         {item.title}
                       </h4>
-                      <div className="flex items-center justify-between mt-2 text-xs text-gray-500 dark:text-purple-300">
-                        <span>{item.category}</span>
-                        <span>{item.readTime}</span>
+                      <div className="flex items-center justify-between gap-2 mt-2 text-xs text-gray-500 dark:text-purple-300">
+                        <span className="truncate min-w-0">
+                          {categoriesLabelList(item.categories).join(" · ")}
+                        </span>
+                        <span className="shrink-0">{item.readTime}</span>
                       </div>
                     </div>
                   </Link>
@@ -678,35 +715,48 @@ export default function PostPageClient({
             </div>
 
             <div className="bg-white dark:bg-gradient-to-br dark:from-dark-800 dark:to-purple-900/50 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-purple-500/30">
-              <div className="flex items-center space-x-2 mb-6">
-                <Calculator className="h-5 w-5 text-purple-500" />
-                <h3 className="font-display font-bold text-lg text-gray-900 dark:text-purple-200">Quick Tools</h3>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-2">
+                  <Calculator className="h-5 w-5 text-purple-500" />
+                  <h3 className="font-display font-bold text-lg text-gray-900 dark:text-purple-200">Quick Tools</h3>
+                </div>
+                <span className="text-xs font-medium text-purple-500 dark:text-purple-400/90">Spotlight</span>
               </div>
               <div className="space-y-3">
-                {quickTools.map((tool, index) => {
+                {sidebarTools.map((tool) => {
                   const ToolIcon = iconMap[tool.iconKey || "Calculator"] ?? Calculator;
-                  const slug = tool.name.toLowerCase().replace(/\s+/g, "-");
                   return (
                     <Link
-                      key={index}
-                      href={`/tools/${slug}`}
+                      key={tool.slug}
+                      href={`/tools/${tool.slug}`}
                       className="block w-full group"
                     >
-                      <div className="flex items-center justify-between p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                      <div className="flex items-center justify-between gap-2 p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                        <div className="flex items-center space-x-3 min-w-0">
+                          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
                             <ToolIcon className="h-4 w-4 text-white" />
                           </div>
-                          <span className="font-semibold text-sm text-gray-900 dark:text-purple-200 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors text-start">
+                          <span className="font-semibold text-sm text-gray-900 dark:text-purple-200 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors text-start line-clamp-2">
                             {tool.name}
                           </span>
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-purple-300">{tool.users}</div>
+                        <span
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 dark:border-purple-500/35 bg-gray-50/90 dark:bg-dark-850/60 text-gray-400 group-hover:border-purple-300 group-hover:bg-purple-100/80 group-hover:text-purple-600 dark:group-hover:border-emerald-500/45 dark:group-hover:bg-emerald-950/30 dark:group-hover:text-emerald-400 transition-all group-hover:scale-105"
+                          aria-hidden
+                        >
+                          <ArrowUpRight className="h-4 w-4" />
+                        </span>
                       </div>
                     </Link>
                   );
                 })}
               </div>
+              <Link
+                href="/tools"
+                className="mt-4 flex items-center justify-center gap-1 text-purple-600 dark:text-purple-400 font-semibold text-sm hover:text-purple-700 dark:hover:text-purple-300 transition-colors py-2"
+              >
+                All tools <ChevronRight className="h-4 w-4" />
+              </Link>
             </div>
 
             <div className="bg-white dark:bg-gradient-to-br dark:from-dark-800 dark:to-purple-900/50 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-purple-500/30">
@@ -721,9 +771,14 @@ export default function PostPageClient({
                       <h4 className="font-semibold text-sm text-gray-900 dark:text-purple-200 mb-2 line-clamp-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                         {post.title}
                       </h4>
-                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-purple-300">
-                        <span>{post.category}</span>
-                        <span>{post.readTime}</span>
+                      <div className="flex items-center justify-between gap-2 text-xs text-gray-500 dark:text-purple-300">
+                        <CategoryPills
+                          categories={categoryLabelList(post)}
+                          variant="muted"
+                          max={2}
+                          className="min-w-0"
+                        />
+                        <span className="shrink-0">{post.readTime}</span>
                       </div>
                     </div>
                   </Link>

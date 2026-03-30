@@ -3,6 +3,8 @@ import HomePageClient from "./components/HomePageClient";
 import { getPartitionedPosts, getCategoriesWithCounts } from "./lib/posts";
 import { getMarketData } from "./lib/market-data";
 import { SITE_URL } from "./lib/seo";
+import { siteTools } from "./lib/site-config";
+import { pickDailyTools } from "./lib/tools-utils";
 
 const homeDescription =
   "Expert investing, banking & personal finance guides, tools & comparisons. Build financial literacy with Facts Deck — trusted by millions of readers.";
@@ -89,6 +91,7 @@ export default async function HomePage() {
     getCategoriesWithCounts(),
     getMarketData(),
   ]);
+  const sidebarTools = pickDailyTools(siteTools, 3, "home-sidebar");
 
   return (
     <>
@@ -104,6 +107,7 @@ export default async function HomePage() {
       guidePosts={partitioned.guides}
       categoriesWithCounts={categoriesWithCounts}
       marketData={marketData}
+      sidebarTools={sidebarTools}
     />
     </>
   );

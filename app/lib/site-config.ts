@@ -23,11 +23,82 @@ export const categories = [
   { name: "Retirement", count: "678+ Articles", color: "from-indigo-500 to-indigo-600", iconKey: "Target" },
 ];
 
-export const quickTools = [
-  { name: "Mortgage Calculator", users: "125K+", iconKey: "Calculator" },
-  { name: "Investment Calculator", users: "98K+", iconKey: "BarChart3" },
-  { name: "Budget Planner", users: "156K+", iconKey: "PieChart" },
-  { name: "Retirement Calculator", users: "87K+", iconKey: "Target" },
-  { name: "Loan Calculator", users: "76K+", iconKey: "DollarSign" },
-  { name: "Credit Score Simulator", users: "134K+", iconKey: "Activity" },
+export type SiteTool = {
+  slug: string;
+  name: string;
+  users: string;
+  iconKey: string;
+  /** One line for cards and SEO snippets */
+  tagline: string;
+  /** Longer blurb for the tools index */
+  description: string;
+  /** Extra tokens matched by site search */
+  searchTerms: string[];
+};
+
+/** Canonical list — add new tools here; slugs power `/tools/[slug]`. */
+export const siteTools: SiteTool[] = [
+  {
+    slug: "mortgage-calculator",
+    name: "Mortgage Calculator",
+    users: "125K+",
+    iconKey: "Calculator",
+    tagline: "PITI, PMI, amortization & refinance math",
+    description:
+      "Advanced home loan calculator with taxes, insurance, PMI lifecycle, full amortization schedules, refinance break-even, and affordability from your DTI.",
+    searchTerms: ["mortgage", "home loan", "PITI", "PMI", "house payment", "refinance", "amortization"],
+  },
+  {
+    slug: "investment-calculator",
+    name: "Investment Calculator",
+    users: "98K+",
+    iconKey: "BarChart3",
+    tagline: "Compound growth, FIRE paths & Monte Carlo",
+    description:
+      "Project wealth with fees and inflation, explore FIRE timelines, stress tests, lump sum vs DCA, and illustrative Monte Carlo bands.",
+    searchTerms: ["invest", "compound", "FIRE", "portfolio", "stocks", "returns", "Monte Carlo", "DCA"],
+  },
+  {
+    slug: "budget-planner",
+    name: "Budget Planner",
+    users: "156K+",
+    iconKey: "PieChart",
+    tagline: "Zero-based buckets & 50/30/20",
+    description:
+      "Build a monthly plan with needs, wants, savings, and debt buckets—track what’s left and export a snapshot for review.",
+    searchTerms: ["budget", "spending", "50 30 20", "zero based", "monthly plan", "cash flow"],
+  },
+  {
+    slug: "retirement-calculator",
+    name: "Retirement Calculator",
+    users: "87K+",
+    iconKey: "Target",
+    tagline: "Nest egg, withdrawals & longevity",
+    description:
+      "Estimate how savings and drawdown rules interact—set targets, try contribution paths, and stress-test your retirement timeline.",
+    searchTerms: ["retirement", "401k", "nest egg", "withdrawal", "pension", "RMD", "savings rate"],
+  },
+  {
+    slug: "loan-calculator",
+    name: "Loan Calculator",
+    users: "76K+",
+    iconKey: "DollarSign",
+    tagline: "Payoff curves, extra payments & compare",
+    description:
+      "Amortize auto and personal loans, model extra payments, compare scenarios, and see total interest at a glance.",
+    searchTerms: ["loan", "auto loan", "personal loan", "payment", "interest", "payoff", "amortization"],
+  },
+  {
+    slug: "credit-score-simulator",
+    name: "Credit Score Simulator",
+    users: "134K+",
+    iconKey: "Activity",
+    tagline: "Factors, mix & utilization what-ifs",
+    description:
+      "Educational simulator for utilization, payment history, age of accounts, inquiries, and credit mix—not a real bureau score.",
+    searchTerms: ["credit score", "FICO", "utilization", "inquiries", "credit mix", "payment history", "improve credit"],
+  },
 ];
+
+/** @deprecated Prefer `siteTools` — same array, kept for gradual migration */
+export const quickTools = siteTools;

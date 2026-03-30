@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, Plus, X, Globe, EyeOff } from "lucide-react";
 import { createPost, updatePost, type PostFormData } from "../../lib/admin-actions";
 import { categories } from "../../lib/site-config";
 import type { Post } from "../../lib/types";
@@ -13,7 +13,8 @@ const CATEGORY_OPTIONS = [...new Set(categories.map((c) => c.name))];
 const defaultForm: PostFormData = {
   title: "",
   excerpt: "",
-  category: "Investing",
+  categories: ["Investing"],
+  published: true,
   imageUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=900&h=500&fit=crop",
   contentUrl: "",
   bodyMarkdown: "",
@@ -41,12 +42,14 @@ export default function PostForm({ mode, post }: PostFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tagInput, setTagInput] = useState("");
   const [form, setForm] = useState<PostFormData>(
     post
       ? {
           title: post.title,
           excerpt: post.excerpt,
-          category: post.category,
+          categories: post.categories?.length ? post.categories : ["General"],
+          published: post.published,
           imageUrl: post.image,
           contentUrl: post.contentUrl ?? "",
           bodyMarkdown: post.content ?? "",
@@ -74,30 +77,54 @@ export default function PostForm({ mode, post }: PostFormProps) {
     const checked = (e.target as HTMLInputElement).checked;
     setForm((prev) => ({
       ...prev,
-      [name]:
-        type === "checkbox"
-          ? checked
-          : name === "tags"
-            ? value.split(",").map((t) => t.trim()).filter(Boolean)
-            : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
-  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setForm((prev) => ({
-      ...prev,
-      tags: val.split(",").map((t) => t.trim()).filter(Boolean),
-    }));
+  const toggleCategory = (name: string) => {
+    setForm((prev) => {
+      const set = new Set(prev.categories);
+      if (set.has(name)) set.delete(name);
+      else set.add(name);
+      const next = Array.from(set);
+      return { ...prev, categories: next.length ? next : ["General"] };
+    });
+  };
+
+  const addTagsFromString = (raw: string) => {
+    const parts = raw
+      .split(/[,;\n]+/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+    if (parts.length === 0) return;
+    setForm((prev) => {
+      const merged = new Set([...prev.tags, ...parts]);
+      return { ...prev, tags: Array.from(merged) };
+    });
+  };
+
+  const addTagLine = () => {
+    const t = tagInput.trim();
+    if (!t) return;
+    setForm((prev) => (prev.tags.includes(t) ? prev : { ...prev, tags: [...prev.tags, t] }));
+    setTagInput("");
+  };
+
+  const removeTag = (tag: string) => {
+    setForm((prev) => ({ ...prev, tags: prev.tags.filter((x) => x !== tag) }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const payload: PostFormData = {
+      ...form,
+      categories: form.categories.length ? form.categories : ["General"],
+    };
     try {
       if (mode === "create") {
-        const res = await createPost(form);
+        const res = await createPost(payload);
         if (res.ok && res.id) {
           router.push(`/admin/articles`);
           router.refresh();
@@ -105,7 +132,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
           setError(res.error ?? "Failed to create post");
         }
       } else if (post) {
-        const res = await updatePost(post.id, form);
+        const res = await updatePost(post.id, payload);
         if (res.ok) {
           router.push(`/admin/articles`);
           router.refresh();
@@ -176,18 +203,29 @@ export default function PostForm({ mode, post }: PostFormProps) {
             />
           </div>
           <div>
-            <label htmlFor="category" className={labelClass}>Category</label>
-            <select
-              id="category"
-              name="category"
-              value={form.category}
-              onChange={handleChange}
-              className={inputClass}
-            >
-              {CATEGORY_OPTIONS.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+            <span className={labelClass}>Categories (select all that apply)</span>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {CATEGORY_OPTIONS.map((c) => {
+                const on = form.categories.includes(c);
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => toggleCategory(c)}
+                    className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
+                      on
+                        ? "bg-purple-600 text-white border-purple-600 shadow-md"
+                        : "bg-slate-50 dark:bg-dark-900 text-slate-600 dark:text-purple-300 border-slate-200 dark:border-purple-500/40 hover:border-purple-400"
+                    }`}
+                  >
+                    {c}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-xs text-slate-500 dark:text-purple-400">
+              Posts can appear under multiple topics; readers filter by any matching label.
+            </p>
           </div>
           <div>
             <div className="flex items-center justify-between gap-2 mb-1">
@@ -421,6 +459,41 @@ export default function PostForm({ mode, post }: PostFormProps) {
           <h2 className="font-display font-bold text-lg text-slate-900 dark:text-dark-100">
             Metadata
           </h2>
+          <div className="rounded-xl border border-slate-200 dark:border-purple-500/30 p-4 bg-slate-50/80 dark:bg-dark-900/40">
+            <span className={labelClass}>Visibility</span>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, published: true }))}
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left border-2 transition-all ${
+                  form.published
+                    ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-100"
+                    : "border-slate-200 dark:border-purple-500/30 text-slate-600 dark:text-purple-300 hover:border-purple-300"
+                }`}
+              >
+                <Globe className="h-5 w-5 shrink-0" />
+                <span>
+                  <span className="block font-bold">Published</span>
+                  <span className="text-xs opacity-90">Live on the site &amp; in listings</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, published: false }))}
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left border-2 transition-all ${
+                  !form.published
+                    ? "border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-100"
+                    : "border-slate-200 dark:border-purple-500/30 text-slate-600 dark:text-purple-300 hover:border-purple-300"
+                }`}
+              >
+                <EyeOff className="h-5 w-5 shrink-0" />
+                <span>
+                  <span className="block font-bold">Hidden</span>
+                  <span className="text-xs opacity-90">Draft — only visible in admin</span>
+                </span>
+              </button>
+            </div>
+          </div>
           <div>
             <label htmlFor="readTime" className={labelClass}>Read time</label>
             <input
@@ -434,16 +507,70 @@ export default function PostForm({ mode, post }: PostFormProps) {
             />
           </div>
           <div>
-            <label htmlFor="tags" className={labelClass}>Tags (comma-separated)</label>
-            <input
-              id="tags"
-              name="tags"
-              type="text"
-              value={form.tags.join(", ")}
-              onChange={handleTagsChange}
-              className={inputClass}
-              placeholder="investing, finance, stocks"
-            />
+            <span className={labelClass}>Tags — add as many as you need</span>
+            <div className="mt-2 flex flex-wrap gap-2 min-h-[2.5rem] p-2 rounded-xl border border-slate-200 dark:border-purple-500/40 bg-white dark:bg-dark-900/50">
+              {form.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-lg bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200 text-sm font-medium"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="p-0.5 rounded-md hover:bg-purple-200/80 dark:hover:bg-purple-800"
+                    aria-label={`Remove ${tag}`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </span>
+              ))}
+              {form.tags.length === 0 && (
+                <span className="text-sm text-slate-400 dark:text-purple-500 self-center px-1">
+                  No tags yet — add below
+                </span>
+              )}
+            </div>
+            <div className="mt-2 flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addTagLine();
+                  }
+                }}
+                className={inputClass}
+                placeholder="Type a tag, press Enter"
+              />
+              <button
+                type="button"
+                onClick={addTagLine}
+                className="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-xl bg-slate-100 dark:bg-purple-900/30 text-slate-800 dark:text-purple-200 font-semibold hover:bg-purple-100 dark:hover:bg-purple-900/50"
+              >
+                <Plus className="h-4 w-4" />
+                Add
+              </button>
+            </div>
+            <div className="mt-3">
+              <label htmlFor="tagsBulk" className="text-xs font-medium text-slate-500 dark:text-purple-400">
+                Bulk add (comma, semicolon, or newline)
+              </label>
+              <textarea
+                id="tagsBulk"
+                rows={2}
+                className={`${inputClass} mt-1 font-mono text-sm`}
+                placeholder="ETFs; index funds&#10;retirement"
+                onBlur={(e) => {
+                  if (e.target.value.trim()) {
+                    addTagsFromString(e.target.value);
+                    e.target.value = "";
+                  }
+                }}
+              />
+            </div>
           </div>
           <div>
             <span className={labelClass}>Featured on homepage</span>
@@ -492,7 +619,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-accent-600 text-white font-bold hover:from-purple-700 hover:to-accent-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {mode === "create" ? "Create Article" : "Save Changes"}
+            {mode === "create" ? (form.published ? "Create & publish" : "Create (hidden)") : "Save changes"}
           </button>
           <Link
             href="/admin/articles"

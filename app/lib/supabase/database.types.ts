@@ -4,7 +4,8 @@ export type PostRow = {
   id: string;
   title: string;
   excerpt: string;
-  category: string;
+  categories: string[];
+  published: boolean;
   image_url: string;
   content_url: string | null;
   content: string | null;

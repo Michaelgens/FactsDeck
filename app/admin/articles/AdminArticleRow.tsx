@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FileText, Pencil, Trash2 } from "lucide-react";
-import { updatePostFlags, deletePost } from "../../lib/admin-actions";
+import { FileText, Pencil, Trash2, Globe, EyeOff } from "lucide-react";
+import { updatePostFlags, deletePost, setPostPublished } from "../../lib/admin-actions";
 import type { Post } from "../../lib/types";
 import { postPublicPath } from "../../lib/post-url";
+import { CategoryPills, categoryLabelList } from "../../lib/post-display";
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -38,6 +39,14 @@ function getPostFlagValue(article: Post, key: FlagKey): boolean {
 export default function AdminArticleRow({ article }: { article: Post }) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
+  const [togglingPub, setTogglingPub] = useState(false);
+
+  const togglePublished = async () => {
+    setTogglingPub(true);
+    await setPostPublished(article.id, !article.published);
+    router.refresh();
+    setTogglingPub(false);
+  };
 
   const handleToggle = async (key: FlagKey) => {
     const current = getPostFlagValue(article, key);
@@ -61,7 +70,19 @@ export default function AdminArticleRow({ article }: { article: Post }) {
         <p className="font-medium text-slate-900 dark:text-dark-100 truncate">
           {article.title}
         </p>
-        <p className="text-sm text-slate-500 dark:text-purple-400">
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <CategoryPills categories={categoryLabelList(article)} variant="muted" max={4} />
+          <span
+            className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${
+              article.published
+                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
+                : "bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"
+            }`}
+          >
+            {article.published ? "Live" : "Hidden"}
+          </span>
+        </div>
+        <p className="text-sm text-slate-500 dark:text-purple-400 mt-1">
           {formatDate(article.publishDate)} · {article.views} views · {article.likes} likes · {article.bookmarks} bookmarks
         </p>
       </div>
@@ -86,6 +107,19 @@ export default function AdminArticleRow({ article }: { article: Post }) {
         })}
       </div>
       <div className="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          disabled={togglingPub}
+          onClick={togglePublished}
+          title={article.published ? "Hide from public site" : "Publish to public site"}
+          className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
+            article.published
+              ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+              : "text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+          }`}
+        >
+          {article.published ? <Globe className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+        </button>
         <Link
           href={`/admin/articles/${article.id}/edit`}
           className="p-2 rounded-lg text-slate-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
@@ -109,12 +143,18 @@ export default function AdminArticleRow({ article }: { article: Post }) {
         >
           <Trash2 className="h-4 w-4" />
         </button>
-        <Link
-          href={postPublicPath(article)}
-          className="text-sm text-purple-600 dark:text-purple-400 font-semibold hover:text-purple-700 dark:hover:text-emerald-400"
-        >
-          View
-        </Link>
+        {article.published ? (
+          <Link
+            href={postPublicPath(article)}
+            className="text-sm text-purple-600 dark:text-purple-400 font-semibold hover:text-purple-700 dark:hover:text-emerald-400"
+          >
+            View
+          </Link>
+        ) : (
+          <span className="text-xs text-slate-400 dark:text-purple-500 font-medium" title="Publish to enable public URL">
+            —
+          </span>
+        )}
       </div>
     </li>
   );

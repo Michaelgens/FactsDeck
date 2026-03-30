@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -14,7 +14,10 @@ import {
   CheckCircle,
   Zap,
   Loader2,
+  Wrench,
 } from "lucide-react";
+import { siteTools } from "../lib/site-config";
+import { pickDailyTools } from "../lib/tools-utils";
 import { subscribeEmail } from "../lib/subscriber-actions";
 
 const companyLinks = [
@@ -31,6 +34,7 @@ export default function Footer() {
   const [message, setMessage] = useState("");
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith("/admin");
+  const footerTools = useMemo(() => pickDailyTools(siteTools, 3, "nav-tools-spotlight"), []);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,8 +121,8 @@ export default function Footer() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-slate-200 dark:border-purple-500/30">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-          <div className="md:col-span-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+          <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center space-x-2 mb-6">
               <div className="w-10 h-10 bg-gradient-to-br from-purple-600 via-purple-600 to-amber-600 dark:from-purple-600 dark:via-amber-600 dark:to-purple-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold">FD</span>
@@ -164,7 +168,34 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="md:col-span-1">
+          <div>
+            <h3 className="font-display font-bold text-lg text-slate-900 dark:text-dark-100 mb-6 flex items-center gap-2">
+              <Wrench className="h-5 w-5 text-purple-500 dark:text-purple-400 shrink-0" aria-hidden />
+              Tools
+            </h3>
+            <ul className="space-y-3">
+              <li>
+                <Link
+                  href="/tools"
+                  className="text-slate-600 dark:text-dark-300 hover:text-purple-600 dark:hover:text-emerald-400 transition-colors hover:translate-x-1 inline-block text-sm"
+                >
+                  All Tools & Calculators
+                </Link>
+              </li>
+              {footerTools.map((tool) => (
+                <li key={tool.slug}>
+                  <Link
+                    href={`/tools/${tool.slug}`}
+                    className="text-slate-600 dark:text-dark-300 hover:text-purple-600 dark:hover:text-emerald-400 transition-colors hover:translate-x-1 inline-block text-sm"
+                  >
+                    {tool.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
             <h3 className="font-display font-bold text-lg text-slate-900 dark:text-dark-100 mb-6">
               Company
             </h3>
@@ -182,7 +213,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="md:col-span-1">
+          <div>
             <h3 className="font-display font-bold text-lg text-slate-900 dark:text-dark-100 mb-6">
               Contact
             </h3>

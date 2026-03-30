@@ -938,7 +938,7 @@ export default function AdvancedMortgageCalculator() {
                       Copy scenario JSON
                     </button>
                     <Link
-                      href="/post?category=Real%20Estate"
+                      href="/post?category=Real%20Estate&q=mortgage"
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700"
                     >
                       Real estate guides

@@ -5,7 +5,10 @@ export interface Post {
   slug: string | null;
   title: string;
   excerpt: string;
-  category: string;
+  /** One or more categories (e.g. Investing, Banking) */
+  categories: string[];
+  /** When false, post is hidden from the public site (admin still sees it) */
+  published: boolean;
   image: string;
   contentUrl: string | null;
   content?: string | null;
@@ -36,7 +39,7 @@ export type PostSummary = Pick<
   | "slug"
   | "title"
   | "excerpt"
-  | "category"
+  | "categories"
   | "image"
   | "readTime"
   | "publishDate"

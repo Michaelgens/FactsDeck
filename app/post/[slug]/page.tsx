@@ -11,6 +11,8 @@ import PostPageClient from "../../components/PostPageClient";
 import { SITE_URL, absoluteUrl } from "../../lib/seo";
 import { postPublicPath } from "../../lib/post-url";
 import { isUuid } from "../../lib/slug";
+import { siteTools } from "../../lib/site-config";
+import { pickDailyTools } from "../../lib/tools-utils";
 
 /** Fresh DB read per request; avoids a cached 404 right after publishing. */
 export const dynamic = "force-dynamic";
@@ -30,14 +32,14 @@ export async function generateMetadata({
 
   const canonicalUrl = canonicalPostUrl(post);
   const ogImage = post.image ? absoluteUrl(post.image) : undefined;
-  const keywordList = [post.category, ...(post.tags ?? [])].filter(Boolean);
+  const keywordList = [...(post.categories ?? []), ...(post.tags ?? [])].filter(Boolean);
 
   return {
     title: post.title,
     description: post.excerpt,
     keywords: keywordList.length ? keywordList : undefined,
     authors: post.author ? [{ name: post.author.name }] : undefined,
-    category: post.category,
+    category: post.categories?.[0],
     openGraph: {
       title: post.title,
       description: post.excerpt,
@@ -47,7 +49,7 @@ export async function generateMetadata({
       locale: "en_US",
       publishedTime: post.publishDate,
       modifiedTime: post.createdAt || post.publishDate,
-      section: post.category,
+      section: post.categories?.[0],
       tags: post.tags?.length ? post.tags : undefined,
       authors: post.author ? [post.author.name] : undefined,
       images: ogImage
@@ -95,13 +97,14 @@ export default async function PostPage({
   const [content, relatedPosts, partitioned, categoriesWithCounts] = await Promise.all([
     getPostContent(post.content, post.contentUrl),
     /** Shared tags first, then same category, then other recent; first 3 for sidebar, rest for inline strip. */
-    getRelatedPosts(post.id, post.category, post.tags, 9),
+    getRelatedPosts(post.id, post.categories, post.tags, 9),
     getPartitionedPosts(post.id),
     getCategoriesWithCounts(),
   ]);
 
   const relatedArticles = relatedPosts.slice(0, 3);
   const moreArticles = relatedPosts.slice(3, 9);
+  const sidebarTools = pickDailyTools(siteTools, 3, `post-article-${post.id}`);
 
   const canonicalUrl = canonicalPostUrl(post);
   const imageUrl = post.image ? absoluteUrl(post.image) : undefined;
@@ -128,8 +131,8 @@ export default async function PostPage({
           ? { "@type": "Person", name: post.author.name }
           : undefined,
         publisher: { "@id": `${SITE_URL}/#organization` },
-        articleSection: post.category,
-        keywords: post.tags?.length ? post.tags.join(", ") : undefined,
+        articleSection: post.categories?.join(", "),
+        keywords: [...(post.categories ?? []), ...(post.tags ?? [])].join(", ") || undefined,
         inLanguage: "en-US",
         mainEntityOfPage: {
           "@type": "WebPage",
@@ -191,6 +194,7 @@ export default async function PostPage({
         trendingPosts={partitioned.trending}
         guidePosts={partitioned.guides}
         categoriesWithCounts={categoriesWithCounts}
+        sidebarTools={sidebarTools}
       />
     </>
   );

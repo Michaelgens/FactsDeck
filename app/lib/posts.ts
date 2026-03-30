@@ -20,13 +20,22 @@ export function normalizeSlugParam(param: string): string {
   return s.normalize("NFC").trim();
 }
 
+function normalizeCategories(row: Record<string, unknown>): string[] {
+  const raw = row.categories;
+  if (Array.isArray(raw) && raw.length > 0) {
+    return (raw as unknown[]).map((c) => String(c).trim()).filter(Boolean);
+  }
+  return ["General"];
+}
+
 function rowToPost(row: Record<string, unknown>): Post {
   return {
     id: String(row.id),
     slug: row.slug != null && String(row.slug).trim() ? String(row.slug).trim() : null,
     title: String(row.title),
     excerpt: String(row.excerpt),
-    category: String(row.category),
+    categories: normalizeCategories(row),
+    published: row.published === false || row.published === 0 ? false : true,
     image: String(row.image_url),
     contentUrl: (row.content_url as string) || null,
     content: (row.content as string) || null,
@@ -59,6 +68,7 @@ export async function getLatestPosts(limit = 50): Promise<Post[]> {
   const { data, error } = await supabase
     .from("posts")
     .select("*")
+    .eq("published", true)
     .order("publish_date", { ascending: false })
     .limit(limit);
   if (error) {
@@ -75,6 +85,7 @@ export async function getFeaturedPosts(): Promise<Post[]> {
   const { data, error } = await supabase
     .from("posts")
     .select("*")
+    .eq("published", true)
     .eq("featured", true)
     .order("publish_date", { ascending: false });
   if (error) {
@@ -91,6 +102,7 @@ export async function getExpertPickPosts(): Promise<Post[]> {
   const { data, error } = await supabase
     .from("posts")
     .select("*")
+    .eq("published", true)
     .eq("expert_picks", true)
     .order("publish_date", { ascending: false });
   if (error) {
@@ -107,6 +119,7 @@ export async function getTrendingPosts(): Promise<Post[]> {
   const { data, error } = await supabase
     .from("posts")
     .select("*")
+    .eq("published", true)
     .eq("trending", true)
     .order("publish_date", { ascending: false });
   if (error) {
@@ -123,6 +136,7 @@ export async function getGuidePosts(): Promise<Post[]> {
   const { data, error } = await supabase
     .from("posts")
     .select("*")
+    .eq("published", true)
     .eq("guides", true)
     .order("publish_date", { ascending: false });
   if (error) {
@@ -185,11 +199,27 @@ export function partitionPostsBySection(
   return { featured, latest, expertPicks, trending, guides };
 }
 
-/** Fetch all posts and return partitioned sections (no duplicates) */
+/** Published posts only — used for homepage & article listings */
+export async function getPublishedPosts(): Promise<Post[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("posts")
+    .select("*")
+    .eq("published", true)
+    .order("publish_date", { ascending: false });
+  if (error) {
+    console.error("[getPublishedPosts]", error.message, error.code);
+    return [];
+  }
+  return (data || []).map(rowToPost);
+}
+
+/** Fetch published posts and return partitioned sections (no duplicates) */
 export async function getPartitionedPosts(
   excludeId?: string
 ): Promise<PartitionedPosts> {
-  const all = await getAllPosts();
+  const all = await getPublishedPosts();
   return partitionPostsBySection(all, excludeId);
 }
 
@@ -259,14 +289,15 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
   return null;
 }
 
-/** Resolve route param: UUID → by id; otherwise by slug */
+/** Resolve route param: UUID → by id; otherwise by slug. Public routes only — unpublished posts return null. */
 export async function getPostBySlugOrId(param: string): Promise<Post | null> {
   noStore();
   const raw = typeof param === "string" ? param : "";
   const trimmed = raw.trim();
   if (!trimmed) return null;
-  if (isUuid(trimmed)) return getPostById(trimmed);
-  return getPostBySlug(trimmed);
+  const post = isUuid(trimmed) ? await getPostById(trimmed) : await getPostBySlug(trimmed);
+  if (!post || !post.published) return null;
+  return post;
 }
 
 function normalizeTagsForMatch(tags: string[] | undefined): Set<string> {
@@ -287,10 +318,15 @@ function sharedTagCount(postTags: string[], current: Set<string>): number {
   return n;
 }
 
-/** Related articles: shared tag(s) first, then same category, then other recent posts (newest first within each tier). */
+function sharesAnyCategory(postCats: string[], currentCats: string[]): boolean {
+  const set = new Set(currentCats.map((c) => c.trim()).filter(Boolean));
+  return postCats.some((c) => set.has(String(c).trim()));
+}
+
+/** Related articles: shared tag(s) first, then overlapping category, then other recent posts (newest first within each tier). */
 export async function getRelatedPosts(
   currentId: string,
-  category: string,
+  currentCategories: string[],
   currentTags: string[] | undefined,
   limit = 3
 ): Promise<PostSummary[]> {
@@ -299,7 +335,10 @@ export async function getRelatedPosts(
   const pool = Math.min(150, Math.max(limit * 20, 60));
   const { data, error } = await supabase
     .from("posts")
-    .select("id, slug, title, excerpt, category, image_url, read_time, publish_date, author_name, author_title, author_image, views, likes, tags")
+    .select(
+      "id, slug, title, excerpt, categories, image_url, read_time, publish_date, author_name, author_title, author_image, views, likes, tags"
+    )
+    .eq("published", true)
     .neq("id", currentId)
     .order("publish_date", { ascending: false })
     .limit(pool);
@@ -313,7 +352,7 @@ export async function getRelatedPosts(
     slug: r.slug != null && String(r.slug).trim() ? String(r.slug).trim() : null,
     title: String(r.title),
     excerpt: String(r.excerpt),
-    category: String(r.category),
+    categories: normalizeCategories(r),
     image: String(r.image_url),
     readTime: String(r.read_time),
     publishDate: String(r.publish_date),
@@ -324,6 +363,7 @@ export async function getRelatedPosts(
   })) as PostSummary[];
 
   const currentSet = normalizeTagsForMatch(currentTags);
+  const cats = currentCategories?.length ? currentCategories : ["General"];
   const byDateDesc = (a: PostSummary, b: PostSummary) =>
     new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime();
 
@@ -331,10 +371,16 @@ export async function getRelatedPosts(
     .filter((p) => sharedTagCount(p.tags, currentSet) > 0)
     .sort(byDateDesc);
   const tier2 = posts
-    .filter((p) => sharedTagCount(p.tags, currentSet) === 0 && p.category === category)
+    .filter(
+      (p) =>
+        sharedTagCount(p.tags, currentSet) === 0 && sharesAnyCategory(p.categories, cats)
+    )
     .sort(byDateDesc);
   const tier3 = posts
-    .filter((p) => sharedTagCount(p.tags, currentSet) === 0 && p.category !== category)
+    .filter(
+      (p) =>
+        sharedTagCount(p.tags, currentSet) === 0 && !sharesAnyCategory(p.categories, cats)
+    )
     .sort(byDateDesc);
 
   const out: PostSummary[] = [];
@@ -365,16 +411,19 @@ export async function getCategoriesWithCounts(): Promise<CategoryWithCount[]> {
   const { defaultCategories } = await import("./site-config");
   if (!isSupabaseConfigured()) return [...defaultCategories];
   const supabase = createServerClient();
-  const { data, error } = await supabase.from("posts").select("category");
+  const { data, error } = await supabase.from("posts").select("categories").eq("published", true);
   if (error) {
     console.error("[getCategoriesWithCounts]", error.message, error.code);
     return [...defaultCategories];
   }
-  const rows = (data || []) as Array<{ category: string }>;
+  const rows = (data || []) as Array<{ categories: string[] | null }>;
   const counts: Record<string, number> = {};
   for (const r of rows) {
-    const c = String(r?.category || "").trim();
-    if (c) counts[c] = (counts[c] || 0) + 1;
+    const arr = Array.isArray(r.categories) ? r.categories : [];
+    for (const raw of arr) {
+      const c = String(raw || "").trim();
+      if (c) counts[c] = (counts[c] || 0) + 1;
+    }
   }
   const withArticles = Object.entries(counts).filter(([, n]) => n >= 1);
 

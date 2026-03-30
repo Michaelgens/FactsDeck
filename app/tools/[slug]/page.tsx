@@ -7,13 +7,17 @@ import {
   BookOpen,
   Calculator,
 } from "lucide-react";
-import { quickTools } from "../../lib/site-config";
+import { siteTools } from "../../lib/site-config";
 import AdvancedMortgageCalculator from "../../components/tools/AdvancedMortgageCalculator";
 import AdvancedInvestmentCalculator from "../../components/tools/AdvancedInvestmentCalculator";
+import AdvancedBudgetPlanner from "../../components/tools/AdvancedBudgetPlanner";
+import AdvancedRetirementCalculator from "../../components/tools/AdvancedRetirementCalculator";
+import AdvancedLoanCalculator from "../../components/tools/AdvancedLoanCalculator";
+import AdvancedCreditScoreSimulator from "../../components/tools/AdvancedCreditScoreSimulator";
 import { SITE_URL, absoluteUrl } from "../../lib/seo";
 
 const SLUG_TO_NAME: Record<string, string> = Object.fromEntries(
-  quickTools.map((t) => [t.name.toLowerCase().replace(/\s+/g, "-"), t.name])
+  siteTools.map((t) => [t.slug, t.name])
 );
 
 function slugToTitle(slug: string): string {
@@ -24,8 +28,8 @@ function slugToTitle(slug: string): string {
 }
 
 export async function generateStaticParams() {
-  return quickTools.map((tool) => ({
-    slug: tool.name.toLowerCase().replace(/\s+/g, "-"),
+  return siteTools.map((tool) => ({
+    slug: tool.slug,
   }));
 }
 
@@ -104,6 +108,106 @@ export async function generateMetadata({
         title,
         description,
       },
+      robots: { index: true, follow: true },
+    };
+  }
+  if (slug === "budget-planner") {
+    const canonical = absoluteUrl("/tools/budget-planner");
+    const title = "Advanced Budget Planner — zero-based & 50/30/20";
+    const description =
+      "Free advanced budget planner: build buckets (needs/wants/savings/debt), add a buffer, track remaining cash, and copy a budget JSON snapshot. Educational planning tool.";
+    return {
+      title,
+      description,
+      keywords: [
+        "budget planner",
+        "monthly budget",
+        "zero based budget",
+        "50 30 20 rule",
+        "sinking funds",
+        "budget categories",
+        "personal finance budget",
+      ],
+      alternates: { canonical },
+      openGraph: {
+        title,
+        description,
+        url: canonical,
+        siteName: "Facts Deck",
+        type: "website",
+        locale: "en_US",
+      },
+      twitter: { card: "summary_large_image", title, description },
+      robots: { index: true, follow: true },
+    };
+  }
+  if (slug === "retirement-calculator") {
+    const canonical = absoluteUrl("/tools/retirement-calculator");
+    const title = "Advanced Retirement Calculator — FI number & timeline";
+    const description =
+      "Free advanced retirement calculator: estimate your FI number using inflation + Social Security assumptions, combine multiple accounts (balance + contributions + match), project balances, and copy results as JSON.";
+    return {
+      title,
+      description,
+      keywords: [
+        "retirement calculator",
+        "FIRE calculator",
+        "financial independence number",
+        "safe withdrawal rate",
+        "4% rule",
+        "401k calculator",
+        "retirement planning",
+        "inflation adjusted retirement",
+      ],
+      alternates: { canonical },
+      openGraph: { title, description, url: canonical, siteName: "Facts Deck", type: "website", locale: "en_US" },
+      twitter: { card: "summary_large_image", title, description },
+      robots: { index: true, follow: true },
+    };
+  }
+  if (slug === "loan-calculator") {
+    const canonical = absoluteUrl("/tools/loan-calculator");
+    const title = "Advanced Loan Calculator — amortization, extra pay & compare";
+    const description =
+      "Free advanced loan calculator: fixed-rate monthly payment, full amortization schedule, extra principal payments, origination fees, and side-by-side loan comparison. Copy results as JSON.";
+    return {
+      title,
+      description,
+      keywords: [
+        "loan calculator",
+        "amortization calculator",
+        "personal loan calculator",
+        "auto loan calculator",
+        "extra payment calculator",
+        "refinance comparison",
+        "total interest calculator",
+      ],
+      alternates: { canonical },
+      openGraph: { title, description, url: canonical, siteName: "Facts Deck", type: "website", locale: "en_US" },
+      twitter: { card: "summary_large_image", title, description },
+      robots: { index: true, follow: true },
+    };
+  }
+  if (slug === "credit-score-simulator") {
+    const canonical = absoluteUrl("/tools/credit-score-simulator");
+    const title = "Advanced Credit Score Simulator — factors & what-if";
+    const description =
+      "Educational credit score simulator: adjust utilization, payment history, age of accounts, inquiries, and mix—see an illustrative score band and what-if scenarios. Not a real bureau score.";
+    return {
+      title,
+      description,
+      keywords: [
+        "credit score simulator",
+        "credit utilization",
+        "FICO factors",
+        "improve credit score",
+        "hard inquiries",
+        "credit mix",
+        "payment history",
+      ],
+      alternates: { canonical },
+      openGraph: { title, description, url: canonical, siteName: "Facts Deck", type: "website", locale: "en_US" },
+      twitter: { card: "summary_large_image", title, description },
       robots: { index: true, follow: true },
     };
   }
@@ -252,6 +356,186 @@ export default async function ToolPage({
       </>
     );
   }
+  if (slug === "budget-planner") {
+    const canonical = absoluteUrl("/tools/budget-planner");
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": `${canonical}#planner`,
+          name: "Advanced Budget Planner",
+          description:
+            "Plan a monthly budget with buckets, buffer, and simple rules like 50/30/20 or zero-based budgeting. Educational estimates only.",
+          url: canonical,
+          applicationCategory: "FinanceApplication",
+          operatingSystem: "Any",
+          browserRequirements: "Requires JavaScript",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+          provider: { "@type": "Organization", name: "Facts Deck", url: SITE_URL },
+          featureList: [
+            "Needs/Wants/Savings/Debt buckets",
+            "Buffer for irregular bills",
+            "50/30/20 target comparison",
+            "Zero-based mode (assign every dollar)",
+            "Copy budget JSON snapshot",
+          ],
+        },
+        {
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+            { "@type": "ListItem", position: 2, name: "Advanced Budget Planner", item: canonical },
+          ],
+        },
+      ],
+    };
+
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <AdvancedBudgetPlanner />
+      </>
+    );
+  }
+  if (slug === "retirement-calculator") {
+    const canonical = absoluteUrl("/tools/retirement-calculator");
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": `${canonical}#calculator`,
+          name: "Advanced Retirement Calculator",
+          description:
+            "Estimate a retirement FI number using inflation and withdrawal rate assumptions, project multi-account balances, and explore how contributions and match affect your timeline. Educational estimates only.",
+          url: canonical,
+          applicationCategory: "FinanceApplication",
+          operatingSystem: "Any",
+          browserRequirements: "Requires JavaScript",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+          provider: { "@type": "Organization", name: "Facts Deck", url: SITE_URL },
+          featureList: [
+            "FI number from spending + withdrawal rate",
+            "Inflation-adjusted spending projection",
+            "Social Security offset",
+            "Multiple accounts (balance + contributions + match)",
+            "Timeline chart and JSON export",
+          ],
+        },
+        {
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+            { "@type": "ListItem", position: 2, name: "Advanced Retirement Calculator", item: canonical },
+          ],
+        },
+      ],
+    };
+
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <AdvancedRetirementCalculator />
+      </>
+    );
+  }
+  if (slug === "loan-calculator") {
+    const canonical = absoluteUrl("/tools/loan-calculator");
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": `${canonical}#calculator`,
+          name: "Advanced Loan Calculator",
+          description:
+            "Calculate fixed-rate loan payments, amortization schedules, extra principal payments, origination fees, and compare two loan scenarios. Educational estimates only.",
+          url: canonical,
+          applicationCategory: "FinanceApplication",
+          operatingSystem: "Any",
+          browserRequirements: "Requires JavaScript",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+          provider: { "@type": "Organization", name: "Facts Deck", url: SITE_URL },
+          featureList: [
+            "Monthly P&I payment",
+            "Amortization schedule preview",
+            "Extra principal per month",
+            "Origination fee modeling",
+            "Side-by-side scenario comparison",
+            "Copy JSON export",
+          ],
+        },
+        {
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+            { "@type": "ListItem", position: 2, name: "Advanced Loan Calculator", item: canonical },
+          ],
+        },
+      ],
+    };
+
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <AdvancedLoanCalculator />
+      </>
+    );
+  }
+  if (slug === "credit-score-simulator") {
+    const canonical = absoluteUrl("/tools/credit-score-simulator");
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": `${canonical}#simulator`,
+          name: "Advanced Credit Score Simulator",
+          description:
+            "Educational interactive model illustrating how common credit factors might influence an illustrative score band. Not a real credit score from any bureau.",
+          url: canonical,
+          applicationCategory: "FinanceApplication",
+          operatingSystem: "Any",
+          browserRequirements: "Requires JavaScript",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+          provider: { "@type": "Organization", name: "Facts Deck", url: SITE_URL },
+          featureList: [
+            "Factor-style sliders (utilization, payments, age, inquiries, mix)",
+            "Illustrative 300–850 score gauge",
+            "What-if utilization scenarios",
+            "Copy JSON export",
+          ],
+        },
+        {
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+            { "@type": "ListItem", position: 2, name: "Advanced Credit Score Simulator", item: canonical },
+          ],
+        },
+      ],
+    };
+
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <AdvancedCreditScoreSimulator />
+      </>
+    );
+  }
 
   const toolName = SLUG_TO_NAME[slug] ?? slugToTitle(slug);
 
@@ -326,12 +610,12 @@ export default async function ToolPage({
             Other tools we&apos;re building
           </p>
           <div className="flex flex-wrap justify-center gap-2">
-            {quickTools
+            {siteTools
               .filter((t) => t.name !== toolName)
               .slice(0, 4)
               .map((tool) => (
                 <span
-                  key={tool.name}
+                  key={tool.slug}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-dark-800 text-gray-600 dark:text-purple-300 text-xs font-medium"
                 >
                   {tool.name}

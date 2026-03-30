@@ -14,6 +14,7 @@ import {
   Bookmark,
   Filter,
   Share2,
+  Check,
   Star,
   Users,
   Flame,
@@ -35,12 +36,33 @@ import {
 } from "lucide-react";
 import type { Post } from "../lib/types";
 import { postPublicPath } from "../lib/post-url";
+import { CategoryPills, categoryLabelList, postHasCategory } from "../lib/post-display";
 import type { CategoryWithCount } from "../lib/posts";
 import type { MarketDataItem } from "../lib/market-data";
 import { formatPublishDate } from "../lib/format-date";
-import { quickTools } from "../lib/site-config";
+import type { SiteTool } from "../lib/site-config";
+import { proxiedImageSrc } from "../lib/image-proxy";
 import { usePostEngagement } from "../hooks/usePostEngagement";
 import EmptyState from "./EmptyState";
+
+function postUrl(article: Post): string {
+  if (typeof window === "undefined") return postPublicPath(article);
+  return `${window.location.origin}${postPublicPath(article)}`;
+}
+
+async function shareArticle(article: Post): Promise<"shared" | "copied"> {
+  const url = postUrl(article);
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: article.title, text: article.excerpt, url });
+      return "shared";
+    }
+  } catch {
+    // user cancelled or share failed -> fallback to copy
+  }
+  await navigator.clipboard.writeText(url);
+  return "copied";
+}
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Scale,
@@ -71,14 +93,14 @@ function FeaturedArticleCard({ article }: { article: Post }) {
     >
       <div className="relative">
         <Image
-          src={article.image}
+          src={proxiedImageSrc(article.image)}
           alt={article.title}
           width={800}
           height={192}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        <span className="absolute top-3 left-3 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-bold">
-          {article.category}
+        <span className="absolute top-3 left-3 max-w-[calc(100%-5rem)]">
+          <CategoryPills categories={categoryLabelList(article)} variant="overlay" max={3} />
         </span>
         <div className="absolute top-3 right-3 flex space-x-2">
           <button
@@ -99,7 +121,7 @@ function FeaturedArticleCard({ article }: { article: Post }) {
         <div className="flex items-center space-x-4 mb-4">
           <span className="inline-block rounded-full border-2 border-purple-400 dark:border-emerald-400 p-0.5">
             <Image
-              src={article.author.image}
+              src={proxiedImageSrc(article.author.image)}
               alt={article.author.name}
               width={38}
               height={38}
@@ -147,6 +169,17 @@ function LatestArticleCard({ article }: { article: Post }) {
     article.likes,
     article.bookmarks
   );
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const result = await shareArticle(article);
+    if (result === "copied") {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    }
+  };
   return (
     <Link
       href={postPublicPath(article)}
@@ -155,7 +188,7 @@ function LatestArticleCard({ article }: { article: Post }) {
       <div className="flex flex-col md:flex-row">
         <div className="md:w-1/3 relative h-48 md:h-auto">
           <Image
-            src={article.image}
+            src={proxiedImageSrc(article.image)}
             alt={article.title}
             fill
             className="object-cover rounded-t-xl md:rounded-l-xl md:rounded-t-none group-hover:scale-105 transition-transform duration-300"
@@ -163,17 +196,15 @@ function LatestArticleCard({ article }: { article: Post }) {
         </div>
         <div className="md:w-2/3 p-6">
           <div className="flex items-center justify-between mb-4">
-            <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 px-3 py-1 rounded-full text-sm font-semibold">
-              {article.category}
-            </span>
+            <CategoryPills categories={categoryLabelList(article)} max={4} />
             <div className="flex items-center space-x-2">
               <button
                 type="button"
-                onClick={(e) => e.preventDefault()}
+                onClick={handleShare}
                 className="text-slate-500 dark:text-purple-200 hover:text-purple-600 dark:hover:text-purple-400 p-2 rounded-lg transition-colors"
                 aria-label="Share"
               >
-                <Share2 className="h-4 w-4" />
+                {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
               </button>
               <button
                 type="button"
@@ -199,7 +230,7 @@ function LatestArticleCard({ article }: { article: Post }) {
             <div className="flex items-center space-x-4">
               <span className="inline-flex items-center justify-center rounded-full border-2 border-purple-400 dark:border-purple-600 w-9 h-9 bg-white dark:bg-dark-900">
                 <Image
-                  src={article.author.image}
+                    src={proxiedImageSrc(article.author.image)}
                   alt={article.author.name}
                   width={36}
                   height={36}
@@ -246,6 +277,8 @@ type HomePageClientProps = {
   guidePosts: Post[];
   categoriesWithCounts: CategoryWithCount[];
   marketData: MarketDataItem[] | null;
+  /** Daily-rotating subset for sidebar */
+  sidebarTools: SiteTool[];
 };
 
 export default function HomePageClient({
@@ -256,15 +289,18 @@ export default function HomePageClient({
   guidePosts,
   categoriesWithCounts,
   marketData,
+  sidebarTools,
 }: HomePageClientProps) {
   const [activeFilter, setActiveFilter] = useState("All Categories");
   const availableCategories = [
     "All Categories",
-    ...Array.from(new Set(latestPosts.map((p) => p.category))).filter(Boolean),
+    ...Array.from(
+      new Set(latestPosts.flatMap((p) => categoryLabelList(p)))
+    ).sort(),
   ];
   const filteredArticles = latestPosts.filter(
     (article) =>
-      activeFilter === "All Categories" || article.category === activeFilter
+      activeFilter === "All Categories" || postHasCategory(article, activeFilter)
   );
 
   return (
@@ -331,7 +367,7 @@ export default function HomePageClient({
                 <div className="text-sm text-purple-200">Articles</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl lg:text-3xl font-bold">50+</div>
+                <div className="text-2xl lg:text-3xl font-bold">6+</div>
                 <div className="text-sm text-purple-200">Tools</div>
               </div>
               <div className="text-center">
@@ -488,7 +524,7 @@ export default function HomePageClient({
                     <div className="flex items-center space-x-3 mb-4">
                       <span className="inline-block rounded-full border-2 border-purple-500 dark:border-emerald-400 p-0.5 bg-white dark:bg-dark-900">
                         <Image
-                          src={pick.author.image}
+                          src={proxiedImageSrc(pick.author.image)}
                           alt={pick.author.name}
                           width={48}
                           height={48}
@@ -502,9 +538,9 @@ export default function HomePageClient({
                         </p>
                       </div>
                     </div>
-                    <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 px-3 py-1 rounded-full text-xs font-bold mb-3 inline-block">
-                      {pick.category}
-                    </span>
+                    <div className="mb-3">
+                      <CategoryPills categories={categoryLabelList(pick)} max={3} />
+                    </div>
                     <h3 className="font-display font-bold text-lg text-gray-900 dark:text-purple-200 mb-3 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
                       {pick.title}
                     </h3>
@@ -611,37 +647,50 @@ export default function HomePageClient({
             </div>
 
             <div className="bg-white dark:bg-dark-900/50 dark:border-purple-500/30 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-200">
-              <div className="flex items-center space-x-2 mb-6">
-                <Calculator className="h-5 w-5 text-purple-500" />
-                <h3 className="font-display font-bold text-lg text-slate-900 dark:text-purple-200">
-                  Quick Tools
-                </h3>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-2">
+                  <Calculator className="h-5 w-5 text-purple-500" />
+                  <h3 className="font-display font-bold text-lg text-slate-900 dark:text-purple-200">
+                    Quick Tools
+                  </h3>
+                </div>
+                <span className="text-xs font-medium text-purple-500 dark:text-purple-400/90">Spotlight</span>
               </div>
               <div className="space-y-3">
-                {quickTools.map((tool, index) => {
+                {sidebarTools.map((tool) => {
                   const ToolIcon = iconMap[tool.iconKey || "Calculator"] ?? Calculator;
-                  const slug = tool.name.toLowerCase().replace(/\s+/g, "-");
                   return (
                     <Link
-                      key={index}
-                      href={`/tools/${slug}`}
+                      key={tool.slug}
+                      href={`/tools/${tool.slug}`}
                       className="block w-full group text-left"
                     >
-                      <div className="flex items-center justify-between p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                      <div className="flex items-center justify-between gap-2 p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                        <div className="flex items-center space-x-3 min-w-0">
+                          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
                             <ToolIcon className="h-4 w-4 text-white" />
                           </div>
-                          <span className="font-semibold text-sm text-gray-900 dark:text-purple-200 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors text-start">
+                          <span className="font-semibold text-sm text-gray-900 dark:text-purple-200 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors text-start line-clamp-2">
                             {tool.name}
                           </span>
                         </div>
-                        <span className="text-xs text-slate-500 dark:text-purple-200">{tool.users}</span>
+                        <span
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200/90 dark:border-purple-500/35 bg-slate-50/90 dark:bg-dark-850/60 text-slate-400 group-hover:border-purple-300 group-hover:bg-purple-100/80 group-hover:text-purple-600 dark:group-hover:border-emerald-500/45 dark:group-hover:bg-emerald-950/30 dark:group-hover:text-emerald-400 transition-all group-hover:scale-105"
+                          aria-hidden
+                        >
+                          <ArrowUpRight className="h-4 w-4" />
+                        </span>
                       </div>
                     </Link>
                   );
                 })}
               </div>
+              <Link
+                href="/tools"
+                className="mt-4 flex items-center justify-center gap-1 text-purple-600 dark:text-purple-400 font-semibold text-sm hover:text-purple-700 dark:hover:text-purple-300 transition-colors py-2"
+              >
+                All tools <ChevronRight className="h-4 w-4" />
+              </Link>
             </div>
 
             <div className="bg-white dark:bg-dark-900/50 dark:border-purple-500/30 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-200">
@@ -661,8 +710,8 @@ export default function HomePageClient({
                     <h4 className="font-semibold text-sm text-gray-900 dark:text-purple-200 mb-2 line-clamp-2 transition-colors group-hover:text-purple-600 dark:group-hover:text-emerald-400">
                       {guide.title}
                     </h4>
-                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-purple-200">
-                      <span>{guide.category}</span>
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-purple-200 gap-2">
+                      <CategoryPills categories={categoryLabelList(guide)} variant="muted" max={2} className="min-w-0" />
                       <div className="flex items-center space-x-2">
                         <span>{guide.readTime}</span>
                         <span>-</span>

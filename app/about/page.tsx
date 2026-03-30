@@ -35,6 +35,7 @@ import {
   Target,
 } from "lucide-react";
 import { SITE_URL, absoluteUrl } from "../lib/seo";
+import { proxiedImageSrc } from "../lib/image-proxy";
 
 const canonical = absoluteUrl("/about");
 
@@ -265,7 +266,7 @@ const values = [
 const achievements = [
   { number: "2.5M+", label: "Monthly Readers", icon: Users },
   { number: "5,000+", label: "Articles Published", icon: BookOpen },
-  { number: "5+", label: "Financial Tools", icon: Calculator },
+  { number: "6+", label: "Financial Tools", icon: Calculator },
   { number: "99%", label: "User Satisfaction", icon: Trophy },
 ];
 
@@ -706,7 +707,7 @@ export default function AboutPage() {
                       className="bg-white dark:bg-gradient-to-br dark:from-dark-800 dark:to-purple-900/50 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-purple-500/30 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 text-center group"
                     >
                       <Image
-                        src={member.image}
+                        src={proxiedImageSrc(member.image)}
                         alt={member.name}
                         width={96}
                         height={96}
