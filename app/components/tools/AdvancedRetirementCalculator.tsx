@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  BookOpen,
   ChevronRight,
   Target,
   Calendar,
@@ -16,6 +17,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
 
 type Account = {
   id: string;
@@ -51,6 +53,9 @@ type ProjectionRow = {
 };
 
 export default function AdvancedRetirementCalculator() {
+  const [tourOpen, setTourOpen] = useState(false);
+  const TOUR_ID = "retirement-calculator";
+
   const [currentAge, setCurrentAge] = useState(32);
   const [retireAge, setRetireAge] = useState(60);
   const [lifeExpectancy, setLifeExpectancy] = useState(92);
@@ -228,6 +233,176 @@ export default function AdvancedRetirementCalculator() {
     setTimeout(() => setCopied(false), 1600);
   };
 
+  useEffect(() => {
+    if (hasCompletedWalkthrough(TOUR_ID)) return;
+    const t = window.setTimeout(() => setTourOpen(true), 450);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  const walkthroughSteps: WalkthroughStep[] = useMemo(
+    () => [
+      {
+        id: "welcome",
+        placement: "center",
+        title: "Welcome — let’s map your retirement plan",
+        body: (
+          <div className="space-y-3">
+            <p>
+              This tool estimates a retirement target (your <strong>FI number</strong>) and projects your accounts to
+              your retirement age. It’s meant to be simple, clear, and easy to tweak.
+            </p>
+            <p>
+              You can <strong>skip anytime</strong>. To replay later, use the <strong>Walk-through</strong> button.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "top-cards",
+        target: "[data-tour='retire-top-cards']",
+        title: "Top cards: FI number, projection, status",
+        body: (
+          <div className="space-y-2">
+            <p>These cards answer the big questions:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>FI number</strong>: the target portfolio at retirement.
+              </li>
+              <li>
+                <strong>Projected at your retire age</strong>: where you might land.
+              </li>
+              <li>
+                <strong>Status</strong>: on track vs gap, plus an “earliest” estimate.
+              </li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        id: "assumptions",
+        target: "[data-tour='retire-assumptions']",
+        title: "Assumptions: ages, inflation, return, withdrawal rate",
+        body: (
+          <div className="space-y-2">
+            <p>These settings control the whole model.</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Inflation</strong> changes “future spending.”
+              </li>
+              <li>
+                <strong>Return</strong> changes growth.
+              </li>
+              <li>
+                <strong>Withdrawal rate</strong> changes your FI number.
+              </li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        id: "spending",
+        target: "[data-tour='retire-spending']",
+        title: "Spending: what you want to live on",
+        body: (
+          <div className="space-y-2">
+            <p>
+              Start with annual spending in today’s dollars. We inflate it to your retirement year, then subtract Social
+              Security to estimate what your portfolio needs to cover.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "social",
+        target: "[data-tour='retire-social-onetime']",
+        title: "Social Security + one-time at retire",
+        body: (
+          <div className="space-y-2">
+            <p>
+              Add any income you expect at retirement (Social Security) and any one-time amount (like a home sale or a
+              lump sum). This can reduce how much you need to withdraw from investments.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "copy",
+        target: "[data-tour='retire-copy-json']",
+        title: "Copy JSON: save this scenario",
+        body: <p>Copy a snapshot so you can compare different plans later.</p>,
+      },
+      {
+        id: "timeline",
+        target: "[data-tour='retire-timeline']",
+        title: "Timeline: real dollars over time",
+        body: (
+          <div className="space-y-2">
+            <p>This mini chart shows your inflation-adjusted (real) balance growing toward retirement.</p>
+          </div>
+        ),
+      },
+      {
+        id: "retire-summary",
+        target: "[data-tour='retire-retirement-summary']",
+        title: "At retirement: spending and FI target",
+        body: <p>These boxes summarize your spending at retirement and the FI target based on your withdrawal rule.</p>,
+      },
+      {
+        id: "accounts",
+        target: "[data-tour='retire-accounts']",
+        title: "Accounts: balances + contributions + match",
+        body: (
+          <div className="space-y-2">
+            <p>
+              Add every account that matters. Contributions and employer match are a huge part of the plan—especially
+              early on.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "account-row",
+        target: "[data-tour='retire-account-row']",
+        title: "Edit an account: name, balance, contributions",
+        body: <p>Adjust the numbers here and watch the top cards and timeline update instantly.</p>,
+      },
+      {
+        id: "add-account",
+        target: "[data-tour='retire-add-account']",
+        title: "Add account: model your real life",
+        body: <p>Add more accounts (HSA, 457(b), taxable brokerage, etc.). Keep it simple and accurate.</p>,
+      },
+      {
+        id: "finish",
+        placement: "center",
+        title: "All set",
+        body: (
+          <div className="space-y-3">
+            <p>Quick workflow:</p>
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>Set retire age, inflation, return, withdrawal rate</li>
+              <li>Set spending + Social Security</li>
+              <li>Add accounts + contributions + match</li>
+              <li>Check “Status” and tweak until it feels realistic</li>
+            </ol>
+          </div>
+        ),
+      },
+    ],
+    [
+      currentAge,
+      retireAge,
+      lifeExpectancy,
+      inflation,
+      returnNominal,
+      withdrawalRate,
+      annualSpendingToday,
+      socialSecurityAnnualAtRetire,
+      oneTimeAtRetire,
+      accounts.length,
+    ]
+  );
+
   const pill = (ok: boolean, yes: string, no: string) => (
     <span
       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
@@ -242,6 +417,19 @@ export default function AdvancedRetirementCalculator() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-dark-950 dark:to-dark-900">
+      <ToolWalkthrough
+        id={TOUR_ID}
+        open={tourOpen}
+        onClose={() => setTourOpen(false)}
+        onFinish={() => {
+          try {
+            window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+          } catch {
+            window.scrollTo(0, 0);
+          }
+        }}
+        steps={walkthroughSteps}
+      />
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/15 via-transparent to-purple-600/10 dark:from-indigo-900/35 dark:to-purple-900/25" />
         <div className="absolute top-16 left-10 w-72 h-72 bg-indigo-400/20 dark:bg-indigo-500/10 rounded-full blur-3xl" />
@@ -281,7 +469,19 @@ export default function AdvancedRetirementCalculator() {
                 </div>
               </div>
 
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => setTourOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/80 dark:bg-dark-900/40 border border-slate-200 dark:border-purple-500/20 text-slate-900 dark:text-purple-100 font-bold hover:bg-white dark:hover:bg-purple-900/20 transition-colors"
+                  aria-label="Open retirement calculator walk-through"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Walk-through
+                </button>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3" data-tour="retire-top-cards">
                 <div className="rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-5">
                   <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
                     FI number at retire
@@ -325,7 +525,10 @@ export default function AdvancedRetirementCalculator() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg">
+            <div
+              className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg"
+              data-tour="retire-assumptions"
+            >
               <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-amber-500" />
                 Assumptions
@@ -409,7 +612,7 @@ export default function AdvancedRetirementCalculator() {
                 </label>
               </div>
 
-              <div className="mt-4">
+              <div className="mt-4" data-tour="retire-spending">
                 <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
                   Annual spending (today’s dollars)
                 </label>
@@ -427,7 +630,7 @@ export default function AdvancedRetirementCalculator() {
                 </p>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="mt-4 grid grid-cols-2 gap-3" data-tour="retire-social-onetime">
                 <label className="block">
                   <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
                     Social Security (annual)
@@ -460,6 +663,7 @@ export default function AdvancedRetirementCalculator() {
                 type="button"
                 onClick={copyJson}
                 className="mt-5 inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900/40 text-slate-900 dark:text-purple-100 font-bold hover:bg-slate-50 dark:hover:bg-purple-900/20 transition-colors"
+                data-tour="retire-copy-json"
               >
                 {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                 {copied ? "Copied JSON" : "Copy JSON"}
@@ -468,7 +672,10 @@ export default function AdvancedRetirementCalculator() {
           </div>
 
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <section className="lg:col-span-2 rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg">
+            <section
+              className="lg:col-span-2 rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg"
+              data-tour="retire-timeline"
+            >
               <div className="flex items-center justify-between gap-3 mb-4">
                 <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-indigo-500" />
@@ -491,7 +698,7 @@ export default function AdvancedRetirementCalculator() {
                 ))}
               </div>
 
-              <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4" data-tour="retire-retirement-summary">
                 <div className="rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white dark:bg-dark-900/40 p-4">
                   <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
                     At retirement (nominal)
@@ -518,7 +725,10 @@ export default function AdvancedRetirementCalculator() {
             </section>
 
             <aside className="space-y-6">
-              <section className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg">
+              <section
+                className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg"
+                data-tour="retire-accounts"
+              >
                 <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
                   <PiggyBank className="h-4 w-4 text-emerald-500" />
                   Accounts
@@ -528,10 +738,11 @@ export default function AdvancedRetirementCalculator() {
                 </p>
 
                 <div className="mt-4 space-y-3">
-                  {accounts.map((a) => (
+                  {accounts.map((a, idx) => (
                     <div
                       key={a.id}
                       className="rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white dark:bg-dark-900/40 p-3"
+                      data-tour={idx === 0 ? "retire-account-row" : undefined}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <input
@@ -598,6 +809,7 @@ export default function AdvancedRetirementCalculator() {
                   type="button"
                   onClick={addAccount}
                   className="mt-4 inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold hover:from-indigo-700 hover:to-purple-700 transition-colors"
+                  data-tour="retire-add-account"
                 >
                   <Plus className="h-4 w-4" />
                   Add account

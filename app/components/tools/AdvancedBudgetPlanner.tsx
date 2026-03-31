@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  BookOpen,
   ChevronRight,
   PiggyBank,
   Wallet,
@@ -15,6 +16,7 @@ import {
   Check,
   Copy,
 } from "lucide-react";
+import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
 
 type ExpenseGroup = "Needs" | "Wants" | "Savings" | "Debt";
 
@@ -159,6 +161,192 @@ export default function AdvancedBudgetPlanner() {
     setTimeout(() => setCopied(false), 1600);
   };
 
+  const [tourOpen, setTourOpen] = useState(false);
+  const TOUR_ID = "budget-planner";
+
+  useEffect(() => {
+    if (hasCompletedWalkthrough(TOUR_ID)) return;
+    const t = window.setTimeout(() => setTourOpen(true), 450);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  const walkthroughSteps: WalkthroughStep[] = useMemo(
+    () => [
+      {
+        id: "welcome",
+        placement: "center",
+        title: "Welcome — let’s build a budget that survives real life",
+        body: (
+          <div className="space-y-3">
+            <p>
+              This budget planner is simple on purpose: pick a style, add your monthly items, and keep a small buffer so
+              one weird bill doesn’t ruin your whole month.
+            </p>
+            <p>
+              You can <strong>skip anytime</strong>. You can always replay later using the <strong>Walk-through</strong>{" "}
+              button.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "top-stats",
+        target: "[data-tour='budget-stats']",
+        title: "Top cards: income, available, remaining",
+        body: (
+          <div className="space-y-2">
+            <p>
+              These three cards keep you oriented:
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Monthly income</strong>: use after‑tax if you can.
+              </li>
+              <li>
+                <strong>Available</strong>: income minus your buffer.
+              </li>
+              <li>
+                <strong>Remaining</strong>: what’s left after all your items.
+              </li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        id: "style",
+        target: "[data-tour='budget-style']",
+        title: "Budget style: 50/30/20 vs zero‑based",
+        body: (
+          <div className="space-y-2">
+            <p>Pick the style that fits your brain:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>50 / 30 / 20</strong>: aim for targets (needs / wants / saving+debt).
+              </li>
+              <li>
+                <strong>Zero‑based</strong>: give every dollar a job (remaining goes near zero).
+              </li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        id: "income",
+        target: "[data-tour='budget-income']",
+        title: "Income: set the monthly baseline",
+        body: <p>This number drives everything. If your income varies, use a conservative average.</p>,
+      },
+      {
+        id: "buffer",
+        target: "[data-tour='budget-buffer']",
+        title: "Buffer: your ‘oops’ protection",
+        body: (
+          <div className="space-y-2">
+            <p>
+              The buffer is money you don’t assign. It helps with price changes, random fees, and “forgotten” expenses.
+            </p>
+            <p className="text-xs text-slate-500 dark:text-purple-300/90">
+              Even 2–5% can make budgeting feel calmer.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "copy",
+        target: "[data-tour='budget-copy-json']",
+        title: "Copy budget JSON: save your plan",
+        body: <p>Use this to save/share your setup (notes, docs, spreadsheets, or with a partner).</p>,
+      },
+      {
+        id: "buckets",
+        target: "[data-tour='budget-buckets']",
+        title: "Buckets: Needs, Wants, Savings, Debt",
+        body: (
+          <div className="space-y-2">
+            <p>
+              Your items live in four buckets. Add everything you pay monthly (or convert yearly bills into monthly).
+            </p>
+            <p className="text-xs text-slate-500 dark:text-purple-300/90">
+              Tip: Savings isn’t just investing—think emergency fund and sinking funds too.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "bucket-card",
+        target: "[data-tour='budget-bucket-card']",
+        title: "Each bucket shows a total + a bar",
+        body: (
+          <div className="space-y-2">
+            <p>
+              Every bucket shows:
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>the monthly total</li>
+              <li>its % of your available money</li>
+              <li>a progress bar for quick scanning</li>
+              <li>targets when using 50/30/20</li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        id: "add-item",
+        target: "[data-tour='budget-add-item']",
+        title: "Add item: build your real list",
+        body: <p>Add an expense/investment/debt payment. Then name it and give it a monthly amount.</p>,
+      },
+      {
+        id: "edit-item",
+        target: "[data-tour='budget-item-row']",
+        title: "Edit items: name + amount + delete",
+        body: <p>Keep it simple. If something is yearly, divide by 12 and put it in Savings as a sinking fund.</p>,
+      },
+      {
+        id: "insights",
+        target: "[data-tour='budget-insights']",
+        title: "Insights: what this budget is saying",
+        body: (
+          <div className="space-y-2">
+            <p>
+              This panel gives quick feedback: are you saving enough, are wants too heavy, and what to do with remaining
+              money.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "sinking",
+        target: "[data-tour='budget-sinking']",
+        title: "Sinking funds: add common yearly bills fast",
+        body: (
+          <div className="space-y-2">
+            <p>
+              These buttons create a monthly “sinking fund” item so yearly bills don’t surprise you.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "finish",
+        placement: "center",
+        title: "All set",
+        body: (
+          <div className="space-y-3">
+            <p>Quick workflow:</p>
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>Set income and a small buffer</li>
+              <li>Add your needs first (housing, utilities, groceries)</li>
+              <li>Add savings/debt next</li>
+              <li>Finally add wants and make sure remaining looks healthy</li>
+            </ol>
+          </div>
+        ),
+      },
+    ],
+    [mode, incomeMonthly, bufferPct, items.length]
+  );
+
   const headerStat = (label: string, value: string, sub?: string) => (
     <div className="rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-5">
       <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
@@ -178,13 +366,26 @@ export default function AdvancedBudgetPlanner() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-dark-950 dark:to-dark-900">
+      <ToolWalkthrough
+        id={TOUR_ID}
+        open={tourOpen}
+        onClose={() => setTourOpen(false)}
+        onFinish={() => {
+          try {
+            window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+          } catch {
+            window.scrollTo(0, 0);
+          }
+        }}
+        steps={walkthroughSteps}
+      />
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-600/15 via-transparent to-emerald-600/10 dark:from-purple-900/35 dark:to-emerald-900/25" />
         <div className="absolute top-16 left-10 w-72 h-72 bg-purple-400/20 dark:bg-purple-500/10 rounded-full blur-3xl" />
         <div className="absolute bottom-16 right-10 w-80 h-80 bg-emerald-400/20 dark:bg-emerald-500/10 rounded-full blur-3xl" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3" data-tour="budget-top-nav">
             <Link
               href="/"
               className="inline-flex items-center gap-2 text-purple-700 dark:text-purple-200 font-semibold hover:text-purple-800 dark:hover:text-emerald-300 transition-colors"
@@ -217,14 +418,26 @@ export default function AdvancedBudgetPlanner() {
                 </div>
               </div>
 
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => setTourOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/80 dark:bg-dark-900/40 border border-slate-200 dark:border-purple-500/20 text-slate-900 dark:text-purple-100 font-bold hover:bg-white dark:hover:bg-purple-900/20 transition-colors"
+                  aria-label="Open budget planner walk-through"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Walk-through
+                </button>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3" data-tour="budget-stats">
                 {headerStat("Monthly income", money(incomeMonthly), "After-tax is best")}
                 {headerStat("Available (after buffer)", money(totals.available), `${pct(bufferPct)} buffer = ${money(totals.buffer)}`)}
                 {headerStat("Remaining", money(totals.remaining), totals.remaining >= 0 ? "Unassigned cash" : "Over budget")}
               </div>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg">
+            <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg" data-tour="budget-style">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-amber-500" />
@@ -260,7 +473,7 @@ export default function AdvancedBudgetPlanner() {
                 </button>
               </div>
 
-              <div className="mt-4">
+              <div className="mt-4" data-tour="budget-income">
                 <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
                   Income (monthly)
                 </label>
@@ -274,7 +487,7 @@ export default function AdvancedBudgetPlanner() {
                 />
               </div>
 
-              <div className="mt-4">
+              <div className="mt-4" data-tour="budget-buffer">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
                     Buffer (for “life happens”)
@@ -302,6 +515,7 @@ export default function AdvancedBudgetPlanner() {
                 type="button"
                 onClick={copyJson}
                 className="mt-5 inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900/40 text-slate-900 dark:text-purple-100 font-bold hover:bg-slate-50 dark:hover:bg-purple-900/20 transition-colors"
+                data-tour="budget-copy-json"
               >
                 {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                 {copied ? "Copied budget JSON" : "Copy budget JSON"}
@@ -309,7 +523,7 @@ export default function AdvancedBudgetPlanner() {
             </div>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6" data-tour="budget-buckets">
             <div className="lg:col-span-2 space-y-6">
               {(Object.keys(GROUP_META) as ExpenseGroup[]).map((group) => {
                 const list = items.filter((i) => i.group === group);
@@ -330,6 +544,7 @@ export default function AdvancedBudgetPlanner() {
                   <section
                     key={group}
                     className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg"
+                    data-tour="budget-bucket-card"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                       <div className="min-w-0">
@@ -362,6 +577,7 @@ export default function AdvancedBudgetPlanner() {
                         type="button"
                         onClick={() => addItem(group)}
                         className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-purple-600 to-emerald-600 text-white font-bold hover:from-purple-700 hover:to-emerald-700 transition-colors"
+                        data-tour="budget-add-item"
                       >
                         <Plus className="h-4 w-4" />
                         Add item
@@ -373,6 +589,7 @@ export default function AdvancedBudgetPlanner() {
                         <div
                           key={it.id}
                           className="grid grid-cols-1 sm:grid-cols-[1fr_10rem_2.75rem] gap-2 items-center rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white dark:bg-dark-900/40 p-3"
+                          data-tour="budget-item-row"
                         >
                           <input
                             value={it.name}
@@ -411,7 +628,10 @@ export default function AdvancedBudgetPlanner() {
             </div>
 
             <aside className="space-y-6">
-              <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg">
+              <div
+                className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg"
+                data-tour="budget-insights"
+              >
                 <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
                   <Target className="h-4 w-4 text-emerald-500" />
                   What this budget says
@@ -453,7 +673,10 @@ export default function AdvancedBudgetPlanner() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg">
+              <div
+                className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg"
+                data-tour="budget-sinking"
+              >
                 <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
                   <PiggyBank className="h-4 w-4 text-amber-500" />
                   Sinking funds (quick idea)

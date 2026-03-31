@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState, useCallback, type FormEvent } from "react";
+import { useEffect, useMemo, useState, useCallback, type FormEvent } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  BookOpen,
   Building2,
   Calculator,
   ChevronRight,
@@ -36,6 +37,7 @@ import {
   type ScheduleResult,
 } from "../../lib/mortgage-math";
 import type { MortgageSummaryPayload } from "../../lib/mortgage-summary-email";
+import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
 
 type Tab = "overview" | "schedule" | "afford" | "refi" | "lab";
 
@@ -49,6 +51,9 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 
 export default function AdvancedMortgageCalculator() {
   const [tab, setTab] = useState<Tab>("overview");
+  const [tourOpen, setTourOpen] = useState(false);
+
+  const TOUR_ID = "mortgage-calculator";
 
   const [homePrice, setHomePrice] = useState(425_000);
   const [downPercent, setDownPercent] = useState(10);
@@ -326,8 +331,336 @@ export default function AdvancedMortgageCalculator() {
     a.click();
   }, [schedule.rows]);
 
+  useEffect(() => {
+    if (hasCompletedWalkthrough(TOUR_ID)) return;
+    const t = window.setTimeout(() => setTourOpen(true), 450);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  const walkthroughSteps: WalkthroughStep[] = useMemo(
+    () => [
+      {
+        id: "welcome",
+        placement: "center",
+        title: "Welcome — let’s build your mortgage",
+        body: (
+          <div className="space-y-3">
+            <p>
+              This tool helps you estimate your monthly home cost. It includes <strong>P&amp;I</strong> (the loan
+              payment), plus <strong>taxes</strong>, <strong>insurance</strong>, <strong>HOA</strong>, and{" "}
+              <strong>PMI</strong> when needed.
+            </p>
+            <p>
+              You can <strong>skip anytime</strong>. And you can replay this later using the{" "}
+              <strong>Walk-through</strong> button.
+            </p>
+            <div className="rounded-xl border border-slate-200 dark:border-purple-500/30 bg-slate-50 dark:bg-dark-850/40 p-3 text-xs text-slate-600 dark:text-purple-200/90">
+              Tip: use <strong>←</strong> / <strong>→</strong> to move between steps.
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "tabs",
+        target: "[data-tour='mortgage-tabs']",
+        title: "Tabs: pick what you want to explore",
+        body: (
+          <div className="space-y-2">
+            <p>Use these tabs to switch views:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Overview</strong>: your monthly payment and key totals.
+              </li>
+              <li>
+                <strong>Amortization</strong>: month-by-month schedule (and export).
+              </li>
+              <li>
+                <strong>Affordability</strong>: a “what can I afford?” estimate using DTI.
+              </li>
+              <li>
+                <strong>Refinance</strong>: compare a new rate and see break-even.
+              </li>
+              <li>
+                <strong>What-if lab</strong>: quick comparisons + copy a snapshot.
+              </li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        id: "loan-property",
+        target: "[data-tour='mortgage-input-loan']",
+        title: "Loan & property: start here",
+        body: (
+          <div className="space-y-2">
+            <p>These inputs shape almost everything you see on the right.</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Home price</strong> + <strong>down payment</strong> set your loan amount.
+              </li>
+              <li>
+                <strong>Rate</strong> + <strong>term</strong> set how your payment is split (interest vs principal).
+              </li>
+            </ul>
+            <p className="text-xs text-slate-500 dark:text-purple-300/90">
+              Keep an eye on LTV — it often affects PMI and refi decisions.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "escrow",
+        target: "[data-tour='mortgage-input-escrow']",
+        title: "Taxes, insurance, HOA: the “missing” monthly costs",
+        body: (
+          <div className="space-y-2">
+            <p>These are often why your real monthly cost is higher than you expect.</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Property taxes</strong> (as a % per year)
+              </li>
+              <li>
+                <strong>Home insurance</strong> (yearly → monthly)
+              </li>
+              <li>
+                <strong>HOA</strong> (monthly)
+              </li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        id: "paydown",
+        target: "[data-tour='mortgage-input-paydown']",
+        title: "Pay down faster: extra principal",
+        body: (
+          <div className="space-y-2">
+            <p>
+              Paying a little extra toward principal can save a lot of interest over time.
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Extra monthly</strong>: a simple monthly add-on
+              </li>
+              <li>
+                <strong>One-time extra</strong>: like a bonus or refund
+              </li>
+              <li>
+                <strong>Bi-weekly equivalence</strong>: a common payoff trick (modeled as extra monthly principal)
+              </li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        id: "overview-cards",
+        target: "[data-tour='mortgage-overview-cards']",
+        onEnter: () => setTab("overview"),
+        title: "Overview: your two main monthly numbers",
+        body: (
+          <div className="space-y-2">
+            <p>You’ll usually care about these two:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Principal &amp; interest</strong>: the loan payment.
+              </li>
+              <li>
+                <strong>PITI (+ PMI + HOA)</strong>: a more realistic “monthly cost to live here.”
+              </li>
+            </ul>
+            <p className="text-xs text-slate-500 dark:text-purple-300/90">
+              Budget with PITI. P&amp;I is only part of the story.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "totals",
+        target: "[data-tour='mortgage-totals']",
+        onEnter: () => setTab("overview"),
+        title: "Totals: what this loan costs over time",
+        body: (
+          <div className="space-y-2">
+            <p>These tiles show the “big picture” totals.</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Total interest</strong>: what you pay the lender over the life of the loan.
+              </li>
+              <li>
+                <strong>Total PMI</strong>: what PMI adds up to (if you have it).
+              </li>
+              <li>
+                <strong>Payoff months</strong>: how long until it’s paid off.
+              </li>
+            </ul>
+            <p className="text-xs text-slate-500 dark:text-purple-300/90">
+              Lower monthly payments can mean more interest if the loan lasts longer.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "npv",
+        target: "[data-tour='mortgage-npv']",
+        onEnter: () => setTab("overview"),
+        title: "Present value (NPV): a “today’s dollars” view",
+        body: (
+          <div className="space-y-2">
+            <p>
+              This is a rough way to compare future payments in “today’s dollars,” using an inflation discount.
+            </p>
+            <p className="text-xs text-slate-500 dark:text-purple-300/90">
+              Think of it as a planning helper (not advice).
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "schedule-export",
+        target: "[data-tour='mortgage-export-csv']",
+        onEnter: () => setTab("schedule"),
+        title: "Amortization: the month-by-month table",
+        body: (
+          <div className="space-y-2">
+            <p>
+              This shows, month by month, how much goes to <strong>principal</strong>, <strong>interest</strong>,{" "}
+              and <strong>PMI</strong>, plus your remaining balance.
+            </p>
+            <p>
+              Use <strong>Export CSV</strong> if you want to save it or share it.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "affordability",
+        target: "[data-tour='mortgage-afford']",
+        onEnter: () => setTab("afford"),
+        title: "Affordability: a quick DTI check",
+        body: (
+          <div className="space-y-2">
+            <p>This section gives a quick “can I afford this?” estimate.</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Housing DTI</strong>: housing cost vs income
+              </li>
+              <li>
+                <strong>Total DTI</strong>: housing + other debts vs income
+              </li>
+            </ul>
+            <p className="text-xs text-slate-500 dark:text-purple-300/90">
+              Try lowering the DTI limits to be more conservative.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "refi",
+        target: "[data-tour='mortgage-refi']",
+        onEnter: () => setTab("refi"),
+        title: "Refinance: compare a new rate",
+        body: (
+          <div className="space-y-2">
+            <p>
+              Refinancing usually means paying closing costs to (hopefully) get a lower payment.
+            </p>
+            <p className="text-xs text-slate-500 dark:text-purple-300/90">
+              If you move before you break even, it may not be worth it.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "refi-break-even",
+        target: "[data-tour='mortgage-refi-break-even']",
+        onEnter: () => setTab("refi"),
+        title: "Break-even: when the refi “pays for itself”",
+        body: (
+          <div className="space-y-2">
+            <p>
+              Simple idea: <strong>closing costs</strong> ÷ <strong>monthly savings</strong> ≈{" "}
+              <strong>months to break-even</strong>.
+            </p>
+            <p>
+              Points are also shown as an optional upfront cost, with their own break-even.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "lab-json",
+        target: "[data-tour='mortgage-copy-json']",
+        onEnter: () => setTab("lab"),
+        title: "What-if lab: quick compare",
+        body: (
+          <div className="space-y-2">
+            <p>Use this area to compare a couple of payoff ideas quickly.</p>
+            <p>
+              Use <strong>Copy scenario JSON</strong> if you want to save/share your setup.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "email",
+        target: "[data-tour='mortgage-email']",
+        title: "Email summary: send it to yourself",
+        body: (
+          <div className="space-y-2">
+            <p>Want a record? Email yourself a quick summary of your inputs and key results.</p>
+            <p className="text-xs text-slate-500 dark:text-purple-300/90">
+              Tip: send a few scenarios (like 10% down vs 20%) and compare later.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "finish",
+        placement: "center",
+        title: "All set",
+        body: (
+          <div className="space-y-3">
+            <p>Here’s a simple way to use this tool:</p>
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>
+                Set <strong>price</strong>, <strong>down</strong>, <strong>rate</strong>, and <strong>term</strong>
+              </li>
+              <li>
+                Add <strong>tax/insurance/HOA</strong> (so PITI is realistic)
+              </li>
+              <li>
+                Try a small <strong>extra principal</strong>
+              </li>
+              <li>
+                Export the <strong>schedule</strong> or email yourself a summary
+              </li>
+            </ol>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+              Estimates only — always double-check with your lender and your local tax/insurance numbers.
+            </div>
+          </div>
+        ),
+      },
+    ],
+    [downPercent, pmiAnnualPercent, pitiFirstMonth, schedule.monthsToPayoff, scheduleBiweekly.monthsToPayoff, tab]
+  );
+
   return (
     <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-dark-950 dark:via-dark-900 dark:to-purple-950/40">
+      <ToolWalkthrough
+        id={TOUR_ID}
+        open={tourOpen}
+        onClose={() => setTourOpen(false)}
+        onFinish={() => {
+          setTab("overview");
+          try {
+            window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+          } catch {
+            window.scrollTo(0, 0);
+          }
+        }}
+        steps={walkthroughSteps}
+      />
       <div className="relative overflow-hidden border-b border-purple-200/50 dark:border-purple-500/20">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/15 via-purple-600/10 to-amber-500/10 dark:from-purple-900/40 dark:via-transparent dark:to-amber-900/20" />
         <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
@@ -342,7 +675,7 @@ export default function AdvancedMortgageCalculator() {
             Back to Home
           </Link>
 
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10" data-tour="mortgage-hero">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-200 text-xs font-bold uppercase tracking-wider mb-4">
                 <Sparkles className="h-3.5 w-3.5" />
@@ -356,7 +689,15 @@ export default function AdvancedMortgageCalculator() {
                 affordability from DTI, inflation-adjusted cost, and exportable schedules — in one place.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" data-tour="mortgage-tabs">
+              <button
+                type="button"
+                onClick={() => setTourOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white/70 dark:bg-dark-800/70 border border-slate-200 dark:border-purple-500/30 text-slate-800 dark:text-purple-200 hover:bg-white dark:hover:bg-purple-900/20 transition-colors"
+              >
+                <BookOpen className="h-4 w-4" />
+                Walk-through
+              </button>
               {TABS.map((t) => {
                 const Icon = t.icon;
                 const active = tab === t.id;
@@ -381,7 +722,10 @@ export default function AdvancedMortgageCalculator() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-4 space-y-6">
-              <div className="rounded-2xl bg-white dark:bg-dark-800/80 border border-slate-200 dark:border-purple-500/30 p-6 shadow-xl shadow-purple-500/5">
+              <div
+                className="rounded-2xl bg-white dark:bg-dark-800/80 border border-slate-200 dark:border-purple-500/30 p-6 shadow-xl shadow-purple-500/5"
+                data-tour="mortgage-input-loan"
+              >
                 <h2 className="font-display font-bold text-lg text-slate-900 dark:text-purple-100 mb-4 flex items-center gap-2">
                   <Building2 className="h-5 w-5 text-purple-500" />
                   Loan & property
@@ -451,7 +795,10 @@ export default function AdvancedMortgageCalculator() {
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-white dark:bg-dark-800/80 border border-slate-200 dark:border-purple-500/30 p-6 shadow-lg">
+              <div
+                className="rounded-2xl bg-white dark:bg-dark-800/80 border border-slate-200 dark:border-purple-500/30 p-6 shadow-lg"
+                data-tour="mortgage-input-escrow"
+              >
                 <h2 className="font-display font-bold text-lg text-slate-900 dark:text-purple-100 mb-4 flex items-center gap-2">
                   <Landmark className="h-5 w-5 text-amber-500" />
                   Taxes, insurance, HOA
@@ -492,7 +839,7 @@ export default function AdvancedMortgageCalculator() {
                     />
                   </label>
                   {needsPmi && (
-                    <label className="block">
+                    <label className="block" data-tour="mortgage-input-pmi">
                       <span className="text-xs font-semibold text-slate-500 dark:text-purple-400">
                         PMI (% of loan / year, until 78% LTV)
                       </span>
@@ -508,7 +855,10 @@ export default function AdvancedMortgageCalculator() {
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-dark-800 border border-purple-200 dark:border-purple-500/30 p-6">
+              <div
+                className="rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-dark-800 border border-purple-200 dark:border-purple-500/30 p-6"
+                data-tour="mortgage-input-paydown"
+              >
                 <h2 className="font-display font-bold text-lg text-slate-900 dark:text-purple-100 mb-4 flex items-center gap-2">
                   <TrendingDown className="h-5 w-5 text-emerald-500" />
                   Pay down faster
@@ -548,7 +898,7 @@ export default function AdvancedMortgageCalculator() {
             <div className="lg:col-span-8 space-y-6">
               {tab === "overview" && (
                 <>
-                  <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="grid sm:grid-cols-2 gap-4" data-tour="mortgage-overview-cards">
                     <div className="rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white p-6 shadow-xl">
                       <p className="text-purple-200 text-sm font-medium mb-1">Principal & interest</p>
                       <p className="font-display text-3xl md:text-4xl font-bold">{formatCurrency2(pi)}</p>
@@ -565,7 +915,7 @@ export default function AdvancedMortgageCalculator() {
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-3 gap-4">
+                  <div className="grid md:grid-cols-3 gap-4" data-tour="mortgage-totals">
                     <div className="rounded-xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-800/50 p-5">
                       <PiggyBank className="h-8 w-8 text-amber-500 mb-2" />
                       <p className="text-xs text-slate-500 dark:text-purple-400 uppercase font-bold">
@@ -639,7 +989,10 @@ export default function AdvancedMortgageCalculator() {
                     </p>
                   </div>
 
-                  <label className="flex items-center justify-between rounded-xl border border-dashed border-purple-300 dark:border-purple-500/40 bg-purple-50/50 dark:bg-purple-900/10 px-4 py-3">
+                  <label
+                    className="flex items-center justify-between rounded-xl border border-dashed border-purple-300 dark:border-purple-500/40 bg-purple-50/50 dark:bg-purple-900/10 px-4 py-3"
+                    data-tour="mortgage-npv"
+                  >
                     <span className="text-sm text-slate-700 dark:text-purple-200">
                       Inflation discount for NPV of payments (% / year)
                     </span>
@@ -668,6 +1021,7 @@ export default function AdvancedMortgageCalculator() {
                       Amortization schedule
                     </h3>
                     <button
+                      data-tour="mortgage-export-csv"
                       type="button"
                       onClick={exportCsv}
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold"
@@ -716,7 +1070,7 @@ export default function AdvancedMortgageCalculator() {
               )}
 
               {tab === "afford" && (
-                <div className="space-y-6">
+                <div className="space-y-6" data-tour="mortgage-afford">
                   <div className="grid sm:grid-cols-2 gap-4">
                     <label className="block">
                       <span className="text-xs font-bold text-slate-500 dark:text-purple-400 uppercase">
@@ -783,7 +1137,7 @@ export default function AdvancedMortgageCalculator() {
               )}
 
               {tab === "refi" && (
-                <div className="space-y-6">
+                <div className="space-y-6" data-tour="mortgage-refi">
                   <div className="grid sm:grid-cols-2 gap-4">
                     <label className="block">
                       <span className="text-xs font-bold text-slate-500 dark:text-purple-400 uppercase">
@@ -860,7 +1214,10 @@ export default function AdvancedMortgageCalculator() {
                       </p>
                     </div>
                   </div>
-                  <div className="rounded-2xl bg-slate-900 text-white p-6 border border-purple-500/30">
+                  <div
+                    className="rounded-2xl bg-slate-900 text-white p-6 border border-purple-500/30"
+                    data-tour="mortgage-refi-break-even"
+                  >
                     <p className="text-slate-400 text-sm">Monthly P&amp;I savings</p>
                     <p className="text-3xl font-bold text-emerald-400">{formatCurrency2(monthlySavings)}</p>
                     <p className="text-slate-400 text-sm mt-4">
@@ -914,6 +1271,7 @@ export default function AdvancedMortgageCalculator() {
                   </div>
                   <div className="flex flex-wrap gap-3">
                     <button
+                      data-tour="mortgage-copy-json"
                       type="button"
                       onClick={() => {
                         navigator.clipboard.writeText(
@@ -953,6 +1311,7 @@ export default function AdvancedMortgageCalculator() {
           <section
             className="mt-12 max-w-xl mx-auto rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-slate-50/80 dark:bg-dark-800/60 p-6 shadow-lg shadow-purple-500/5"
             aria-labelledby="email-summary-heading"
+            data-tour="mortgage-email"
           >
             <h2
               id="email-summary-heading"

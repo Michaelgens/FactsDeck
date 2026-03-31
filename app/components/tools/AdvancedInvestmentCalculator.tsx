@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
   BarChart3,
+  BookOpen,
   ChevronRight,
   Download,
   Flame,
@@ -18,6 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import { formatCurrency } from "../../lib/mortgage-math";
+import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
 import {
   afterTaxBalance,
   fireNumber,
@@ -76,6 +78,9 @@ function Sparkline({ values }: { values: number[] }) {
 
 export default function AdvancedInvestmentCalculator() {
   const [tab, setTab] = useState<Tab>("overview");
+  const [tourOpen, setTourOpen] = useState(false);
+
+  const TOUR_ID = "investment-calculator";
 
   const [initial, setInitial] = useState(25_000);
   const [monthly, setMonthly] = useState(800);
@@ -207,8 +212,226 @@ export default function AdvancedInvestmentCalculator() {
 
   const realFinal = projection.series[projection.series.length - 1]?.realBalance ?? 0;
 
+  useEffect(() => {
+    if (hasCompletedWalkthrough(TOUR_ID)) return;
+    const t = window.setTimeout(() => setTourOpen(true), 450);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  const walkthroughSteps: WalkthroughStep[] = useMemo(
+    () => [
+      {
+        id: "welcome",
+        placement: "center",
+        title: "Welcome — let’s map your investing plan",
+        body: (
+          <div className="space-y-3">
+            <p>
+              This tool helps you estimate how your portfolio could grow over time. You can tweak returns, fees,
+              inflation, taxes, and even run “what‑ifs” like sequence of returns and Monte Carlo.
+            </p>
+            <p>
+              You can <strong>skip anytime</strong>. Want to replay later? Use the <strong>Walk-through</strong> button.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "tabs",
+        target: "[data-tour='invest-tabs']",
+        title: "Tabs: switch between views",
+        body: (
+          <div className="space-y-2">
+            <p>Each tab answers a different question:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Overview</strong>: quick results + a growth curve.
+              </li>
+              <li>
+                <strong>Trajectory</strong>: year-by-year table + a simple stress example.
+              </li>
+              <li>
+                <strong>FIRE &amp; income</strong>: “how much is enough?” and “when could I get there?”
+              </li>
+              <li>
+                <strong>Lab</strong>: sequence-of-returns, lump sum vs DCA, Monte Carlo percentiles.
+              </li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        id: "inputs",
+        target: "[data-tour='invest-inputs']",
+        title: "Portfolio inputs: your starting point",
+        body: (
+          <div className="space-y-2">
+            <p>Start here. These controls drive almost everything.</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Starting balance</strong> and <strong>monthly contribution</strong>
+              </li>
+              <li>
+                <strong>Horizon</strong> (how many years)
+              </li>
+              <li>
+                <strong>Expected return</strong>, <strong>expense ratio</strong> (fees), and <strong>inflation</strong>
+              </li>
+              <li>
+                <strong>Tax on gains</strong> (simple estimate)
+              </li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        id: "overview-cards",
+        target: "[data-tour='invest-overview-cards']",
+        onEnter: () => setTab("overview"),
+        title: "Overview: nominal vs “today’s dollars”",
+        body: (
+          <div className="space-y-2">
+            <p>
+              You’ll see two versions of your ending balance:
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Nominal</strong>: raw dollars in the future.
+              </li>
+              <li>
+                <strong>Purchasing power</strong>: adjusted for inflation (easier to compare to today).
+              </li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        id: "growth-curve",
+        target: "[data-tour='invest-growth-curve']",
+        onEnter: () => setTab("overview"),
+        title: "Growth curve: export your projection",
+        body: (
+          <div className="space-y-2">
+            <p>
+              This chart shows the projected balance over time. Use <strong>Export CSV</strong> if you want it in a
+              spreadsheet.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "trajectory",
+        target: "[data-tour='invest-trajectory']",
+        onEnter: () => setTab("path"),
+        title: "Trajectory: see the year-by-year table",
+        body: <p>Want the details? This table shows balance, contributions, and real (inflation-adjusted) balance.</p>,
+      },
+      {
+        id: "stress",
+        target: "[data-tour='invest-stress']",
+        onEnter: () => setTab("path"),
+        title: "Stress example: a bad first year",
+        body: (
+          <div className="space-y-2">
+            <p>
+              This is a simple “what if the market drops early?” example. It’s not predicting a crash—it’s showing why
+              timing can matter.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "fire-inputs",
+        target: "[data-tour='invest-fire-inputs']",
+        onEnter: () => setTab("fire"),
+        title: "FIRE inputs: spending + withdrawal rule",
+        body: (
+          <div className="space-y-2">
+            <p>
+              Set how much you want to spend per year and a withdrawal rule (like 4%). The tool estimates your “FIRE
+              number.”
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "fire-result",
+        target: "[data-tour='invest-fire-result']",
+        onEnter: () => setTab("fire"),
+        title: "FIRE result: the target + time-to-target",
+        body: <p>Here you’ll see the implied FIRE portfolio, years to reach it (simple model), and estimated income.</p>,
+      },
+      {
+        id: "lab-seq",
+        target: "[data-tour='invest-lab-seq']",
+        onEnter: () => setTab("lab"),
+        title: "Lab: sequence of returns",
+        body: (
+          <div className="space-y-2">
+            <p>
+              Same average return, different order. When you add money every month, “good early years” can help more
+              than “good later years.”
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "lab-lump-dca",
+        target: "[data-tour='invest-lab-lumpdca']",
+        onEnter: () => setTab("lab"),
+        title: "Lab: lump sum vs DCA",
+        body: <p>Compare investing a budget all at once vs spreading it out (DCA). This is a comparison tool, not advice.</p>,
+      },
+      {
+        id: "lab-mc",
+        target: "[data-tour='invest-lab-mc']",
+        onEnter: () => setTab("lab"),
+        title: "Lab: Monte Carlo percentiles",
+        body: (
+          <div className="space-y-2">
+            <p>
+              Monte Carlo runs many random paths to show a range of outcomes (like 10th/50th/90th percentile). It’s a
+              way to see uncertainty—not a promise.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "finish",
+        placement: "center",
+        title: "All set",
+        body: (
+          <div className="space-y-3">
+            <p>Quick way to use this tool:</p>
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>Set your starting balance + monthly contribution</li>
+              <li>Pick a horizon and a reasonable return + fee</li>
+              <li>Check purchasing power (today’s dollars)</li>
+              <li>Use the Lab to sanity-check “what if” scenarios</li>
+            </ol>
+          </div>
+        ),
+      },
+    ],
+    [tab]
+  );
+
   return (
     <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-dark-950 dark:via-slate-900 dark:to-emerald-950/30">
+      <ToolWalkthrough
+        id={TOUR_ID}
+        open={tourOpen}
+        onClose={() => setTourOpen(false)}
+        onFinish={() => {
+          setTab("overview");
+          try {
+            window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+          } catch {
+            window.scrollTo(0, 0);
+          }
+        }}
+        steps={walkthroughSteps}
+      />
       <div className="relative overflow-hidden border-b border-emerald-200/50 dark:border-emerald-500/20">
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/15 via-cyan-600/10 to-amber-500/10 dark:from-emerald-900/30 dark:via-transparent dark:to-cyan-900/20" />
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
@@ -223,7 +446,7 @@ export default function AdvancedInvestmentCalculator() {
             Back to Home
           </Link>
 
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10" data-tour="invest-hero">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 text-xs font-bold uppercase tracking-wider mb-4">
                 <Sparkles className="h-3.5 w-3.5" />
@@ -237,7 +460,15 @@ export default function AdvancedInvestmentCalculator() {
                 sequence-of-returns paths, lump-sum vs DCA, and a Monte Carlo fan — in one workspace.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" data-tour="invest-tabs">
+              <button
+                type="button"
+                onClick={() => setTourOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white/70 dark:bg-dark-800/70 border border-slate-200 dark:border-emerald-500/25 text-slate-800 dark:text-emerald-100/90 hover:bg-white dark:hover:bg-emerald-900/20 transition-colors"
+              >
+                <BookOpen className="h-4 w-4" />
+                Walk-through
+              </button>
               {TABS.map((t) => {
                 const Icon = t.icon;
                 const active = tab === t.id;
@@ -262,7 +493,10 @@ export default function AdvancedInvestmentCalculator() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-4 space-y-6">
-              <div className="rounded-2xl bg-white dark:bg-dark-800/80 border border-slate-200 dark:border-emerald-500/25 p-6 shadow-xl shadow-emerald-500/5">
+              <div
+                className="rounded-2xl bg-white dark:bg-dark-800/80 border border-slate-200 dark:border-emerald-500/25 p-6 shadow-xl shadow-emerald-500/5"
+                data-tour="invest-inputs"
+              >
                 <h2 className="font-display font-bold text-lg text-slate-900 dark:text-emerald-50 mb-4 flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-emerald-500" />
                   Portfolio inputs
@@ -369,7 +603,7 @@ export default function AdvancedInvestmentCalculator() {
             <div className="lg:col-span-8 space-y-6">
               {tab === "overview" && (
                 <div className="space-y-6">
-                  <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="grid sm:grid-cols-2 gap-4" data-tour="invest-overview-cards">
                     <div className="rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-gradient-to-br from-emerald-50 to-cyan-50 dark:from-emerald-900/20 dark:to-cyan-900/10 p-6">
                       <p className="text-xs uppercase font-bold text-emerald-700 dark:text-emerald-300">
                         Ending balance (nominal)
@@ -400,7 +634,10 @@ export default function AdvancedInvestmentCalculator() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 dark:border-emerald-500/20 bg-white dark:bg-dark-800/40 p-6">
+                  <div
+                    className="rounded-2xl border border-slate-200 dark:border-emerald-500/20 bg-white dark:bg-dark-800/40 p-6"
+                    data-tour="invest-growth-curve"
+                  >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                       <h3 className="font-display font-bold text-xl text-slate-900 dark:text-emerald-50 flex items-center gap-2">
                         <TrendingUp className="h-6 w-6 text-emerald-500" />
@@ -427,7 +664,7 @@ export default function AdvancedInvestmentCalculator() {
               )}
 
               {tab === "path" && (
-                <div className="space-y-6">
+                <div className="space-y-6" data-tour="invest-trajectory">
                   <div className="rounded-2xl border border-slate-200 dark:border-emerald-500/20 bg-white dark:bg-dark-800/40 p-6 overflow-x-auto">
                     <h3 className="font-display font-bold text-xl text-slate-900 dark:text-emerald-50 mb-4 flex items-center gap-2">
                       <LineChart className="h-6 w-6 text-emerald-500" />
@@ -467,7 +704,7 @@ export default function AdvancedInvestmentCalculator() {
                     </table>
                   </div>
 
-                  <div className="rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/20 p-6">
+                  <div className="rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/20 p-6" data-tour="invest-stress">
                     <h3 className="font-bold text-amber-900 dark:text-amber-200 mb-2 flex items-center gap-2">
                       <Target className="h-5 w-5" />
                       Stress: first year −22%, then baseline
@@ -488,7 +725,7 @@ export default function AdvancedInvestmentCalculator() {
               {tab === "fire" && (
                 <div className="space-y-6">
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <label className="block rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-4 bg-white dark:bg-dark-800/50">
+                    <label className="block rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-4 bg-white dark:bg-dark-800/50" data-tour="invest-fire-inputs">
                       <span className="text-xs font-semibold text-slate-500 dark:text-emerald-400 uppercase">
                         Annual spend (today&apos;s dollars)
                       </span>
@@ -500,7 +737,7 @@ export default function AdvancedInvestmentCalculator() {
                         className="mt-2 w-full rounded-xl border border-slate-200 dark:border-emerald-500/30 bg-slate-50 dark:bg-dark-900 px-4 py-2 font-mono"
                       />
                     </label>
-                    <label className="block rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-4 bg-white dark:bg-dark-800/50">
+                    <label className="block rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-4 bg-white dark:bg-dark-800/50" data-tour="invest-fire-inputs">
                       <span className="text-xs font-semibold text-slate-500 dark:text-emerald-400 uppercase">
                         Withdrawal rule ({swr}%)
                       </span>
@@ -516,7 +753,10 @@ export default function AdvancedInvestmentCalculator() {
                     </label>
                   </div>
 
-                  <div className="rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/25 dark:to-dark-800/50 p-6">
+                  <div
+                    className="rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/25 dark:to-dark-800/50 p-6"
+                    data-tour="invest-fire-result"
+                  >
                     <p className="text-xs uppercase font-bold text-emerald-700 dark:text-emerald-300 mb-1">
                       Implied FIRE portfolio
                     </p>
@@ -549,7 +789,7 @@ export default function AdvancedInvestmentCalculator() {
 
               {tab === "lab" && (
                 <div className="space-y-6">
-                  <div className="rounded-2xl border border-slate-200 dark:border-emerald-500/20 bg-white dark:bg-dark-800/40 p-6">
+                  <div className="rounded-2xl border border-slate-200 dark:border-emerald-500/20 bg-white dark:bg-dark-800/40 p-6" data-tour="invest-lab-seq">
                     <h3 className="font-display font-bold text-lg text-slate-900 dark:text-emerald-50 mb-2 flex items-center gap-2">
                       <GitCompare className="h-5 w-5 text-emerald-500" />
                       Sequence of returns (same average, different order)
@@ -592,7 +832,7 @@ export default function AdvancedInvestmentCalculator() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 dark:border-emerald-500/20 bg-white dark:bg-dark-800/40 p-6">
+                  <div className="rounded-2xl border border-slate-200 dark:border-emerald-500/20 bg-white dark:bg-dark-800/40 p-6" data-tour="invest-lab-lumpdca">
                     <h3 className="font-display font-bold text-lg text-slate-900 dark:text-emerald-50 mb-2 flex items-center gap-2">
                       <Scale className="h-5 w-5 text-cyan-500" />
                       Lump sum vs DCA (same budget)
@@ -650,7 +890,10 @@ export default function AdvancedInvestmentCalculator() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-purple-200 dark:border-purple-500/30 bg-purple-50/80 dark:bg-purple-950/20 p-6">
+                  <div
+                    className="rounded-2xl border border-purple-200 dark:border-purple-500/30 bg-purple-50/80 dark:bg-purple-950/20 p-6"
+                    data-tour="invest-lab-mc"
+                  >
                     <h3 className="font-display font-bold text-lg text-slate-900 dark:text-emerald-50 mb-2 flex items-center gap-2">
                       <BarChart3 className="h-5 w-5 text-purple-500" />
                       Monte Carlo (lognormal annual shocks)

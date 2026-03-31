@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  BookOpen,
   ChevronRight,
   Activity,
   Gauge,
@@ -12,8 +13,9 @@ import {
   Check,
   Shield,
   Zap,
-  BookOpen,
+  BookOpen as TourBook,
 } from "lucide-react";
+import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
 
 /** Educational model only — not a real FICO/VantageScore. Illustrative 300–850. */
 function clamp(n: number, lo: number, hi: number) {
@@ -95,6 +97,9 @@ const PRESETS = [
 ] as const;
 
 export default function AdvancedCreditScoreSimulator() {
+  const [tourOpen, setTourOpen] = useState(false);
+  const TOUR_ID = "credit-score-simulator";
+
   const [utilizationPct, setUtilizationPct] = useState(28);
   const [onTimePct, setOnTimePct] = useState(99);
   const [avgAgeYears, setAvgAgeYears] = useState(7);
@@ -169,8 +174,165 @@ export default function AdvancedCreditScoreSimulator() {
     setTimeout(() => setCopied(false), 1600);
   };
 
+  useEffect(() => {
+    if (hasCompletedWalkthrough(TOUR_ID)) return;
+    const t = window.setTimeout(() => setTourOpen(true), 450);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  const walkthroughSteps: WalkthroughStep[] = useMemo(
+    () => [
+      {
+        id: "welcome",
+        placement: "center",
+        title: "Welcome — let’s learn what moves a score",
+        body: (
+          <div className="space-y-3">
+            <p>
+              This is a friendly, transparent credit score <strong>simulator</strong>. It’s not a real bureau score—
+              it’s a learning model so you can see how different habits can help or hurt.
+            </p>
+            <p>
+              You can <strong>skip anytime</strong>. To replay later, use the <strong>Walk-through</strong> button.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "disclaimer",
+        target: "[data-tour='credit-disclaimer']",
+        title: "Quick heads-up (important)",
+        body: <p>Real FICO/VantageScore formulas are proprietary. This tool is for learning and “what‑ifs.”</p>,
+      },
+      {
+        id: "presets",
+        target: "[data-tour='credit-presets']",
+        title: "Presets: start with a vibe",
+        body: <p>These buttons load example profiles so you can explore without thinking too hard first.</p>,
+      },
+      {
+        id: "score-card",
+        target: "[data-tour='credit-score-card']",
+        title: "Your simulated score + band",
+        body: (
+          <div className="space-y-2">
+            <p>This card shows your simulated score and the rough band (Poor → Excellent).</p>
+            <p className="text-xs text-slate-500 dark:text-purple-300/90">
+              The gauge is just a visual—focus on direction, not exact points.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "copy",
+        target: "[data-tour='credit-copy-json']",
+        title: "Copy JSON: save your scenario",
+        body: <p>Copy a snapshot so you can compare different “plans” (before/after) later.</p>,
+      },
+      {
+        id: "inputs",
+        target: "[data-tour='credit-inputs']",
+        title: "Inputs: the five dials",
+        body: (
+          <div className="space-y-2">
+            <p>These controls change the model’s five main factors:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Utilization</strong> (lower is usually better)
+              </li>
+              <li>
+                <strong>On-time %</strong> (higher is better)
+              </li>
+              <li>
+                <strong>Age</strong> (older average helps)
+              </li>
+              <li>
+                <strong>Inquiries</strong> (fewer is better)
+              </li>
+              <li>
+                <strong>Mix</strong> (healthy variety, managed well)
+              </li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        id: "utilization",
+        target: "[data-tour='credit-utilization']",
+        title: "Utilization: the fastest lever",
+        body: (
+          <div className="space-y-2">
+            <p>
+              Utilization is roughly “balance ÷ limit.” Even if nothing else changes, lowering it can help quickly.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "payment",
+        target: "[data-tour='credit-payment']",
+        title: "On-time payments: the foundation",
+        body: <p>In real scoring, payment history is one of the biggest factors. Protect it.</p>,
+      },
+      {
+        id: "age",
+        target: "[data-tour='credit-age']",
+        title: "Age: patience pays",
+        body: <p>Older average age usually helps. Avoid churning accounts if your goal is score stability.</p>,
+      },
+      {
+        id: "inq-mix",
+        target: "[data-tour='credit-inq-mix']",
+        title: "Inquiries + mix: small, but real",
+        body: <p>Lots of new applications can ding you short-term. Mix helps when accounts are managed well.</p>,
+      },
+      {
+        id: "factor-bars",
+        target: "[data-tour='credit-factor-bars']",
+        title: "Factor contribution: see the points",
+        body: <p>These bars show how many points each factor is contributing in this illustrative model.</p>,
+      },
+      {
+        id: "what-if",
+        target: "[data-tour='credit-whatif']",
+        title: "What-if: paying down utilization",
+        body: <p>Here’s the “only utilization changed” scenario, so you can see a clean, single-variable effect.</p>,
+      },
+      {
+        id: "finish",
+        placement: "center",
+        title: "All set",
+        body: (
+          <div className="space-y-3">
+            <p>Quick workflow:</p>
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>Pick a preset</li>
+              <li>Lower utilization and see what changes</li>
+              <li>Try “inquiries” and “age” to understand slower vs faster levers</li>
+              <li>Copy JSON to save a before/after</li>
+            </ol>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
+
   return (
     <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-dark-950 dark:to-dark-900">
+      <ToolWalkthrough
+        id={TOUR_ID}
+        open={tourOpen}
+        onClose={() => setTourOpen(false)}
+        onFinish={() => {
+          try {
+            window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+          } catch {
+            window.scrollTo(0, 0);
+          }
+        }}
+        steps={walkthroughSteps}
+      />
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-600/12 via-transparent to-sky-600/10 dark:from-fuchsia-900/25 dark:to-sky-900/20" />
         <div className="absolute top-24 left-8 w-72 h-72 bg-fuchsia-400/15 rounded-full blur-3xl" />
@@ -196,8 +358,18 @@ export default function AdvancedCreditScoreSimulator() {
               </Link>
               <button
                 type="button"
+                onClick={() => setTourOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-800/60 text-sm font-bold text-slate-900 dark:text-purple-100 hover:bg-slate-50 dark:hover:bg-purple-900/20"
+                aria-label="Open credit score simulator walk-through"
+              >
+                <TourBook className="h-4 w-4" />
+                Walk-through
+              </button>
+              <button
+                type="button"
                 onClick={copyJson}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-800/60 text-sm font-bold text-slate-900 dark:text-purple-100 hover:bg-slate-50 dark:hover:bg-purple-900/20"
+                data-tour="credit-copy-json"
               >
                 {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                 {copied ? "Copied" : "Copy JSON"}
@@ -222,7 +394,7 @@ export default function AdvancedCreditScoreSimulator() {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/90 dark:bg-amber-900/15 px-4 py-3 text-sm text-amber-950 dark:text-amber-100/90 flex gap-2">
+              <div className="mt-4 rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/90 dark:bg-amber-900/15 px-4 py-3 text-sm text-amber-950 dark:text-amber-100/90 flex gap-2" data-tour="credit-disclaimer">
                 <Shield className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
                 <span>
                   This is <strong>not</strong> a real FICO, VantageScore, or lender score. It’s a transparent toy
@@ -230,7 +402,7 @@ export default function AdvancedCreditScoreSimulator() {
                 </span>
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-2">
+              <div className="mt-6 flex flex-wrap gap-2" data-tour="credit-presets">
                 {PRESETS.map((p) => (
                   <button
                     key={p.name}
@@ -254,6 +426,7 @@ export default function AdvancedCreditScoreSimulator() {
             <div className="w-full max-w-md mx-auto lg:mx-0">
               <div
                 className={`rounded-3xl p-8 text-white shadow-2xl bg-gradient-to-br ${b.color} relative overflow-hidden`}
+                data-tour="credit-score-card"
               >
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.25),transparent_50%)]" />
                 <div className="relative">
@@ -278,7 +451,7 @@ export default function AdvancedCreditScoreSimulator() {
           </div>
 
           <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg space-y-6">
+            <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg space-y-6" data-tour="credit-inputs">
               <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-fuchsia-500" />
                 Your inputs
@@ -295,6 +468,7 @@ export default function AdvancedCreditScoreSimulator() {
                   value={utilizationPct}
                   onChange={(e) => setUtilizationPct(Number(e.target.value))}
                   className="mt-2 w-full accent-fuchsia-600"
+                  data-tour="credit-utilization"
                 />
               </label>
 
@@ -309,6 +483,7 @@ export default function AdvancedCreditScoreSimulator() {
                   value={onTimePct}
                   onChange={(e) => setOnTimePct(Number(e.target.value))}
                   className="mt-2 w-full accent-emerald-600"
+                  data-tour="credit-payment"
                 />
               </label>
 
@@ -324,10 +499,11 @@ export default function AdvancedCreditScoreSimulator() {
                   value={avgAgeYears}
                   onChange={(e) => setAvgAgeYears(Number(e.target.value))}
                   className="mt-2 w-full accent-sky-600"
+                  data-tour="credit-age"
                 />
               </label>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4" data-tour="credit-inq-mix">
                 <label className="block">
                   <span className="text-xs font-bold uppercase text-slate-500 dark:text-purple-300">
                     Hard inquiries (12 mo)
@@ -358,7 +534,7 @@ export default function AdvancedCreditScoreSimulator() {
             </div>
 
             <div className="space-y-6">
-              <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg">
+              <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg" data-tour="credit-factor-bars">
                 <p className="text-sm font-bold text-slate-900 dark:text-purple-100 mb-4">Factor contribution (model)</p>
                 <div className="space-y-3">
                   {(Object.keys(FACTOR_LABELS) as FactorKey[]).map((k) => {
@@ -394,7 +570,7 @@ export default function AdvancedCreditScoreSimulator() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg">
+              <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg" data-tour="credit-whatif">
                 <p className="text-sm font-bold text-slate-900 dark:text-purple-100 mb-2">What-if (same model)</p>
                 <p className="text-sm text-slate-600 dark:text-purple-200/90 mb-4">
                   If you only lowered utilization (everything else unchanged):

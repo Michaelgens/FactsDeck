@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  BookOpen,
   ChevronRight,
   DollarSign,
   Zap,
@@ -14,6 +15,7 @@ import {
   TrendingDown,
   Sparkles,
 } from "lucide-react";
+import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
 
 function clamp(n: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, n));
@@ -66,6 +68,9 @@ function buildAmortization(
 }
 
 export default function AdvancedLoanCalculator() {
+  const [tourOpen, setTourOpen] = useState(false);
+  const TOUR_ID = "loan-calculator";
+
   const [principal, setPrincipal] = useState(28_000);
   const [apr, setApr] = useState(8.49);
   const [termYears, setTermYears] = useState(5);
@@ -135,8 +140,141 @@ export default function AdvancedLoanCalculator() {
 
   const previewRows = showSchedule ? base.rows.slice(0, 24) : base.rows.slice(0, 6);
 
+  useEffect(() => {
+    if (hasCompletedWalkthrough(TOUR_ID)) return;
+    const t = window.setTimeout(() => setTourOpen(true), 450);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  const walkthroughSteps: WalkthroughStep[] = useMemo(
+    () => [
+      {
+        id: "welcome",
+        placement: "center",
+        title: "Welcome — let’s price this loan",
+        body: (
+          <div className="space-y-3">
+            <p>
+              This loan calculator shows your monthly payment, total interest, and an amortization preview. You can also
+              test extra payments, origination fees, and compare a second offer side-by-side.
+            </p>
+            <p>
+              You can <strong>skip anytime</strong>. To replay later, use the <strong>Walk-through</strong> button.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "copy",
+        target: "[data-tour='loan-copy-json']",
+        title: "Copy results JSON: save your scenario",
+        body: <p>Copy a snapshot to compare offers later (or share with a partner).</p>,
+      },
+      {
+        id: "inputs",
+        target: "[data-tour='loan-your-loan']",
+        title: "Your loan: principal, APR, term",
+        body: (
+          <div className="space-y-2">
+            <p>Start with the basics:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Principal</strong>: amount borrowed
+              </li>
+              <li>
+                <strong>APR</strong>: the interest rate
+              </li>
+              <li>
+                <strong>Term</strong>: how long you’ll pay
+              </li>
+            </ul>
+          </div>
+        ),
+      },
+      {
+        id: "extra",
+        target: "[data-tour='loan-extra']",
+        title: "Extra principal: pay it off faster",
+        body: <p>Even small extra payments can cut months off the loan and reduce total interest.</p>,
+      },
+      {
+        id: "fee",
+        target: "[data-tour='loan-fee']",
+        title: "Origination fee: the upfront bite",
+        body: <p>This models a simple origination fee so you can see the true “interest + fees” cost.</p>,
+      },
+      {
+        id: "compare",
+        target: "[data-tour='loan-compare-b']",
+        title: "Scenario B: compare another offer",
+        body: (
+          <div className="space-y-2">
+            <p>Use this to compare a refi or competing offer.</p>
+            <p className="text-xs text-slate-500 dark:text-purple-300/90">
+              Try changing just one thing (rate, term, or principal) to see what actually matters most.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "results",
+        target: "[data-tour='loan-results']",
+        title: "Results: monthly payment + total interest",
+        body: <p>This section shows your key outputs at a glance—payment, payoff time, and total interest.</p>,
+      },
+      {
+        id: "schedule",
+        target: "[data-tour='loan-schedule']",
+        title: "Amortization preview: where your money goes",
+        body: (
+          <div className="space-y-2">
+            <p>
+              Early payments are mostly interest. Over time, principal takes over. Toggle the preview to see more rows.
+            </p>
+          </div>
+        ),
+      },
+      {
+        id: "comparison-cards",
+        target: "[data-tour='loan-compare-cards']",
+        title: "Bottom cards: Scenario A vs B",
+        body: <p>A quick side-by-side summary of payments and total interest for both scenarios.</p>,
+      },
+      {
+        id: "finish",
+        placement: "center",
+        title: "All set",
+        body: (
+          <div className="space-y-3">
+            <p>Quick workflow:</p>
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>Enter principal, APR, and term</li>
+              <li>Try a small extra payment</li>
+              <li>Add a fee if your offer has one</li>
+              <li>Compare Scenario B (another offer or refi)</li>
+            </ol>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
+
   return (
     <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-dark-950 dark:to-dark-900">
+      <ToolWalkthrough
+        id={TOUR_ID}
+        open={tourOpen}
+        onClose={() => setTourOpen(false)}
+        onFinish={() => {
+          try {
+            window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+          } catch {
+            window.scrollTo(0, 0);
+          }
+        }}
+        steps={walkthroughSteps}
+      />
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-violet-600/12 via-transparent to-cyan-600/10 dark:from-violet-900/30 dark:to-cyan-900/20" />
         <div className="absolute top-20 right-10 w-72 h-72 bg-violet-400/15 dark:bg-violet-500/10 rounded-full blur-3xl" />
@@ -176,11 +314,23 @@ export default function AdvancedLoanCalculator() {
                   </p>
                 </div>
               </div>
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => setTourOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/80 dark:bg-dark-900/40 border border-slate-200 dark:border-purple-500/20 text-slate-900 dark:text-purple-100 font-bold hover:bg-white dark:hover:bg-purple-900/20 transition-colors"
+                  aria-label="Open loan calculator walk-through"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Walk-through
+                </button>
+              </div>
             </div>
             <button
               type="button"
               onClick={copyJson}
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-800/60 text-slate-900 dark:text-purple-100 font-bold hover:bg-slate-50 dark:hover:bg-purple-900/20 transition-colors shrink-0"
+              data-tour="loan-copy-json"
             >
               {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
               {copied ? "Copied JSON" : "Copy results JSON"}
@@ -189,7 +339,7 @@ export default function AdvancedLoanCalculator() {
 
           <div className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-5 space-y-6">
-              <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg">
+              <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg" data-tour="loan-your-loan">
                 <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
                   <Zap className="h-4 w-4 text-amber-500" />
                   Your loan
@@ -236,7 +386,7 @@ export default function AdvancedLoanCalculator() {
                       />
                     </label>
                   </div>
-                  <div>
+                  <div data-tour="loan-extra">
                     <div className="flex justify-between text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
                       <span>Extra principal / month</span>
                       <span>{money(extraMonthly)}</span>
@@ -255,7 +405,7 @@ export default function AdvancedLoanCalculator() {
                       Extra payments go straight to principal—same monthly bill, shorter life, less interest.
                     </p>
                   </div>
-                  <div>
+                  <div data-tour="loan-fee">
                     <div className="flex justify-between text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
                       <span>Origination fee (%)</span>
                       <span>{feePct.toFixed(2)}% · {money(feeAmount)}</span>
@@ -273,7 +423,7 @@ export default function AdvancedLoanCalculator() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg">
+              <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg" data-tour="loan-compare-b">
                 <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
                   <GitCompare className="h-4 w-4 text-cyan-500" />
                   Compare scenario B
@@ -327,7 +477,7 @@ export default function AdvancedLoanCalculator() {
             </div>
 
             <div className="lg:col-span-7 space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" data-tour="loan-results">
                 <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-gradient-to-br from-violet-600 to-purple-700 text-white p-6 shadow-xl">
                   <p className="text-xs font-bold uppercase tracking-wide text-white/80">Monthly payment</p>
                   <p className="mt-2 text-4xl font-extrabold font-mono">{money(base.pmt)}</p>
@@ -355,7 +505,7 @@ export default function AdvancedLoanCalculator() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg">
+              <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg" data-tour="loan-schedule">
                 <div className="flex items-center justify-between gap-2 mb-4">
                   <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
                     <Table2 className="h-4 w-4 text-violet-500" />
@@ -402,7 +552,7 @@ export default function AdvancedLoanCalculator() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" data-tour="loan-compare-cards">
                 <div className="rounded-2xl border border-cyan-200 dark:border-cyan-500/30 bg-cyan-50/80 dark:bg-cyan-900/15 p-5">
                   <p className="text-xs font-bold uppercase text-cyan-800 dark:text-cyan-200">Scenario B payment</p>
                   <p className="mt-1 text-2xl font-extrabold font-mono text-slate-900 dark:text-purple-100">
