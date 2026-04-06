@@ -17,6 +17,19 @@ import {
   Copy,
 } from "lucide-react";
 import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
+import { FACTS_DECK_BUDGET_PLANNER } from "./budget/budget-journey-types";
+import ToolDashboardTestCta from "./ToolDashboardTestCta";
+import {
+  ToolDashboardHeroBackdrop,
+  tdGhostBtn,
+  tdHero,
+  tdHeroInner,
+  tdIconTile,
+  tdNavLink,
+  tdPage,
+  tdPanelLg,
+  tdStatCard,
+} from "./tool-dashboard-ui";
 
 type ExpenseGroup = "Needs" | "Wants" | "Savings" | "Debt";
 
@@ -45,33 +58,47 @@ function pct(n: number) {
   return `${Math.round(n * 100)}%`;
 }
 
+export type BudgetPlannerInitialValues = {
+  mode?: "50-30-20" | "zero-based";
+  incomeMonthly?: number;
+  bufferPct?: number;
+};
+
+type AdvancedBudgetPlannerProps = {
+  initialValues?: BudgetPlannerInitialValues;
+  deferWalkthrough?: boolean;
+};
+
 const GROUP_META: Record<ExpenseGroup, { color: string; chip: string; hint: string }> = {
   Needs: {
-    color: "from-emerald-500 to-emerald-600",
-    chip: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200",
+    color: "from-zinc-700 to-zinc-900",
+    chip: "bg-zinc-100 text-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:border-zinc-800 border border-transparent",
     hint: "Housing, groceries, utilities, minimums",
   },
   Wants: {
-    color: "from-purple-500 to-purple-600",
-    chip: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200",
+    color: "from-zinc-600 to-zinc-900",
+    chip: "bg-zinc-100 text-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:border-zinc-800 border border-transparent",
     hint: "Dining, subscriptions, fun money",
   },
   Savings: {
-    color: "from-amber-500 to-amber-600",
-    chip: "bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200",
+    color: "from-zinc-800 to-zinc-950",
+    chip: "bg-zinc-100 text-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:border-zinc-800 border border-transparent",
     hint: "Emergency fund, investing, sinking funds",
   },
   Debt: {
-    color: "from-rose-500 to-rose-600",
-    chip: "bg-rose-100 text-rose-900 dark:bg-rose-900/30 dark:text-rose-200",
+    color: "from-zinc-700 to-zinc-950",
+    chip: "bg-zinc-100 text-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:border-zinc-800 border border-transparent",
     hint: "Extra payments, snowball/avalanche",
   },
 };
 
-export default function AdvancedBudgetPlanner() {
-  const [mode, setMode] = useState<"50-30-20" | "zero-based">("50-30-20");
-  const [incomeMonthly, setIncomeMonthly] = useState<number>(6200);
-  const [bufferPct, setBufferPct] = useState<number>(0.03); // friction/unknowns
+export default function AdvancedBudgetPlanner({
+  initialValues,
+  deferWalkthrough = false,
+}: AdvancedBudgetPlannerProps = {}) {
+  const [mode, setMode] = useState<"50-30-20" | "zero-based">(initialValues?.mode ?? "50-30-20");
+  const [incomeMonthly, setIncomeMonthly] = useState<number>(initialValues?.incomeMonthly ?? 6200);
+  const [bufferPct, setBufferPct] = useState<number>(initialValues?.bufferPct ?? 0.03); // friction/unknowns
   const [items, setItems] = useState<ExpenseItem[]>([
     { id: uid(), name: "Rent / Mortgage", group: "Needs", amountMonthly: 2100 },
     { id: uid(), name: "Groceries", group: "Needs", amountMonthly: 520 },
@@ -165,27 +192,25 @@ export default function AdvancedBudgetPlanner() {
   const TOUR_ID = "budget-planner";
 
   useEffect(() => {
+    if (deferWalkthrough) return;
     if (hasCompletedWalkthrough(TOUR_ID)) return;
     const t = window.setTimeout(() => setTourOpen(true), 450);
     return () => window.clearTimeout(t);
-  }, []);
+  }, [deferWalkthrough]);
 
   const walkthroughSteps: WalkthroughStep[] = useMemo(
     () => [
       {
         id: "welcome",
         placement: "center",
-        title: "Welcome — let’s build a budget that survives real life",
+        title: "Welcome to the workspace",
         body: (
           <div className="space-y-3">
             <p>
-              This budget planner is simple on purpose: pick a style, add your monthly items, and keep a small buffer so
-              one weird bill doesn’t ruin your whole month.
+              If you completed the <strong>Facts Deck Budget Test</strong>, your income, buffer, and style are already
+              filled in. This tour highlights where to edit line items, buckets, and exports.
             </p>
-            <p>
-              You can <strong>skip anytime</strong>. You can always replay later using the <strong>Walk-through</strong>{" "}
-              button.
-            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">Replay anytime from the Walk-through button.</p>
           </div>
         ),
       },
@@ -245,7 +270,7 @@ export default function AdvancedBudgetPlanner() {
             <p>
               The buffer is money you don’t assign. It helps with price changes, random fees, and “forgotten” expenses.
             </p>
-            <p className="text-xs text-slate-500 dark:text-purple-300/90">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Even 2–5% can make budgeting feel calmer.
             </p>
           </div>
@@ -266,7 +291,7 @@ export default function AdvancedBudgetPlanner() {
             <p>
               Your items live in four buckets. Add everything you pay monthly (or convert yearly bills into monthly).
             </p>
-            <p className="text-xs text-slate-500 dark:text-purple-300/90">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Tip: Savings isn’t just investing—think emergency fund and sinking funds too.
             </p>
           </div>
@@ -348,24 +373,28 @@ export default function AdvancedBudgetPlanner() {
   );
 
   const headerStat = (label: string, value: string, sub?: string) => (
-    <div className="rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-5">
-      <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+    <div className={tdStatCard}>
+      <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
         {label}
       </p>
-      <p className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-purple-100">
+      <p className="mt-1 text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">
         {value}
       </p>
-      {sub ? <p className="mt-1 text-sm text-slate-600 dark:text-purple-200/80">{sub}</p> : null}
+      {sub ? <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">{sub}</p> : null}
     </div>
   );
 
   const bar = (value: number, max: number) => {
     const w = `${Math.round(clamp(max <= 0 ? 0 : value / max, 0, 1) * 100)}%`;
-    return <div className="h-2 rounded-full bg-slate-200 dark:bg-dark-700 overflow-hidden"><div className="h-full bg-gradient-to-r from-purple-500 to-accent-500" style={{ width: w }} /></div>;
+    return (
+      <div className="h-2 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
+        <div className="h-full bg-zinc-900 dark:bg-zinc-100" style={{ width: w }} />
+      </div>
+    );
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-dark-950 dark:to-dark-900">
+    <div className={tdPage}>
       <ToolWalkthrough
         id={TOUR_ID}
         open={tourOpen}
@@ -379,23 +408,18 @@ export default function AdvancedBudgetPlanner() {
         }}
         steps={walkthroughSteps}
       />
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/15 via-transparent to-emerald-600/10 dark:from-purple-900/35 dark:to-emerald-900/25" />
-        <div className="absolute top-16 left-10 w-72 h-72 bg-purple-400/20 dark:bg-purple-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-16 right-10 w-80 h-80 bg-emerald-400/20 dark:bg-emerald-500/10 rounded-full blur-3xl" />
+      <section className={tdHero}>
+        <ToolDashboardHeroBackdrop />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+        <div className={tdHeroInner}>
           <div className="flex items-center justify-between gap-3" data-tour="budget-top-nav">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-purple-700 dark:text-purple-200 font-semibold hover:text-purple-800 dark:hover:text-emerald-300 transition-colors"
-            >
+            <Link href="/" className={tdNavLink}>
               <ArrowLeft className="h-4 w-4" />
               Back to Home
             </Link>
             <Link
               href="/post?category=Personal%20Finance&q=budget"
-              className="inline-flex items-center gap-2 text-slate-700 dark:text-purple-200 font-semibold hover:text-purple-800 dark:hover:text-emerald-300 transition-colors"
+              className={tdNavLink}
             >
               Read budgeting guides
               <ChevronRight className="h-4 w-4" />
@@ -405,14 +429,14 @@ export default function AdvancedBudgetPlanner() {
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             <div className="lg:col-span-2">
               <div className="flex items-center gap-3">
-                <span className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-emerald-600 flex items-center justify-center shadow-xl">
-                  <Wallet className="h-6 w-6 text-white" />
+                <span className={tdIconTile}>
+                  <Wallet className="h-6 w-6" />
                 </span>
                 <div>
-                  <h1 className="font-display text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-purple-100">
-                    Advanced Budget Planner
+                  <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    {FACTS_DECK_BUDGET_PLANNER}
                   </h1>
-                  <p className="text-slate-600 dark:text-purple-200/80 mt-1">
+                  <p className="text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
                     Build a budget that actually survives real life: buffer, buckets, and a clear “what next”.
                   </p>
                 </div>
@@ -422,7 +446,7 @@ export default function AdvancedBudgetPlanner() {
                 <button
                   type="button"
                   onClick={() => setTourOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/80 dark:bg-dark-900/40 border border-slate-200 dark:border-purple-500/20 text-slate-900 dark:text-purple-100 font-bold hover:bg-white dark:hover:bg-purple-900/20 transition-colors"
+                  className={tdGhostBtn}
                   aria-label="Open budget planner walk-through"
                 >
                   <BookOpen className="h-4 w-4" />
@@ -437,13 +461,13 @@ export default function AdvancedBudgetPlanner() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg" data-tour="budget-style">
+            <div className={tdPanelLg} data-tour="budget-style">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-amber-500" />
+                <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-zinc-700 dark:text-zinc-300" />
                   Budget style
                 </p>
-                <span className={`text-xs font-bold px-2 py-1 rounded-full ${score > 0.75 ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200" : score > 0.55 ? "bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200" : "bg-rose-100 text-rose-900 dark:bg-rose-900/30 dark:text-rose-200"}`}>
+                <span className="text-xs font-bold px-2 py-1 rounded-full border border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
                   Score {Math.round(score * 100)}
                 </span>
               </div>
@@ -454,8 +478,8 @@ export default function AdvancedBudgetPlanner() {
                   onClick={() => setMode("50-30-20")}
                   className={`px-3 py-2 rounded-2xl text-sm font-semibold border transition-colors ${
                     mode === "50-30-20"
-                      ? "bg-purple-600 text-white border-purple-600"
-                      : "bg-white dark:bg-dark-900/40 text-slate-700 dark:text-purple-200 border-slate-200 dark:border-purple-500/20 hover:border-purple-300"
+                      ? "bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100"
+                      : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300 dark:bg-zinc-950 dark:text-zinc-200 dark:border-zinc-800 dark:hover:border-zinc-700"
                   }`}
                 >
                   50 / 30 / 20
@@ -465,8 +489,8 @@ export default function AdvancedBudgetPlanner() {
                   onClick={() => setMode("zero-based")}
                   className={`px-3 py-2 rounded-2xl text-sm font-semibold border transition-colors ${
                     mode === "zero-based"
-                      ? "bg-emerald-600 text-white border-emerald-600"
-                      : "bg-white dark:bg-dark-900/40 text-slate-700 dark:text-purple-200 border-slate-200 dark:border-purple-500/20 hover:border-purple-300"
+                      ? "bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100"
+                      : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300 dark:bg-zinc-950 dark:text-zinc-200 dark:border-zinc-800 dark:hover:border-zinc-700"
                   }`}
                 >
                   Zero-based
@@ -474,7 +498,7 @@ export default function AdvancedBudgetPlanner() {
               </div>
 
               <div className="mt-4" data-tour="budget-income">
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                <label className="block text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                   Income (monthly)
                 </label>
                 <input
@@ -483,16 +507,16 @@ export default function AdvancedBudgetPlanner() {
                   step={50}
                   value={incomeMonthly}
                   onChange={(e) => setIncomeMonthly(Number(e.target.value))}
-                  className="mt-1 w-full px-4 py-2 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="mt-1 w-full px-4 py-2 rounded-2xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                 />
               </div>
 
               <div className="mt-4" data-tour="budget-buffer">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Buffer (for “life happens”)
                   </label>
-                  <span className="text-xs font-semibold text-slate-700 dark:text-purple-200">
+                  <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-200">
                     {pct(bufferPct)} · {money(totals.buffer)}
                   </span>
                 </div>
@@ -503,10 +527,10 @@ export default function AdvancedBudgetPlanner() {
                   step={0.005}
                   value={bufferPct}
                   onChange={(e) => setBufferPct(Number(e.target.value))}
-                  className="mt-2 w-full accent-purple-600"
+                  className="mt-2 w-full accent-zinc-900 dark:accent-zinc-100"
                 />
-                <p className="mt-2 text-xs text-slate-500 dark:text-purple-200/70 flex items-start gap-2">
-                  <Shield className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 flex items-start gap-2">
+                  <Shield className="h-4 w-4 text-zinc-900 dark:text-zinc-100 mt-0.5 shrink-0" />
                   A small buffer keeps you from “budget whiplash” when bills fluctuate.
                 </p>
               </div>
@@ -514,14 +538,16 @@ export default function AdvancedBudgetPlanner() {
               <button
                 type="button"
                 onClick={copyJson}
-                className="mt-5 inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900/40 text-slate-900 dark:text-purple-100 font-bold hover:bg-slate-50 dark:hover:bg-purple-900/20 transition-colors"
+                className={`${tdGhostBtn} mt-5 w-full`}
                 data-tour="budget-copy-json"
               >
-                {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                {copied ? <Check className="h-4 w-4 text-zinc-900 dark:text-zinc-100" /> : <Copy className="h-4 w-4" />}
                 {copied ? "Copied budget JSON" : "Copy budget JSON"}
               </button>
             </div>
           </div>
+
+          <ToolDashboardTestCta toolSlug="budget-planner" testLabel={FACTS_DECK_BUDGET_PLANNER} />
 
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6" data-tour="budget-buckets">
             <div className="lg:col-span-2 space-y-6">
@@ -543,7 +569,7 @@ export default function AdvancedBudgetPlanner() {
                 return (
                   <section
                     key={group}
-                    className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg"
+                    className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40"
                     data-tour="budget-bucket-card"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -552,15 +578,15 @@ export default function AdvancedBudgetPlanner() {
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${meta.chip}`}>
                             {group}
                           </span>
-                          <span className="text-sm text-slate-600 dark:text-purple-200/80 truncate">
+                          <span className="text-sm text-zinc-600 dark:text-zinc-300 truncate">
                             {meta.hint}
                           </span>
                         </div>
                         <div className="mt-2 flex items-end gap-3">
-                          <p className="text-2xl font-extrabold text-slate-900 dark:text-purple-100">
+                          <p className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">
                             {money(total)}
                           </p>
-                          <p className="text-sm text-slate-500 dark:text-purple-300">
+                          <p className="text-sm text-zinc-500 dark:text-zinc-400">
                             {totals.available > 0 ? pct(total / totals.available) : "0%"} of available
                           </p>
                         </div>
@@ -568,7 +594,7 @@ export default function AdvancedBudgetPlanner() {
                           {bar(total, totals.available)}
                         </div>
                         {mode === "50-30-20" && target != null && (
-                          <p className="mt-2 text-xs text-slate-500 dark:text-purple-200/70">
+                          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                             Target: {money(target)} ({group === "Savings" || group === "Debt" ? "Savings + Debt" : group})
                           </p>
                         )}
@@ -576,7 +602,7 @@ export default function AdvancedBudgetPlanner() {
                       <button
                         type="button"
                         onClick={() => addItem(group)}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-purple-600 to-emerald-600 text-white font-bold hover:from-purple-700 hover:to-emerald-700 transition-colors"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-2xl bg-zinc-900 text-white font-bold hover:bg-zinc-800 transition-colors dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
                         data-tour="budget-add-item"
                       >
                         <Plus className="h-4 w-4" />
@@ -588,14 +614,14 @@ export default function AdvancedBudgetPlanner() {
                       {list.map((it) => (
                         <div
                           key={it.id}
-                          className="grid grid-cols-1 sm:grid-cols-[1fr_10rem_2.75rem] gap-2 items-center rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white dark:bg-dark-900/40 p-3"
+                          className="grid grid-cols-1 sm:grid-cols-[1fr_10rem_2.75rem] gap-2 items-center rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950"
                           data-tour="budget-item-row"
                         >
                           <input
                             value={it.name}
                             onChange={(e) => updateItem(it.id, { name: e.target.value })}
                             placeholder="e.g. Car insurance (sinking fund)"
-                            className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-3 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                           />
                           <input
                             type="number"
@@ -603,12 +629,12 @@ export default function AdvancedBudgetPlanner() {
                             step={10}
                             value={Number.isFinite(it.amountMonthly) ? it.amountMonthly : 0}
                             onChange={(e) => updateItem(it.id, { amountMonthly: Number(e.target.value) })}
-                            className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-right font-mono"
+                            className="w-full px-3 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700 text-right font-mono"
                           />
                           <button
                             type="button"
                             onClick={() => removeItem(it.id)}
-                            className="inline-flex items-center justify-center h-10 w-10 rounded-xl text-rose-600 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                            className="inline-flex items-center justify-center h-10 w-10 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-colors"
                             aria-label="Remove item"
                             title="Remove item"
                           >
@@ -617,7 +643,7 @@ export default function AdvancedBudgetPlanner() {
                         </div>
                       ))}
                       {list.length === 0 && (
-                        <p className="text-sm text-slate-500 dark:text-purple-200/70">
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400">
                           No items yet. Add one to start shaping this bucket.
                         </p>
                       )}
@@ -629,20 +655,20 @@ export default function AdvancedBudgetPlanner() {
 
             <aside className="space-y-6">
               <div
-                className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg"
+                className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40"
                 data-tour="budget-insights"
               >
-                <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
-                  <Target className="h-4 w-4 text-emerald-500" />
+                <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <Target className="h-4 w-4 text-zinc-900 dark:text-zinc-100" />
                   What this budget says
                 </p>
 
                 <div className="mt-4 space-y-4">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                    <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                       Safety first
                     </p>
-                    <p className="mt-1 text-sm text-slate-700 dark:text-purple-200">
+                    <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
                       {totals.byGroup.Savings + totals.byGroup.Debt >= totals.available * 0.2
                         ? "You’re funding future-you aggressively. Nice."
                         : "Consider bumping Savings/Debt until you hit at least ~20% of available cash."}
@@ -650,10 +676,10 @@ export default function AdvancedBudgetPlanner() {
                   </div>
 
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                    <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                       Flexibility
                     </p>
-                    <p className="mt-1 text-sm text-slate-700 dark:text-purple-200">
+                    <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
                       {totals.byGroup.Wants <= totals.available * 0.3
                         ? "Wants are under control — you’ll feel less guilt spending."
                         : "Wants are heavy. Try trimming one subscription or capping dining for a month."}
@@ -661,10 +687,10 @@ export default function AdvancedBudgetPlanner() {
                   </div>
 
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                    <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                       Cash flow
                     </p>
-                    <p className="mt-1 text-sm text-slate-700 dark:text-purple-200">
+                    <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-200">
                       {totals.remaining >= 0
                         ? `You still have ${money(totals.remaining)} unassigned. Give it a job: emergency fund, sinking fund, or debt.`
                         : `You’re over by ${money(Math.abs(totals.remaining))}. Cut Wants first, then renegotiate Needs.`}
@@ -674,14 +700,14 @@ export default function AdvancedBudgetPlanner() {
               </div>
 
               <div
-                className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg"
+                className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40"
                 data-tour="budget-sinking"
               >
-                <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
-                  <PiggyBank className="h-4 w-4 text-amber-500" />
+                <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <PiggyBank className="h-4 w-4 text-zinc-700 dark:text-zinc-300" />
                   Sinking funds (quick idea)
                 </p>
-                <p className="mt-2 text-sm text-slate-700 dark:text-purple-200">
+                <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-200">
                   Annual bill? Divide by 12 and add it as a Savings item so it never surprises you.
                 </p>
                 <div className="mt-4 grid grid-cols-2 gap-2">
@@ -705,10 +731,10 @@ export default function AdvancedBudgetPlanner() {
                           },
                         ])
                       }
-                      className="text-left rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white dark:bg-dark-900/40 p-3 hover:border-purple-300 dark:hover:border-purple-500/50 transition-colors"
+                      className="text-left rounded-2xl border border-zinc-200 bg-white p-3 hover:bg-zinc-50 transition-colors dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900/40"
                     >
-                      <p className="text-sm font-bold text-slate-900 dark:text-purple-100">{x.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-purple-300">
+                      <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{x.name}</p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
                         ~{money(Math.round(x.yearly / 12))}/mo
                       </p>
                     </button>

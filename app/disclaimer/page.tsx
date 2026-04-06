@@ -10,17 +10,19 @@ import {
   Lock,
   CheckCircle,
   Info,
-  ExternalLink,
   Calendar,
   Building,
   Phone,
+  Mail,
+  ChevronRight,
 } from "lucide-react";
 import { absoluteUrl } from "../lib/seo";
 
 const canonical = absoluteUrl("/disclaimer");
+const LAST_UPDATED = "March 9, 2026";
 
 export const metadata: Metadata = {
-  title: { absolute: "FactsDeck | Disclaimer" },
+  title: { absolute: "Disclaimer | Facts Deck" },
   description:
     "Important legal information for Facts Deck: educational content only, no personalized advice, limitations of liability, affiliate disclosures, and how this relates to our editorial standards.",
   keywords: [
@@ -32,7 +34,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical },
   openGraph: {
-    title: "FactsDeck | Disclaimer",
+    title: "Disclaimer | Facts Deck",
     description:
       "Read Facts Deck’s disclaimer: general education only, risks, third-party links, and affiliate transparency.",
     url: canonical,
@@ -42,7 +44,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "FactsDeck | Disclaimer",
+    title: "Disclaimer | Facts Deck",
     description: "Educational use only, risk warnings, and legal limitations for Facts Deck.",
   },
   robots: { index: true, follow: true },
@@ -54,28 +56,24 @@ const disclaimerSections = [
     title: "Educational Content Only",
     content:
       "The information on Facts Deck is for general education and information only—the same scope described in our About page under “No Individual Investment Advice.” It is not personalized financial, investment, tax, or legal advice. Consult a qualified professional who knows your situation before you act.",
-    color: "from-blue-500 to-blue-600",
   },
   {
     icon: Scale,
     title: "No Professional Relationship",
     content:
       "Reading our content or using our tools does not create a professional relationship between you and Facts Deck or any of our contributors. We are not acting as your financial advisor, investment advisor, or fiduciary. Any decisions you make based on our content are your sole responsibility.",
-    color: "from-purple-500 to-purple-600",
   },
   {
     icon: AlertTriangle,
     title: "Investment Risk Warning",
     content:
       "All investments carry risk, including the potential loss of principal. Past performance does not guarantee future results. The value of investments can go down as well as up, and you may not get back the amount you originally invested. Before making any investment decisions, you should carefully consider your financial situation, investment objectives, and risk tolerance.",
-    color: "from-red-500 to-red-600",
   },
   {
     icon: Eye,
     title: "Accuracy and Timeliness",
     content:
       "While we strive to provide accurate and up-to-date information, we cannot guarantee the completeness, accuracy, or timeliness of all content. Financial markets and regulations change rapidly, and information that was accurate when published may become outdated. Always verify information with current sources.",
-    color: "from-emerald-500 to-emerald-600",
   },
 ];
 
@@ -129,216 +127,358 @@ const complianceInfo = [
   },
 ];
 
+const cardSurface =
+  "rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80";
+
+const iconWrap =
+  "inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-orange-200/90 bg-orange-50 text-blue-700 shadow-sm dark:border-emerald-800/70 dark:bg-emerald-950/50 dark:text-cyan-300";
+
+function SectionHeading({
+  kicker,
+  title,
+  description,
+}: {
+  kicker: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="mb-12 max-w-3xl">
+      <p className="text-xs font-semibold tracking-widest text-orange-800/80 dark:text-cyan-400/90">{kicker}</p>
+      <div className="mt-3">
+        <div>
+          <h2 className="font-display text-3xl font-bold tracking-tight text-zinc-900 md:text-4xl dark:text-zinc-100">
+            {title}
+          </h2>
+          <p className="mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">{description}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DisclaimerPage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-dark-950">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-purple-600 via-purple-700 to-amber-800 dark:from-dark-900 dark:via-dark-850 dark:to-dark-900 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent" />
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-10 left-10 w-72 h-72 bg-purple-400/20 dark:bg-purple-400/30 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-purple-400/20 dark:bg-amber-400/30 rounded-full blur-3xl" />
-        </div>
+    <div className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      <section className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <Link
+              href="/"
+              className="inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+            >
+              <ArrowLeft className="h-4 w-4 shrink-0" />
+              Back to home
+            </Link>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <Link
-            href="/"
-            className="inline-flex items-center glass-effect text-white px-6 py-3 rounded-xl font-bold hover:bg-white/20 transition-all duration-300 mb-8"
-          >
-            <ArrowLeft className="mr-2 h-5 w-5" />
-            Back
-          </Link>
-
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="flex items-center justify-center space-x-2 mb-6">
-              <Shield className="h-6 w-6 text-amber-400" />
-              <span className="text-purple-100 dark:text-purple-200 text-sm font-medium">Legal Protection • Transparency • Compliance</span>
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
+              <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200">
+                <Calendar className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-emerald-400" />
+                Updated {LAST_UPDATED}
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                <Shield className="h-3.5 w-3.5 shrink-0 text-orange-600 dark:text-cyan-400" />
+                Educational use only
+              </span>
             </div>
+          </div>
 
-            <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-balance">
-              Legal <span className="gradient-text">Disclaimer</span>
-            </h1>
+          <div className="mt-10 grid gap-10 lg:grid-cols-12 lg:items-end">
+            <div className="lg:col-span-7">
+              <p className="text-xs font-semibold tracking-widest text-orange-800/80 dark:text-cyan-400/90">
+                LEGAL &amp; DISCLOSURES
+              </p>
+              <h1 className="mt-3 font-display text-4xl font-bold leading-[1.08] text-balance sm:text-5xl md:text-6xl">
+                <span className="text-blue-800 dark:text-emerald-300">Legal</span>{" "}
+                <span className="text-orange-600 dark:text-cyan-400">Disclaimer</span>
+              </h1>
+              <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-600 sm:text-lg dark:text-zinc-300">
+                How <span className="font-medium text-zinc-800 dark:text-zinc-200">Facts Deck</span> scopes its content and
+                tools: limitations, risks, and transparency—so you know what this site is, and isn&apos;t.
+              </p>
 
-            <p className="text-xl text-purple-100 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto mb-8">
-              Important legal information about the use of Facts Deck&apos;s content, tools, and services. Please read carefully before using our platform.
-            </p>
-
-            <div className="bg-amber-500/20 dark:bg-amber-500/20 border border-amber-400/30 dark:border-amber-400/30 rounded-xl p-6 backdrop-blur-sm">
-              <div className="flex items-center justify-center space-x-3 mb-4">
-                <AlertTriangle className="h-6 w-6 text-amber-400" />
-                <span className="font-bold text-lg">Important Notice</span>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Link
+                  href="#key-disclaimers"
+                  className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                >
+                  Key disclaimers
+                </Link>
+                <Link
+                  href="#legal-terms"
+                  className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/40 dark:hover:text-cyan-300"
+                >
+                  Legal terms
+                </Link>
+                <Link
+                  href="#risk"
+                  className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/40 dark:hover:text-cyan-300"
+                >
+                  Risk disclosure
+                </Link>
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 shadow-sm transition-colors hover:border-zinc-300 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-cyan-300"
+                >
+                  Contact us
+                </Link>
               </div>
-              <p className="text-amber-100 dark:text-amber-100">This disclaimer was last updated on March 9, 2026. By using Facts Deck, you agree to these terms.</p>
+
+              <p className="mt-6 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                Editorial standards and affiliate transparency: see{" "}
+                <Link href="/about" className="font-medium text-blue-800 underline-offset-4 hover:underline dark:text-cyan-300">
+                  About
+                </Link>
+                . Data practices:{" "}
+                <Link href="/privacy" className="font-medium text-blue-800 underline-offset-4 hover:underline dark:text-cyan-300">
+                  Privacy Policy
+                </Link>
+                .
+              </p>
             </div>
+
+            <aside className="lg:col-span-5">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/35">
+                <p className="text-xs font-semibold tracking-widest text-orange-800/90 dark:text-cyan-400/90">
+                  AT A GLANCE
+                </p>
+                <ul className="mt-4 space-y-3 text-sm text-zinc-700 dark:text-zinc-300">
+                  <li className="flex gap-3">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600 dark:bg-emerald-400" />
+                    General education—not personalized advice or a client relationship.
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500 dark:bg-cyan-400" />
+                    Markets and rules change; verify material facts with primary sources.
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600 dark:bg-emerald-400" />
+                    By using the site, you agree to this disclaimer (see full terms below).
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-5 text-sm text-zinc-700 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                <div className="flex items-start gap-3">
+                  <div className={iconWrap}>
+                    <AlertTriangle className="h-5 w-5" aria-hidden />
+                  </div>
+                  <p>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">Important:</span> Using Facts Deck means
+                    you&apos;ve read and accept this page. Last updated {LAST_UPDATED}.
+                  </p>
+                </div>
+              </div>
+            </aside>
           </div>
         </div>
       </section>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {/* Key Disclaimers */}
-        <section className="mb-20">
-          <div className="text-center mb-16">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-slate-900 dark:text-purple-200 mb-6">Key Disclaimers</h2>
-            <p className="text-xl text-slate-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-              Essential information about the nature and limitations of our content and services.
-            </p>
-          </div>
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <section id="key-disclaimers" className="mb-20 scroll-mt-24">
+          <SectionHeading
+            kicker="SCOPE"
+            title="Key disclaimers"
+            description="Essential information about the nature and limitations of our content, tools, and your relationship with Facts Deck."
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {disclaimerSections.map((section, index) => (
-              <div
-                key={index}
-                className="group bg-white dark:bg-dark-900/50 dark:border-purple-500/30 rounded-2xl p-8 shadow-lg border border-slate-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-2"
-              >
-                <div className={`w-16 h-16 bg-gradient-to-br ${section.color} rounded-2xl flex items-center justify-center mb-6 shadow-lg`}>
-                  <section.icon className="h-8 w-8 text-white" />
+              <div key={index} className={cardSurface}>
+                <div className={`${iconWrap} mb-6`}>
+                  <section.icon className="h-6 w-6" aria-hidden />
                 </div>
-                <h3 className="font-display font-bold text-2xl text-slate-900 dark:text-purple-200 mb-4 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
+                <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-100 md:text-2xl">
                   {section.title}
                 </h3>
-                <p className="text-slate-600 dark:text-purple-200 leading-relaxed text-lg">{section.content}</p>
+                <p className="mt-3 leading-relaxed text-zinc-600 dark:text-zinc-300">{section.content}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Legal Terms */}
-        <section className="mb-20">
-          <div className="text-center mb-16">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-slate-900 dark:text-purple-200 mb-6">Legal Terms and Conditions</h2>
-            <p className="text-xl text-slate-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-              Detailed legal terms governing your use of Facts Deck&apos;s platform and services.
-            </p>
-          </div>
+        <section id="legal-terms" className="mb-20 scroll-mt-24">
+          <SectionHeading
+            kicker="TERMS"
+            title="Legal terms and conditions"
+            description="Detailed terms governing use of Facts Deck’s website, content, and tools. Read alongside our Privacy Policy where personal data is involved."
+          />
 
-          <div className="space-y-8">
+          <div className="space-y-4">
             {legalSections.map((section, index) => (
-              <div
-                key={index}
-                className="group bg-white dark:bg-dark-900/50 dark:border-purple-500/30 rounded-2xl p-8 shadow-lg border border-slate-200 transition-all duration-300 hover:-translate-y-1"
-              >
-                <h3 className="font-display font-bold text-2xl text-slate-900 dark:text-purple-200 mb-6 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
+              <div key={index} className={cardSurface}>
+                <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-100 md:text-2xl">
                   {section.title}
                 </h3>
-                <p className="text-slate-600 dark:text-purple-200 leading-relaxed text-lg">{section.content}</p>
+                <p className="mt-4 leading-relaxed text-zinc-600 dark:text-zinc-300">{section.content}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Compliance & Standards */}
-        <section className="mb-20">
-          <div className="text-center mb-16">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-slate-900 dark:text-purple-200 mb-6">
-              Compliance &amp; standards
-            </h2>
-            <p className="text-xl text-slate-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-              How this disclaimer fits with our About page policies and your Privacy Policy rights.
-            </p>
-          </div>
+        <section className="mb-20 rounded-2xl border border-zinc-200 bg-zinc-50/90 px-4 py-14 sm:px-8 lg:px-10 dark:border-zinc-800 dark:bg-zinc-900/25">
+          <SectionHeading
+            kicker="RELATED POLICIES"
+            title="Compliance & standards"
+            description="How this disclaimer connects to our Privacy Policy, About page, and periodic review—not a substitute for jurisdiction-specific legal advice."
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {complianceInfo.map((item, index) => (
               <div
                 key={index}
-                className="group text-center bg-white dark:bg-dark-900/50 dark:border-purple-500/30 rounded-2xl p-6 shadow-lg border border-slate-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-2"
+                className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <item.icon className="h-8 w-8 text-white" />
+                <div className={`${iconWrap} mx-auto mb-5`}>
+                  <item.icon className="h-6 w-6" aria-hidden />
                 </div>
-                <h3 className="font-display font-bold text-xl text-slate-900 dark:text-purple-200 mb-4 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
-                  {item.title}
-                </h3>
-                <p className="text-slate-600 dark:text-purple-200 leading-relaxed">{item.description}</p>
+                <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-100">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">{item.description}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Investment Risk Disclosure */}
-        <section className="mb-20">
-          <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-3xl p-8 md:p-12 border border-red-200 dark:border-red-500/30">
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <AlertTriangle className="h-10 w-10 text-white" />
+        <section id="risk" className="mb-20 scroll-mt-24">
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-8 md:p-12 dark:border-zinc-800 dark:bg-zinc-900/35">
+            <div className="mx-auto mb-10 max-w-2xl text-center">
+              <div className={`${iconWrap} mx-auto mb-6`}>
+                <AlertTriangle className="h-7 w-7" aria-hidden />
               </div>
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-red-700 dark:text-red-400 mb-6">Investment Risk Disclosure</h2>
+              <p className="text-xs font-semibold tracking-widest text-orange-800/80 dark:text-cyan-400/90">RISK NOTICE</p>
+              <h2 className="mt-2 font-display text-3xl font-bold text-zinc-900 md:text-4xl dark:text-zinc-100">
+                Investment risk disclosure
+              </h2>
+              <p className="mt-3 text-zinc-600 dark:text-zinc-300">
+                General notice only—not personalized advice tailored to your situation.
+              </p>
             </div>
 
-            <div className="max-w-4xl mx-auto space-y-6 text-red-700 dark:text-red-300">
-              <p className="text-lg leading-relaxed">
-                <strong>All investments involve risk.</strong> The value of investments can fluctuate, and past performance is not indicative of future results. You may lose some or all of your invested capital.
+            <div className="mx-auto max-w-5xl space-y-6 text-zinc-700 dark:text-zinc-200">
+              <p className="text-center text-lg leading-relaxed md:text-left">
+                <strong className="text-zinc-900 dark:text-zinc-100">All investments involve risk.</strong> Values can
+                fluctuate; past performance does not guarantee future results. You may lose some or all of your capital.
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white/50 dark:bg-red-900/20 p-6 rounded-2xl">
-                  <h3 className="font-bold text-xl text-slate-900 dark:text-red-200 mb-4">Market Risks</h3>
-                  <ul className="space-y-2 text-sm text-red-700 dark:text-red-300">
-                    <li>• Market volatility and price fluctuations</li>
-                    <li>• Economic and political factors</li>
-                    <li>• Interest rate changes</li>
-                    <li>• Currency exchange rate risks</li>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                  <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-100">Market risks</h3>
+                  <ul className="mt-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
+                    <li className="flex gap-2">
+                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-orange-500 dark:bg-cyan-400" />
+                      Market volatility and price fluctuations
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-orange-500 dark:bg-cyan-400" />
+                      Economic and political factors
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-orange-500 dark:bg-cyan-400" />
+                      Interest rate changes
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-orange-500 dark:bg-cyan-400" />
+                      Currency exchange rate risks
+                    </li>
                   </ul>
                 </div>
 
-                <div className="bg-white/50 dark:bg-red-900/20 p-6 rounded-2xl">
-                  <h3 className="font-bold text-xl text-slate-900 dark:text-red-200 mb-4">Investment Risks</h3>
-                  <ul className="space-y-2 text-sm text-red-700 dark:text-red-300">
-                    <li>• Company-specific risks</li>
-                    <li>• Sector and industry risks</li>
-                    <li>• Liquidity risks</li>
-                    <li>• Inflation and purchasing power risks</li>
+                <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                  <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-100">Investment risks</h3>
+                  <ul className="mt-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
+                    <li className="flex gap-2">
+                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-orange-500 dark:bg-cyan-400" />
+                      Company-specific risks
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-orange-500 dark:bg-cyan-400" />
+                      Sector and industry risks
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-orange-500 dark:bg-cyan-400" />
+                      Liquidity risks
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-orange-500 dark:bg-cyan-400" />
+                      Inflation and purchasing power risks
+                    </li>
                   </ul>
                 </div>
               </div>
 
-              <div className="bg-red-100 dark:bg-red-900/30 p-6 rounded-2xl border border-red-300 dark:border-red-500/50">
-                <p className="font-bold text-lg text-red-800 dark:text-red-200 mb-2">Important Reminder:</p>
-                <p className="text-red-700 dark:text-red-300">
-                  Before making any investment decisions, carefully consider your financial situation, investment objectives, and risk tolerance. Consult with a qualified financial advisor if you need personalized advice.
+              <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                <p className="font-semibold text-zinc-900 dark:text-zinc-100">Reminder</p>
+                <p className="mt-2 text-zinc-600 dark:text-zinc-300">
+                  Before investing, consider your objectives, horizon, and risk tolerance. Seek a qualified professional when
+                  you need advice tailored to you.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Contact Information */}
-        <section className="bg-gradient-to-br from-purple-50 to-white dark:from-dark-900 dark:to-dark-850/50 rounded-3xl p-8 md:p-12 text-center border border-purple-100 dark:border-purple-500/30">
-          <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-8">
-            <Info className="h-10 w-10 text-white" />
+        <section className="rounded-2xl border border-zinc-200 bg-white p-8 text-center shadow-sm md:p-12 dark:border-zinc-800 dark:bg-zinc-950">
+          <div className={`${iconWrap} mx-auto mb-6`}>
+            <Info className="h-7 w-7" aria-hidden />
           </div>
-          <h2 className="font-display text-3xl font-bold text-slate-900 dark:text-purple-200 mb-6">Questions About This Disclaimer?</h2>
-          <p className="text-xl text-slate-600 dark:text-purple-200 mb-8 max-w-2xl mx-auto">
-            If you have any questions about this disclaimer or need clarification on any terms, please don&apos;t hesitate to contact our legal team.
+          <h2 className="font-display text-3xl font-bold text-zinc-900 dark:text-zinc-100">Questions about this disclaimer?</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-lg text-zinc-600 dark:text-zinc-300">
+            For clarification on these terms or how they apply to your use of the site, reach out—we&apos;ll respond as we
+            can, without providing individualized legal or investment advice here.
           </p>
-          <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center mb-8">
+
+          <div className="mx-auto mt-10 flex max-w-2xl flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
             <Link
               href="/contact"
-              className="inline-flex items-center justify-center bg-gradient-to-r from-purple-600 to-purple-700 text-white px-8 py-4 rounded-xl font-bold hover:from-purple-700 hover:to-purple-800 transition-all duration-300"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
             >
-              <Phone className="mr-2 h-5 w-5" />
-              Contact Us
+              <Phone className="h-4 w-4" aria-hidden />
+              Contact us
             </Link>
             <Link
               href="/privacy"
-              className="inline-flex items-center justify-center border-2 border-purple-600 dark:border-purple-400 text-purple-600 dark:text-purple-400 px-8 py-4 rounded-xl font-bold hover:bg-purple-600 hover:text-white dark:hover:bg-emerald-600 dark:hover:border-emerald-600 dark:hover:text-white transition-all duration-300"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-6 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/40 dark:hover:text-cyan-300"
             >
-              <ExternalLink className="mr-2 h-5 w-5" />
-              View Privacy Policy
+              <ChevronRight className="h-4 w-4" aria-hidden />
+              Privacy Policy
             </Link>
             <Link
               href="/about"
-              className="inline-flex items-center justify-center border-2 border-slate-300 dark:border-purple-500/50 text-slate-700 dark:text-purple-200 px-8 py-4 rounded-xl font-bold hover:bg-slate-100 dark:hover:bg-purple-900/40 transition-all duration-300"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-6 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/40 dark:hover:text-cyan-300"
             >
-              <ExternalLink className="mr-2 h-5 w-5" />
+              <ChevronRight className="h-4 w-4" aria-hidden />
               Editorial standards (About)
             </Link>
           </div>
-          <div className="text-sm text-slate-500 dark:text-purple-300 space-y-2">
-            <p><strong>Last Updated:</strong> March 9, 2026</p>
-            <p><strong>Effective Date:</strong> March 9, 2026</p>
-            <p><strong>Version:</strong> 2.1</p>
+
+          <div className="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+              <Mail className="mx-auto mb-3 h-6 w-6 text-blue-600 dark:text-emerald-400" aria-hidden />
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Email</h3>
+              <p className="mt-1 font-medium text-zinc-800 dark:text-zinc-200">legal@factsdeck.com</p>
+            </div>
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+              <Phone className="mx-auto mb-3 h-6 w-6 text-orange-600 dark:text-cyan-400" aria-hidden />
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Phone</h3>
+              <p className="mt-1 font-medium text-zinc-800 dark:text-zinc-200">+1 (555) 123-LEGAL</p>
+            </div>
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+              <Building className="mx-auto mb-3 h-6 w-6 text-blue-600 dark:text-emerald-400" aria-hidden />
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Office</h3>
+              <p className="mt-1 font-medium text-zinc-800 dark:text-zinc-200">Legal &amp; Compliance, NY</p>
+            </div>
+          </div>
+
+          <div className="mt-10 space-y-1 text-sm text-zinc-500 dark:text-zinc-400">
+            <p>
+              <span className="font-semibold text-zinc-700 dark:text-zinc-300">Last updated:</span> {LAST_UPDATED}
+            </p>
+            <p>
+              <span className="font-semibold text-zinc-700 dark:text-zinc-300">Effective:</span> {LAST_UPDATED}
+            </p>
+            <p>
+              <span className="font-semibold text-zinc-700 dark:text-zinc-300">Version:</span> 2.1
+            </p>
           </div>
         </section>
       </div>

@@ -18,13 +18,46 @@ import {
   Trash2,
 } from "lucide-react";
 import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
+import { FACTS_DECK_RETIREMENT_CALCULATOR } from "./retirement/retirement-journey-types";
+import ToolDashboardTestCta from "./ToolDashboardTestCta";
+import {
+  ToolDashboardHeroBackdrop,
+  tdGhostBtn,
+  tdHero,
+  tdHeroInner,
+  tdIconTile,
+  tdNavLink,
+  tdPage,
+  tdPanelLg,
+  tdStatCard,
+} from "./tool-dashboard-ui";
 
-type Account = {
+export type RetirementCalculatorAccount = {
   id: string;
   name: string;
   balance: number;
   contributionMonthly: number;
   employerMatchMonthly: number;
+};
+
+type Account = RetirementCalculatorAccount;
+
+export type RetirementCalculatorInitialValues = {
+  currentAge?: number;
+  retireAge?: number;
+  lifeExpectancy?: number;
+  inflation?: number;
+  returnNominal?: number;
+  withdrawalRate?: number;
+  annualSpendingToday?: number;
+  socialSecurityAnnualAtRetire?: number;
+  oneTimeAtRetire?: number;
+  accounts?: RetirementCalculatorAccount[];
+};
+
+type AdvancedRetirementCalculatorProps = {
+  initialValues?: RetirementCalculatorInitialValues;
+  deferWalkthrough?: boolean;
 };
 
 function uid() {
@@ -52,27 +85,38 @@ type ProjectionRow = {
   balanceReal: number;
 };
 
-export default function AdvancedRetirementCalculator() {
-  const [tourOpen, setTourOpen] = useState(false);
-  const TOUR_ID = "retirement-calculator";
-
-  const [currentAge, setCurrentAge] = useState(32);
-  const [retireAge, setRetireAge] = useState(60);
-  const [lifeExpectancy, setLifeExpectancy] = useState(92);
-
-  const [inflation, setInflation] = useState(0.025);
-  const [returnNominal, setReturnNominal] = useState(0.07);
-  const [withdrawalRate, setWithdrawalRate] = useState(0.04);
-
-  const [annualSpendingToday, setAnnualSpendingToday] = useState(72000);
-  const [socialSecurityAnnualAtRetire, setSocialSecurityAnnualAtRetire] = useState(24000);
-  const [oneTimeAtRetire, setOneTimeAtRetire] = useState(0);
-
-  const [accounts, setAccounts] = useState<Account[]>([
+function defaultRetirementAccounts(): Account[] {
+  return [
     { id: uid(), name: "401(k)", balance: 52000, contributionMonthly: 650, employerMatchMonthly: 250 },
     { id: uid(), name: "Roth IRA", balance: 14000, contributionMonthly: 250, employerMatchMonthly: 0 },
     { id: uid(), name: "Brokerage", balance: 8000, contributionMonthly: 200, employerMatchMonthly: 0 },
-  ]);
+  ];
+}
+
+export default function AdvancedRetirementCalculator({
+  initialValues,
+  deferWalkthrough = false,
+}: AdvancedRetirementCalculatorProps = {}) {
+  const [tourOpen, setTourOpen] = useState(false);
+  const TOUR_ID = "retirement-calculator";
+
+  const [currentAge, setCurrentAge] = useState(initialValues?.currentAge ?? 32);
+  const [retireAge, setRetireAge] = useState(initialValues?.retireAge ?? 60);
+  const [lifeExpectancy, setLifeExpectancy] = useState(initialValues?.lifeExpectancy ?? 92);
+
+  const [inflation, setInflation] = useState(initialValues?.inflation ?? 0.025);
+  const [returnNominal, setReturnNominal] = useState(initialValues?.returnNominal ?? 0.07);
+  const [withdrawalRate, setWithdrawalRate] = useState(initialValues?.withdrawalRate ?? 0.04);
+
+  const [annualSpendingToday, setAnnualSpendingToday] = useState(initialValues?.annualSpendingToday ?? 72000);
+  const [socialSecurityAnnualAtRetire, setSocialSecurityAnnualAtRetire] = useState(
+    initialValues?.socialSecurityAnnualAtRetire ?? 24000
+  );
+  const [oneTimeAtRetire, setOneTimeAtRetire] = useState(initialValues?.oneTimeAtRetire ?? 0);
+
+  const [accounts, setAccounts] = useState<Account[]>(() =>
+    initialValues?.accounts && initialValues.accounts.length > 0 ? initialValues.accounts : defaultRetirementAccounts()
+  );
 
   const [copied, setCopied] = useState(false);
 
@@ -234,26 +278,25 @@ export default function AdvancedRetirementCalculator() {
   };
 
   useEffect(() => {
+    if (deferWalkthrough) return;
     if (hasCompletedWalkthrough(TOUR_ID)) return;
     const t = window.setTimeout(() => setTourOpen(true), 450);
     return () => window.clearTimeout(t);
-  }, []);
+  }, [deferWalkthrough]);
 
   const walkthroughSteps: WalkthroughStep[] = useMemo(
     () => [
       {
         id: "welcome",
         placement: "center",
-        title: "Welcome — let’s map your retirement plan",
+        title: "Welcome to the workspace",
         body: (
           <div className="space-y-3">
             <p>
-              This tool estimates a retirement target (your <strong>FI number</strong>) and projects your accounts to
-              your retirement age. It’s meant to be simple, clear, and easy to tweak.
+              If you completed the <strong>Facts Deck Retirement Test</strong>, your ages, spending, portfolio, and
+              assumptions are pre-filled. This tour walks through the main panels.
             </p>
-            <p>
-              You can <strong>skip anytime</strong>. To replay later, use the <strong>Walk-through</strong> button.
-            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">Replay anytime from the Walk-through button.</p>
           </div>
         ),
       },
@@ -407,8 +450,8 @@ export default function AdvancedRetirementCalculator() {
     <span
       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
         ok
-          ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200"
-          : "bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"
+          ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100"
+          : "bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100"
       }`}
     >
       {ok ? yes : no}
@@ -416,7 +459,7 @@ export default function AdvancedRetirementCalculator() {
   );
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-dark-950 dark:to-dark-900">
+    <div className={tdPage}>
       <ToolWalkthrough
         id={TOUR_ID}
         open={tourOpen}
@@ -430,24 +473,16 @@ export default function AdvancedRetirementCalculator() {
         }}
         steps={walkthroughSteps}
       />
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/15 via-transparent to-purple-600/10 dark:from-indigo-900/35 dark:to-purple-900/25" />
-        <div className="absolute top-16 left-10 w-72 h-72 bg-indigo-400/20 dark:bg-indigo-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-16 right-10 w-80 h-80 bg-purple-400/20 dark:bg-purple-500/10 rounded-full blur-3xl" />
+      <section className={tdHero}>
+        <ToolDashboardHeroBackdrop />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+        <div className={tdHeroInner}>
           <div className="flex items-center justify-between gap-3">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-indigo-700 dark:text-purple-200 font-semibold hover:text-indigo-800 dark:hover:text-emerald-300 transition-colors"
-            >
+            <Link href="/" className={tdNavLink}>
               <ArrowLeft className="h-4 w-4" />
               Back to Home
             </Link>
-            <Link
-              href="/post?category=Retirement&q=401k"
-              className="inline-flex items-center gap-2 text-slate-700 dark:text-purple-200 font-semibold hover:text-indigo-800 dark:hover:text-emerald-300 transition-colors"
-            >
+            <Link href="/post?category=Retirement&q=401k" className={tdNavLink}>
               Read retirement guides
               <ChevronRight className="h-4 w-4" />
             </Link>
@@ -456,14 +491,14 @@ export default function AdvancedRetirementCalculator() {
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             <div className="lg:col-span-2">
               <div className="flex items-center gap-3">
-                <span className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-xl">
-                  <Target className="h-6 w-6 text-white" />
+                <span className={tdIconTile}>
+                  <Target className="h-6 w-6" />
                 </span>
                 <div>
-                  <h1 className="font-display text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-purple-100">
-                    Advanced Retirement Calculator
+                  <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    {FACTS_DECK_RETIREMENT_CALCULATOR}
                   </h1>
-                  <p className="text-slate-600 dark:text-purple-200/80 mt-1">
+                  <p className="text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
                     Plan your “work optional” date with a clear FI number, realistic inflation, and employer match.
                   </p>
                 </div>
@@ -473,7 +508,7 @@ export default function AdvancedRetirementCalculator() {
                 <button
                   type="button"
                   onClick={() => setTourOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/80 dark:bg-dark-900/40 border border-slate-200 dark:border-purple-500/20 text-slate-900 dark:text-purple-100 font-bold hover:bg-white dark:hover:bg-purple-900/20 transition-colors"
+                  className={tdGhostBtn}
                   aria-label="Open retirement calculator walk-through"
                 >
                   <BookOpen className="h-4 w-4" />
@@ -482,61 +517,58 @@ export default function AdvancedRetirementCalculator() {
               </div>
 
               <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3" data-tour="retire-top-cards">
-                <div className="rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-5">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                <div className={tdStatCard}>
+                  <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     FI number at retire
                   </p>
-                  <p className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-purple-100">
+                  <p className="mt-1 text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">
                     {money(fiNumberAtRetire)}
                   </p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-purple-200/80">
+                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
                     Net need {money(netSpendingNeedAtRetire)}/yr @ {pct(withdrawalRate)}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-5">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                <div className={tdStatCard}>
+                  <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Projected at {retireAge}
                   </p>
-                  <p className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-purple-100">
+                  <p className="mt-1 text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">
                     {money(balanceAtRetire)}
                   </p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-purple-200/80">
+                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
                     Starting {money(totals.startBalance)} + {money((totals.contribMonthly + totals.matchMonthly) * 12)}/yr
                   </p>
                 </div>
-                <div className="rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-5">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                <div className={tdStatCard}>
+                  <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Status
                   </p>
                   <div className="mt-2 flex items-center gap-2">
                     {pill(isOnTrack, "On track", "Gap")}
                     {suggestedRetireAge ? (
-                      <span className="text-xs text-slate-600 dark:text-purple-200/80">
+                      <span className="text-xs text-zinc-600 dark:text-zinc-300">
                         Earliest: {suggestedRetireAge.age} ({suggestedRetireAge.year})
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-600 dark:text-purple-200/80">Not within 70 years</span>
+                      <span className="text-xs text-zinc-600 dark:text-zinc-300">Not within 70 years</span>
                     )}
                   </div>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-purple-200/80">
+                  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
                     {yearsToRetire} yrs to retire · {yearsInRetirement} yrs in retirement
                   </p>
                 </div>
               </div>
             </div>
 
-            <div
-              className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg"
-              data-tour="retire-assumptions"
-            >
-              <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-amber-500" />
+            <div className={tdPanelLg} data-tour="retire-assumptions">
+              <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-zinc-900 dark:text-zinc-100" />
                 Assumptions
               </p>
 
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                  <span className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Current age
                   </span>
                   <input
@@ -545,11 +577,11 @@ export default function AdvancedRetirementCalculator() {
                     max={100}
                     value={currentAge}
                     onChange={(e) => setCurrentAge(Number(e.target.value))}
-                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                  <span className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Retire age
                   </span>
                   <input
@@ -558,11 +590,11 @@ export default function AdvancedRetirementCalculator() {
                     max={100}
                     value={retireAge}
                     onChange={(e) => setRetireAge(Number(e.target.value))}
-                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                  <span className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Inflation
                   </span>
                   <input
@@ -570,11 +602,11 @@ export default function AdvancedRetirementCalculator() {
                     step={0.1}
                     value={(inflation * 100).toFixed(1)}
                     onChange={(e) => setInflation(Number(e.target.value) / 100)}
-                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                  <span className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Return (nominal)
                   </span>
                   <input
@@ -582,11 +614,11 @@ export default function AdvancedRetirementCalculator() {
                     step={0.1}
                     value={(returnNominal * 100).toFixed(1)}
                     onChange={(e) => setReturnNominal(Number(e.target.value) / 100)}
-                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                  <span className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Withdrawal rate
                   </span>
                   <input
@@ -594,11 +626,11 @@ export default function AdvancedRetirementCalculator() {
                     step={0.1}
                     value={(withdrawalRate * 100).toFixed(1)}
                     onChange={(e) => setWithdrawalRate(Number(e.target.value) / 100)}
-                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                  <span className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Life expectancy
                   </span>
                   <input
@@ -607,13 +639,13 @@ export default function AdvancedRetirementCalculator() {
                     max={120}
                     value={lifeExpectancy}
                     onChange={(e) => setLifeExpectancy(Number(e.target.value))}
-                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                   />
                 </label>
               </div>
 
               <div className="mt-4" data-tour="retire-spending">
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                <label className="block text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                   Annual spending (today’s dollars)
                 </label>
                 <input
@@ -622,17 +654,17 @@ export default function AdvancedRetirementCalculator() {
                   min={0}
                   value={annualSpendingToday}
                   onChange={(e) => setAnnualSpendingToday(Number(e.target.value))}
-                  className="mt-1 w-full px-4 py-2 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="mt-1 w-full px-4 py-2 rounded-2xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                 />
-                <p className="mt-2 text-xs text-slate-500 dark:text-purple-200/70 flex items-start gap-2">
-                  <Shield className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 flex items-start gap-2">
+                  <Shield className="h-4 w-4 text-zinc-900 dark:text-zinc-100 mt-0.5 shrink-0" />
                   We inflate spending to your retirement year, then subtract Social Security (if any).
                 </p>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3" data-tour="retire-social-onetime">
                 <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                  <span className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Social Security (annual)
                   </span>
                   <input
@@ -641,11 +673,11 @@ export default function AdvancedRetirementCalculator() {
                     min={0}
                     value={socialSecurityAnnualAtRetire}
                     onChange={(e) => setSocialSecurityAnnualAtRetire(Number(e.target.value))}
-                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                  <span className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     One-time at retire
                   </span>
                   <input
@@ -654,7 +686,7 @@ export default function AdvancedRetirementCalculator() {
                     min={0}
                     value={oneTimeAtRetire}
                     onChange={(e) => setOneTimeAtRetire(Number(e.target.value))}
-                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="mt-1 w-full px-3 py-2 rounded-2xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                   />
                 </label>
               </div>
@@ -662,36 +694,38 @@ export default function AdvancedRetirementCalculator() {
               <button
                 type="button"
                 onClick={copyJson}
-                className="mt-5 inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900/40 text-slate-900 dark:text-purple-100 font-bold hover:bg-slate-50 dark:hover:bg-purple-900/20 transition-colors"
+                className={`${tdGhostBtn} mt-5 w-full`}
                 data-tour="retire-copy-json"
               >
-                {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                {copied ? <Check className="h-4 w-4 text-zinc-900 dark:text-zinc-100" /> : <Copy className="h-4 w-4" />}
                 {copied ? "Copied JSON" : "Copy JSON"}
               </button>
             </div>
           </div>
 
+          <ToolDashboardTestCta toolSlug="retirement-calculator" testLabel={FACTS_DECK_RETIREMENT_CALCULATOR} />
+
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <section
-              className="lg:col-span-2 rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg"
+              className="lg:col-span-2 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
               data-tour="retire-timeline"
             >
               <div className="flex items-center justify-between gap-3 mb-4">
-                <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-indigo-500" />
+                <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-zinc-900 dark:text-zinc-100" />
                   Timeline (real dollars)
                 </p>
-                <span className="text-xs text-slate-500 dark:text-purple-200/70 flex items-center gap-1.5">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
                   <Calendar className="h-4 w-4" />
                   Through age {retireAge}
                 </span>
               </div>
 
-              <div className="flex items-end gap-1 h-20 rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white dark:bg-dark-900/40 p-3 overflow-hidden">
+              <div className="flex items-end gap-1 h-20 rounded-2xl border border-zinc-200 bg-white p-3 overflow-hidden dark:border-zinc-800 dark:bg-zinc-950">
                 {miniBars.map((h, i) => (
                   <div
                     key={i}
-                    className="flex-1 rounded-md bg-gradient-to-t from-indigo-600 to-purple-500/70"
+                    className="flex-1 rounded-md bg-zinc-900 dark:bg-zinc-100"
                     style={{ height: `${Math.max(4, h)}%` }}
                     title={`Age ${projection[i].age}: ${money(projection[i].balanceReal)} (real)`}
                   />
@@ -699,25 +733,25 @@ export default function AdvancedRetirementCalculator() {
               </div>
 
               <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4" data-tour="retire-retirement-summary">
-                <div className="rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white dark:bg-dark-900/40 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                  <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     At retirement (nominal)
                   </p>
-                  <p className="mt-1 text-xl font-extrabold text-slate-900 dark:text-purple-100">
+                  <p className="mt-1 text-xl font-extrabold text-zinc-900 dark:text-zinc-100">
                     Spend {money(spendAtRetireNominal)}/yr
                   </p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-purple-200/80">
+                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
                     After Social Security: {money(netSpendingNeedAtRetire)}/yr
                   </p>
                 </div>
-                <div className="rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white dark:bg-dark-900/40 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                  <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Safe withdrawal
                   </p>
-                  <p className="mt-1 text-xl font-extrabold text-slate-900 dark:text-purple-100">
+                  <p className="mt-1 text-xl font-extrabold text-zinc-900 dark:text-zinc-100">
                     {money(fiNumberAtRetire)} target
                   </p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-purple-200/80">
+                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
                     Rule of thumb: portfolio × {pct(withdrawalRate)} covers net needs
                   </p>
                 </div>
@@ -726,14 +760,14 @@ export default function AdvancedRetirementCalculator() {
 
             <aside className="space-y-6">
               <section
-                className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/90 dark:bg-dark-800/40 p-6 shadow-lg"
+                className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
                 data-tour="retire-accounts"
               >
-                <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
-                  <PiggyBank className="h-4 w-4 text-emerald-500" />
+                <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <PiggyBank className="h-4 w-4 text-zinc-900 dark:text-zinc-100" />
                   Accounts
                 </p>
-                <p className="mt-2 text-sm text-slate-600 dark:text-purple-200/80">
+                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
                   Add accounts, contributions, and employer match. This tool sums everything into one projection.
                 </p>
 
@@ -741,19 +775,19 @@ export default function AdvancedRetirementCalculator() {
                   {accounts.map((a, idx) => (
                     <div
                       key={a.id}
-                      className="rounded-2xl border border-slate-200 dark:border-purple-500/20 bg-white dark:bg-dark-900/40 p-3"
+                      className="rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950"
                       data-tour={idx === 0 ? "retire-account-row" : undefined}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <input
                           value={a.name}
                           onChange={(e) => updateAccount(a.id, { name: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          className="w-full px-3 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                         />
                         <button
                           type="button"
                           onClick={() => removeAccount(a.id)}
-                          className="h-10 w-10 inline-flex items-center justify-center rounded-xl text-rose-600 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                          className="h-10 w-10 inline-flex items-center justify-center rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-colors"
                           aria-label="Remove account"
                           title="Remove"
                         >
@@ -762,7 +796,7 @@ export default function AdvancedRetirementCalculator() {
                       </div>
                       <div className="mt-3 grid grid-cols-3 gap-2">
                         <label className="block">
-                          <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                             Balance
                           </span>
                           <input
@@ -771,11 +805,11 @@ export default function AdvancedRetirementCalculator() {
                             step={500}
                             value={a.balance}
                             onChange={(e) => updateAccount(a.id, { balance: Number(e.target.value) })}
-                            className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-right font-mono"
+                            className="mt-1 w-full px-3 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700 text-right font-mono"
                           />
                         </label>
                         <label className="block">
-                          <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                             Contrib/mo
                           </span>
                           <input
@@ -784,11 +818,11 @@ export default function AdvancedRetirementCalculator() {
                             step={50}
                             value={a.contributionMonthly}
                             onChange={(e) => updateAccount(a.id, { contributionMonthly: Number(e.target.value) })}
-                            className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-right font-mono"
+                            className="mt-1 w-full px-3 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700 text-right font-mono"
                           />
                         </label>
                         <label className="block">
-                          <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-purple-300">
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                             Match/mo
                           </span>
                           <input
@@ -797,7 +831,7 @@ export default function AdvancedRetirementCalculator() {
                             step={50}
                             value={a.employerMatchMonthly}
                             onChange={(e) => updateAccount(a.id, { employerMatchMonthly: Number(e.target.value) })}
-                            className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 text-slate-900 dark:text-purple-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-right font-mono"
+                            className="mt-1 w-full px-3 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700 text-right font-mono"
                           />
                         </label>
                       </div>
@@ -808,7 +842,7 @@ export default function AdvancedRetirementCalculator() {
                 <button
                   type="button"
                   onClick={addAccount}
-                  className="mt-4 inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold hover:from-indigo-700 hover:to-purple-700 transition-colors"
+                  className="mt-4 inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-2xl bg-zinc-900 text-white font-bold hover:bg-zinc-800 transition-colors dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
                   data-tour="retire-add-account"
                 >
                   <Plus className="h-4 w-4" />

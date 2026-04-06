@@ -41,10 +41,10 @@ export function CategoryPills({ categories, variant = "inline", className = "", 
 
   const base =
     variant === "overlay"
-      ? "bg-purple-600/95 text-white border border-white/20"
+      ? "bg-zinc-900/95 text-white border border-white/20"
       : variant === "muted"
-        ? "bg-slate-100 dark:bg-purple-900/40 text-slate-700 dark:text-purple-200"
-        : "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300";
+        ? "bg-zinc-100 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-100"
+        : "bg-zinc-100 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100";
 
   return (
     <span className={`flex flex-wrap items-center gap-1.5 ${className}`}>
@@ -57,7 +57,7 @@ export function CategoryPills({ categories, variant = "inline", className = "", 
         </span>
       ))}
       {rest > 0 && (
-        <span className="text-xs font-medium text-slate-500 dark:text-purple-400">+{rest}</span>
+        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">+{rest}</span>
       )}
     </span>
   );

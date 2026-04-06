@@ -20,6 +20,35 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "../../lib/mortgage-math";
 import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
+import { FACTS_DECK_INVESTMENT_TEST } from "./investment/investment-journey-types";
+import ToolDashboardTestCta from "./ToolDashboardTestCta";
+import {
+  ToolDashboardHeroBackdrop,
+  tdGhostBtn,
+  tdHero,
+  tdHeroInnerNarrow,
+  tdNavLink,
+  tdPage,
+  tdPanel,
+  tdProductPill,
+} from "./tool-dashboard-ui";
+
+export type InvestmentCalculatorInitialValues = {
+  initial?: number;
+  monthly?: number;
+  years?: number;
+  nominal?: number;
+  expenseRatio?: number;
+  inflation?: number;
+  taxOnGains?: number;
+  annualSpend?: number;
+  swr?: number;
+};
+
+type AdvancedInvestmentCalculatorProps = {
+  initialValues?: InvestmentCalculatorInitialValues;
+  deferWalkthrough?: boolean;
+};
 import {
   afterTaxBalance,
   fireNumber,
@@ -60,7 +89,7 @@ function Sparkline({ values }: { values: number[] }) {
   return (
     <svg
       viewBox={`0 0 ${w} ${h}`}
-      className="w-full max-w-sm h-20 text-emerald-500"
+      className="w-full max-w-sm h-20 text-zinc-900 dark:text-zinc-100"
       preserveAspectRatio="none"
       aria-hidden
     >
@@ -76,22 +105,25 @@ function Sparkline({ values }: { values: number[] }) {
   );
 }
 
-export default function AdvancedInvestmentCalculator() {
+export default function AdvancedInvestmentCalculator({
+  initialValues,
+  deferWalkthrough = false,
+}: AdvancedInvestmentCalculatorProps = {}) {
   const [tab, setTab] = useState<Tab>("overview");
   const [tourOpen, setTourOpen] = useState(false);
 
   const TOUR_ID = "investment-calculator";
 
-  const [initial, setInitial] = useState(25_000);
-  const [monthly, setMonthly] = useState(800);
-  const [years, setYears] = useState(25);
-  const [nominal, setNominal] = useState(7);
-  const [expenseRatio, setExpenseRatio] = useState(0.08);
-  const [inflation, setInflation] = useState(2.5);
-  const [taxOnGains, setTaxOnGains] = useState(15);
+  const [initial, setInitial] = useState(() => initialValues?.initial ?? 25_000);
+  const [monthly, setMonthly] = useState(() => initialValues?.monthly ?? 800);
+  const [years, setYears] = useState(() => initialValues?.years ?? 25);
+  const [nominal, setNominal] = useState(() => initialValues?.nominal ?? 7);
+  const [expenseRatio, setExpenseRatio] = useState(() => initialValues?.expenseRatio ?? 0.08);
+  const [inflation, setInflation] = useState(() => initialValues?.inflation ?? 2.5);
+  const [taxOnGains, setTaxOnGains] = useState(() => initialValues?.taxOnGains ?? 15);
 
-  const [annualSpend, setAnnualSpend] = useState(60_000);
-  const [swr, setSwr] = useState(4);
+  const [annualSpend, setAnnualSpend] = useState(() => initialValues?.annualSpend ?? 60_000);
+  const [swr, setSwr] = useState(() => initialValues?.swr ?? 4);
 
   const [seqSpread, setSeqSpread] = useState(6);
   const [lumpBudget, setLumpBudget] = useState(24_000);
@@ -213,10 +245,11 @@ export default function AdvancedInvestmentCalculator() {
   const realFinal = projection.series[projection.series.length - 1]?.realBalance ?? 0;
 
   useEffect(() => {
+    if (deferWalkthrough) return;
     if (hasCompletedWalkthrough(TOUR_ID)) return;
     const t = window.setTimeout(() => setTourOpen(true), 450);
     return () => window.clearTimeout(t);
-  }, []);
+  }, [deferWalkthrough]);
 
   const walkthroughSteps: WalkthroughStep[] = useMemo(
     () => [
@@ -417,7 +450,7 @@ export default function AdvancedInvestmentCalculator() {
   );
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-dark-950 dark:via-slate-900 dark:to-emerald-950/30">
+    <div className={tdPage}>
       <ToolWalkthrough
         id={TOUR_ID}
         open={tourOpen}
@@ -432,30 +465,27 @@ export default function AdvancedInvestmentCalculator() {
         }}
         steps={walkthroughSteps}
       />
-      <div className="relative overflow-hidden border-b border-emerald-200/50 dark:border-emerald-500/20">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/15 via-cyan-600/10 to-amber-500/10 dark:from-emerald-900/30 dark:via-transparent dark:to-cyan-900/20" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl" />
+      <div className={tdHero}>
+        <ToolDashboardHeroBackdrop />
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
-          <Link
-            href="/"
-            className="inline-flex items-center text-emerald-600 dark:text-emerald-400/90 hover:text-emerald-700 dark:hover:text-cyan-300 font-semibold text-sm mb-8 transition-colors"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Link>
+        <div className={tdHeroInnerNarrow}>
+          <div className="mb-8">
+            <Link href="/" className={tdNavLink}>
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Link>
+          </div>
 
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10" data-tour="invest-hero">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 text-xs font-bold uppercase tracking-wider mb-4">
-                <Sparkles className="h-3.5 w-3.5" />
-                Pro tool
+              <div className={`${tdProductPill} mb-4`}>
+                <Sparkles className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
+                Pro workspace
               </div>
-              <h1 className="font-display text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-3">
-                Advanced Investment Calculator
+              <h1 className="font-display text-3xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-3">
+                Investment Calculator
               </h1>
-              <p className="text-slate-600 dark:text-emerald-100/80 max-w-2xl text-lg leading-relaxed">
+              <p className="text-zinc-600 dark:text-zinc-400 max-w-2xl text-base md:text-lg leading-relaxed">
                 Compound growth with expense-ratio drag, inflation-adjusted wealth, FIRE targets,
                 sequence-of-returns paths, lump-sum vs DCA, and a Monte Carlo fan — in one workspace.
               </p>
@@ -464,7 +494,7 @@ export default function AdvancedInvestmentCalculator() {
               <button
                 type="button"
                 onClick={() => setTourOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white/70 dark:bg-dark-800/70 border border-slate-200 dark:border-emerald-500/25 text-slate-800 dark:text-emerald-100/90 hover:bg-white dark:hover:bg-emerald-900/20 transition-colors"
+                className={tdGhostBtn}
               >
                 <BookOpen className="h-4 w-4" />
                 Walk-through
@@ -479,8 +509,8 @@ export default function AdvancedInvestmentCalculator() {
                     onClick={() => setTab(t.id)}
                     className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       active
-                        ? "bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-lg shadow-emerald-500/30"
-                        : "bg-slate-100 dark:bg-dark-800 text-slate-700 dark:text-emerald-100/90 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+                        ? "bg-zinc-900 text-white shadow-md shadow-zinc-900/15 ring-1 ring-zinc-900/10 dark:bg-zinc-100 dark:text-zinc-900 dark:shadow-lg dark:ring-white/20"
+                        : "bg-zinc-100/90 text-zinc-700 hover:bg-zinc-200/90 dark:bg-zinc-900/80 dark:text-zinc-200 dark:hover:bg-zinc-800"
                     }`}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
@@ -491,19 +521,25 @@ export default function AdvancedInvestmentCalculator() {
             </div>
           </div>
 
+          <ToolDashboardTestCta
+            toolSlug="investment-calculator"
+            testLabel={FACTS_DECK_INVESTMENT_TEST}
+            blurb="Retake the 5-step interactive flow for a fresh snapshot—goals, contributions, and a simple FIRE band."
+          />
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-4 space-y-6">
               <div
-                className="rounded-2xl bg-white dark:bg-dark-800/80 border border-slate-200 dark:border-emerald-500/25 p-6 shadow-xl shadow-emerald-500/5"
+                className={tdPanel}
                 data-tour="invest-inputs"
               >
-                <h2 className="font-display font-bold text-lg text-slate-900 dark:text-emerald-50 mb-4 flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-emerald-500" />
+                <h2 className="font-display font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-zinc-900 dark:text-zinc-100" />
                   Portfolio inputs
                 </h2>
                 <div className="space-y-4">
                   <label className="block">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-emerald-400/80 uppercase">
+                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">
                       Starting balance
                     </span>
                     <input
@@ -511,11 +547,11 @@ export default function AdvancedInvestmentCalculator() {
                       min={0}
                       value={initial}
                       onChange={(e) => setInitial(Number(e.target.value))}
-                      className="mt-1 w-full rounded-xl border border-slate-200 dark:border-emerald-500/30 bg-slate-50 dark:bg-dark-900 px-4 py-3 text-slate-900 dark:text-white font-mono"
+                      className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-zinc-900 font-mono focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-emerald-400/80 uppercase">
+                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">
                       Monthly contribution
                     </span>
                     <input
@@ -523,11 +559,11 @@ export default function AdvancedInvestmentCalculator() {
                       min={0}
                       value={monthly}
                       onChange={(e) => setMonthly(Number(e.target.value))}
-                      className="mt-1 w-full rounded-xl border border-slate-200 dark:border-emerald-500/30 bg-slate-50 dark:bg-dark-900 px-4 py-3 text-slate-900 dark:text-white font-mono"
+                      className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-zinc-900 font-mono focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-emerald-400/80 uppercase">
+                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">
                       Horizon ({years} y)
                     </span>
                     <input
@@ -537,11 +573,11 @@ export default function AdvancedInvestmentCalculator() {
                       step={1}
                       value={years}
                       onChange={(e) => setYears(Number(e.target.value))}
-                      className="mt-2 w-full accent-emerald-600"
+                      className="mt-2 w-full accent-zinc-900 dark:accent-zinc-100"
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-emerald-400/80 uppercase">
+                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">
                       Expected nominal return ({nominal.toFixed(2)}% / yr)
                     </span>
                     <input
@@ -551,11 +587,11 @@ export default function AdvancedInvestmentCalculator() {
                       step={0.25}
                       value={nominal}
                       onChange={(e) => setNominal(Number(e.target.value))}
-                      className="mt-2 w-full accent-emerald-600"
+                      className="mt-2 w-full accent-zinc-900 dark:accent-zinc-100"
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-emerald-400/80 uppercase">
+                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">
                       Expense ratio ({expenseRatio.toFixed(2)}% / yr drag)
                     </span>
                     <input
@@ -565,11 +601,11 @@ export default function AdvancedInvestmentCalculator() {
                       step={0.01}
                       value={expenseRatio}
                       onChange={(e) => setExpenseRatio(Number(e.target.value))}
-                      className="mt-2 w-full accent-emerald-600"
+                      className="mt-2 w-full accent-zinc-900 dark:accent-zinc-100"
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-emerald-400/80 uppercase">
+                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">
                       Inflation ({inflation.toFixed(2)}% / yr)
                     </span>
                     <input
@@ -579,11 +615,11 @@ export default function AdvancedInvestmentCalculator() {
                       step={0.1}
                       value={inflation}
                       onChange={(e) => setInflation(Number(e.target.value))}
-                      className="mt-2 w-full accent-emerald-600"
+                      className="mt-2 w-full accent-zinc-900 dark:accent-zinc-100"
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-emerald-400/80 uppercase">
+                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">
                       LTCG tax on gains ({taxOnGains}%)
                     </span>
                     <input
@@ -593,7 +629,7 @@ export default function AdvancedInvestmentCalculator() {
                       step={1}
                       value={taxOnGains}
                       onChange={(e) => setTaxOnGains(Number(e.target.value))}
-                      className="mt-2 w-full accent-emerald-600"
+                      className="mt-2 w-full accent-zinc-900 dark:accent-zinc-100"
                     />
                   </label>
                 </div>
@@ -604,30 +640,30 @@ export default function AdvancedInvestmentCalculator() {
               {tab === "overview" && (
                 <div className="space-y-6">
                   <div className="grid sm:grid-cols-2 gap-4" data-tour="invest-overview-cards">
-                    <div className="rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-gradient-to-br from-emerald-50 to-cyan-50 dark:from-emerald-900/20 dark:to-cyan-900/10 p-6">
-                      <p className="text-xs uppercase font-bold text-emerald-700 dark:text-emerald-300">
+                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 p-6">
+                      <p className="text-xs uppercase font-bold text-zinc-600 dark:text-zinc-300">
                         Ending balance (nominal)
                       </p>
-                      <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2 font-mono">
+                      <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2 font-mono">
                         {formatCurrency(projection.finalNominal)}
                       </p>
-                      <p className="text-sm text-emerald-800/80 dark:text-emerald-200/80 mt-2">
+                      <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-2">
                         After-tax est.{" "}
-                        <strong className="text-slate-900 dark:text-white">
+                        <strong className="text-zinc-900 dark:text-zinc-100">
                           {formatCurrency(afterTax)}
                         </strong>
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-slate-200 dark:border-emerald-500/20 bg-white dark:bg-dark-800/50 p-6">
-                      <p className="text-xs uppercase font-bold text-slate-500 dark:text-emerald-400">
+                    <div className="rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 p-6">
+                      <p className="text-xs uppercase font-bold text-zinc-500 dark:text-zinc-400">
                         Purchasing power (today&apos;s dollars)
                       </p>
-                      <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2 font-mono">
+                      <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mt-2 font-mono">
                         {formatCurrency(realFinal)}
                       </p>
-                      <p className="text-sm text-slate-600 dark:text-emerald-200/70 mt-2">
+                      <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-2">
                         Total contributed{" "}
-                        <strong className="text-slate-800 dark:text-white">
+                        <strong className="text-zinc-900 dark:text-zinc-100">
                           {formatCurrency(projection.totalContributed)}
                         </strong>
                       </p>
@@ -635,27 +671,27 @@ export default function AdvancedInvestmentCalculator() {
                   </div>
 
                   <div
-                    className="rounded-2xl border border-slate-200 dark:border-emerald-500/20 bg-white dark:bg-dark-800/40 p-6"
+                    className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950"
                     data-tour="invest-growth-curve"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                      <h3 className="font-display font-bold text-xl text-slate-900 dark:text-emerald-50 flex items-center gap-2">
-                        <TrendingUp className="h-6 w-6 text-emerald-500" />
+                      <h3 className="font-display font-bold text-xl text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                        <TrendingUp className="h-6 w-6 text-zinc-900 dark:text-zinc-100" />
                         Growth curve
                       </h3>
                       <button
                         type="button"
                         onClick={exportCsv}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-200 text-sm font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-900 text-sm font-semibold hover:bg-zinc-50 transition-colors dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900/40"
                       >
                         <Download className="h-4 w-4" />
                         Export CSV
                       </button>
                     </div>
                     <Sparkline values={chartVals} />
-                    <p className="text-sm text-slate-600 dark:text-emerald-200/70 mt-3">
+                    <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-3">
                       Gain before tax:{" "}
-                      <strong className="text-slate-900 dark:text-white">
+                      <strong className="text-zinc-900 dark:text-zinc-100">
                         {formatCurrency(projection.gain)}
                       </strong>
                     </p>
@@ -665,14 +701,14 @@ export default function AdvancedInvestmentCalculator() {
 
               {tab === "path" && (
                 <div className="space-y-6" data-tour="invest-trajectory">
-                  <div className="rounded-2xl border border-slate-200 dark:border-emerald-500/20 bg-white dark:bg-dark-800/40 p-6 overflow-x-auto">
-                    <h3 className="font-display font-bold text-xl text-slate-900 dark:text-emerald-50 mb-4 flex items-center gap-2">
-                      <LineChart className="h-6 w-6 text-emerald-500" />
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-6 overflow-x-auto dark:border-zinc-800 dark:bg-zinc-950">
+                    <h3 className="font-display font-bold text-xl text-zinc-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
+                      <LineChart className="h-6 w-6 text-zinc-900 dark:text-zinc-100" />
                       Year-by-year
                     </h3>
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-left text-slate-500 dark:text-emerald-400 border-b border-slate-200 dark:border-emerald-500/20">
+                        <tr className="text-left text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
                           <th className="pb-2 pr-4">Year</th>
                           <th className="pb-2 pr-4">Balance</th>
                           <th className="pb-2 pr-4">Contributed</th>
@@ -692,7 +728,7 @@ export default function AdvancedInvestmentCalculator() {
                           .map((row) => (
                             <tr
                               key={row.year}
-                              className="border-b border-slate-100 dark:border-emerald-500/10 text-slate-800 dark:text-emerald-50/90"
+                              className="border-b border-zinc-100 dark:border-zinc-800 text-zinc-800 dark:text-zinc-100"
                             >
                               <td className="py-2 font-mono">{row.year}</td>
                               <td className="py-2 font-mono">{formatCurrency(row.balance)}</td>
@@ -704,18 +740,18 @@ export default function AdvancedInvestmentCalculator() {
                     </table>
                   </div>
 
-                  <div className="rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/20 p-6" data-tour="invest-stress">
-                    <h3 className="font-bold text-amber-900 dark:text-amber-200 mb-2 flex items-center gap-2">
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 p-6" data-tour="invest-stress">
+                    <h3 className="font-bold text-zinc-900 dark:text-zinc-100 mb-2 flex items-center gap-2">
                       <Target className="h-5 w-5" />
                       Stress: first year −22%, then baseline
                     </h3>
-                    <p className="text-sm text-amber-900/80 dark:text-amber-200/80 mb-3">
+                    <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-3">
                       Illustrative crash at the start — sequence matters when you keep contributing.
                     </p>
-                    <p className="text-2xl font-mono font-bold text-slate-900 dark:text-white">
+                    <p className="text-2xl font-mono font-bold text-zinc-900 dark:text-zinc-100">
                       {formatCurrency(stressPath.finalNominal)}
                     </p>
-                    <p className="text-xs text-amber-800/70 dark:text-amber-300/70 mt-1">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                       vs {formatCurrency(projection.finalNominal)} smooth constant return
                     </p>
                   </div>
@@ -725,8 +761,8 @@ export default function AdvancedInvestmentCalculator() {
               {tab === "fire" && (
                 <div className="space-y-6">
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <label className="block rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-4 bg-white dark:bg-dark-800/50" data-tour="invest-fire-inputs">
-                      <span className="text-xs font-semibold text-slate-500 dark:text-emerald-400 uppercase">
+                    <label className="block rounded-2xl border border-zinc-200 p-4 bg-white dark:border-zinc-800 dark:bg-zinc-950" data-tour="invest-fire-inputs">
+                      <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">
                         Annual spend (today&apos;s dollars)
                       </span>
                       <input
@@ -734,11 +770,11 @@ export default function AdvancedInvestmentCalculator() {
                         min={0}
                         value={annualSpend}
                         onChange={(e) => setAnnualSpend(Number(e.target.value))}
-                        className="mt-2 w-full rounded-xl border border-slate-200 dark:border-emerald-500/30 bg-slate-50 dark:bg-dark-900 px-4 py-2 font-mono"
+                        className="mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2 font-mono text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                       />
                     </label>
-                    <label className="block rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-4 bg-white dark:bg-dark-800/50" data-tour="invest-fire-inputs">
-                      <span className="text-xs font-semibold text-slate-500 dark:text-emerald-400 uppercase">
+                    <label className="block rounded-2xl border border-zinc-200 p-4 bg-white dark:border-zinc-800 dark:bg-zinc-950" data-tour="invest-fire-inputs">
+                      <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">
                         Withdrawal rule ({swr}%)
                       </span>
                       <input
@@ -748,30 +784,30 @@ export default function AdvancedInvestmentCalculator() {
                         step={0.1}
                         value={swr}
                         onChange={(e) => setSwr(Number(e.target.value))}
-                        className="mt-4 w-full accent-emerald-600"
+                        className="mt-4 w-full accent-zinc-900 dark:accent-zinc-100"
                       />
                     </label>
                   </div>
 
                   <div
-                    className="rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/25 dark:to-dark-800/50 p-6"
+                    className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-950"
                     data-tour="invest-fire-result"
                   >
-                    <p className="text-xs uppercase font-bold text-emerald-700 dark:text-emerald-300 mb-1">
+                    <p className="text-xs uppercase font-bold text-zinc-600 dark:text-zinc-300 mb-1">
                       Implied FIRE portfolio
                     </p>
-                    <p className="text-3xl font-bold font-mono text-slate-900 dark:text-white">
+                    <p className="text-3xl font-bold font-mono text-zinc-900 dark:text-zinc-100">
                       {formatCurrency(fireTarget)}
                     </p>
-                    <p className="text-sm text-slate-600 dark:text-emerald-200/80 mt-3">
+                    <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-3">
                       Years to reach (constant return):{" "}
-                      <strong className="text-slate-900 dark:text-white">
+                      <strong className="text-zinc-900 dark:text-zinc-100">
                         {yearsToFire != null ? `${yearsToFire} yrs` : "beyond 80 yr cap"}
                       </strong>
                     </p>
-                    <p className="text-sm text-slate-600 dark:text-emerald-200/80 mt-2">
+                    <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-2">
                       Passive income at end (nominal, using rule):{" "}
-                      <strong className="text-slate-900 dark:text-white">
+                      <strong className="text-zinc-900 dark:text-zinc-100">
                         {formatCurrency(passiveIncome)}/yr
                       </strong>
                     </p>
@@ -779,7 +815,7 @@ export default function AdvancedInvestmentCalculator() {
 
                   <Link
                     href="/post?category=Investing&q=ETF"
-                    className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 w-fit"
+                    className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-zinc-900 text-white text-sm font-semibold hover:bg-zinc-800 transition-colors w-fit dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
                   >
                     Investing guides
                     <ChevronRight className="h-4 w-4" />
@@ -789,17 +825,17 @@ export default function AdvancedInvestmentCalculator() {
 
               {tab === "lab" && (
                 <div className="space-y-6">
-                  <div className="rounded-2xl border border-slate-200 dark:border-emerald-500/20 bg-white dark:bg-dark-800/40 p-6" data-tour="invest-lab-seq">
-                    <h3 className="font-display font-bold text-lg text-slate-900 dark:text-emerald-50 mb-2 flex items-center gap-2">
-                      <GitCompare className="h-5 w-5 text-emerald-500" />
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950" data-tour="invest-lab-seq">
+                    <h3 className="font-display font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-2 flex items-center gap-2">
+                      <GitCompare className="h-5 w-5 text-zinc-900 dark:text-zinc-100" />
                       Sequence of returns (same average, different order)
                     </h3>
-                    <p className="text-sm text-slate-600 dark:text-emerald-200/80 mb-4">
+                    <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4">
                       Two halves with identical weighted-average return (~{seq.mean.toFixed(2)}%): strong
                       early vs strong late. Order changes outcomes when you add money every month.
                     </p>
                     <label className="block mb-4">
-                      <span className="text-xs font-semibold text-slate-500 dark:text-emerald-400 uppercase">
+                      <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">
                         Half-to-half spread ({seqSpread}%)
                       </span>
                       <input
@@ -809,41 +845,41 @@ export default function AdvancedInvestmentCalculator() {
                         step={0.5}
                         value={seqSpread}
                         onChange={(e) => setSeqSpread(Number(e.target.value))}
-                        className="mt-2 w-full accent-emerald-600"
+                        className="mt-2 w-full accent-zinc-900 dark:accent-zinc-100"
                       />
                     </label>
                     <div className="grid sm:grid-cols-2 gap-4">
-                      <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-4 border border-emerald-200 dark:border-emerald-500/30">
-                        <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase">
+                      <div className="rounded-xl bg-zinc-50 p-4 border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800">
+                        <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase">
                           Early bull
                         </p>
-                        <p className="text-2xl font-mono font-bold text-slate-900 dark:text-white mt-1">
+                        <p className="text-2xl font-mono font-bold text-zinc-900 dark:text-zinc-100 mt-1">
                           {formatCurrency(earlyPath.finalNominal)}
                         </p>
                       </div>
-                      <div className="rounded-xl bg-cyan-50 dark:bg-cyan-900/20 p-4 border border-cyan-200 dark:border-cyan-500/30">
-                        <p className="text-xs font-bold text-cyan-800 dark:text-cyan-300 uppercase">
+                      <div className="rounded-xl bg-zinc-50 p-4 border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800">
+                        <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase">
                           Late bull
                         </p>
-                        <p className="text-2xl font-mono font-bold text-slate-900 dark:text-white mt-1">
+                        <p className="text-2xl font-mono font-bold text-zinc-900 dark:text-zinc-100 mt-1">
                           {formatCurrency(latePath.finalNominal)}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 dark:border-emerald-500/20 bg-white dark:bg-dark-800/40 p-6" data-tour="invest-lab-lumpdca">
-                    <h3 className="font-display font-bold text-lg text-slate-900 dark:text-emerald-50 mb-2 flex items-center gap-2">
-                      <Scale className="h-5 w-5 text-cyan-500" />
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950" data-tour="invest-lab-lumpdca">
+                    <h3 className="font-display font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-2 flex items-center gap-2">
+                      <Scale className="h-5 w-5 text-zinc-900 dark:text-zinc-100" />
                       Lump sum vs DCA (same budget)
                     </h3>
-                    <p className="text-sm text-slate-600 dark:text-emerald-200/80 mb-4">
+                    <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4">
                       Full budget invested day one vs twelve equal monthly buys, then hold for the rest of the
                       horizon.
                     </p>
                     <div className="grid sm:grid-cols-2 gap-4 mb-4">
                       <label className="block">
-                        <span className="text-xs font-semibold text-slate-500 dark:text-emerald-400 uppercase">
+                        <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">
                           Total budget
                         </span>
                         <input
@@ -851,11 +887,11 @@ export default function AdvancedInvestmentCalculator() {
                           min={0}
                           value={lumpBudget}
                           onChange={(e) => setLumpBudget(Number(e.target.value))}
-                          className="mt-1 w-full rounded-xl border border-slate-200 dark:border-emerald-500/30 bg-slate-50 dark:bg-dark-900 px-3 py-2 font-mono"
+                          className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 font-mono text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                         />
                       </label>
                       <label className="block">
-                        <span className="text-xs font-semibold text-slate-500 dark:text-emerald-400 uppercase">
+                        <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">
                           Horizon (months)
                         </span>
                         <input
@@ -864,26 +900,26 @@ export default function AdvancedInvestmentCalculator() {
                           max={120}
                           value={dcaHorizon}
                           onChange={(e) => setDcaHorizon(Number(e.target.value))}
-                          className="mt-1 w-full rounded-xl border border-slate-200 dark:border-emerald-500/30 bg-slate-50 dark:bg-dark-900 px-3 py-2 font-mono"
+                          className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 font-mono text-zinc-900 focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
                         />
                       </label>
                     </div>
                     <div className="flex flex-wrap gap-6 text-sm">
                       <div>
-                        <span className="text-slate-500 dark:text-emerald-400">Lump</span>
-                        <p className="font-mono font-bold text-lg text-slate-900 dark:text-white">
+                        <span className="text-zinc-500 dark:text-zinc-400">Lump</span>
+                        <p className="font-mono font-bold text-lg text-zinc-900 dark:text-zinc-100">
                           {formatCurrency(lumpDca.lumpFinal)}
                         </p>
                       </div>
                       <div>
-                        <span className="text-slate-500 dark:text-emerald-400">12-mo DCA</span>
-                        <p className="font-mono font-bold text-lg text-slate-900 dark:text-white">
+                        <span className="text-zinc-500 dark:text-zinc-400">12-mo DCA</span>
+                        <p className="font-mono font-bold text-lg text-zinc-900 dark:text-zinc-100">
                           {formatCurrency(lumpDca.dcaFinal)}
                         </p>
                       </div>
                       <div>
-                        <span className="text-slate-500 dark:text-emerald-400">Δ</span>
-                        <p className="font-mono font-bold text-lg text-emerald-600 dark:text-emerald-400">
+                        <span className="text-zinc-500 dark:text-zinc-400">Δ</span>
+                        <p className="font-mono font-bold text-lg text-zinc-900 dark:text-zinc-100">
                           {formatCurrency(lumpDca.lumpFinal - lumpDca.dcaFinal)}
                         </p>
                       </div>
@@ -891,18 +927,18 @@ export default function AdvancedInvestmentCalculator() {
                   </div>
 
                   <div
-                    className="rounded-2xl border border-purple-200 dark:border-purple-500/30 bg-purple-50/80 dark:bg-purple-950/20 p-6"
+                    className="rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 p-6"
                     data-tour="invest-lab-mc"
                   >
-                    <h3 className="font-display font-bold text-lg text-slate-900 dark:text-emerald-50 mb-2 flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5 text-purple-500" />
+                    <h3 className="font-display font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-2 flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5 text-zinc-900 dark:text-zinc-100" />
                       Monte Carlo (lognormal annual shocks)
                     </h3>
-                    <p className="text-sm text-slate-600 dark:text-emerald-200/80 mb-4">
+                    <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4">
                       Fixed seed for repeatability. Shows spread from volatility, not a forecast.
                     </p>
                     <div className="flex flex-wrap gap-4 mb-4">
-                      <label className="flex flex-col text-xs font-semibold text-slate-500 dark:text-emerald-400 uppercase">
+                      <label className="flex flex-col text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">
                         Volatility (σ)
                         <input
                           type="range"
@@ -910,13 +946,13 @@ export default function AdvancedInvestmentCalculator() {
                           max={35}
                           value={volatility}
                           onChange={(e) => setVolatility(Number(e.target.value))}
-                          className="mt-1 accent-purple-600"
+                          className="mt-1 accent-zinc-900 dark:accent-zinc-100"
                         />
-                        <span className="text-slate-800 dark:text-white normal-case font-mono">
+                        <span className="text-zinc-900 dark:text-zinc-100 normal-case font-mono">
                           {volatility}%
                         </span>
                       </label>
-                      <label className="flex flex-col text-xs font-semibold text-slate-500 dark:text-emerald-400 uppercase">
+                      <label className="flex flex-col text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase">
                         Iterations
                         <input
                           type="range"
@@ -925,34 +961,34 @@ export default function AdvancedInvestmentCalculator() {
                           step={100}
                           value={mcIterations}
                           onChange={(e) => setMcIterations(Number(e.target.value))}
-                          className="mt-1 accent-purple-600"
+                          className="mt-1 accent-zinc-900 dark:accent-zinc-100"
                         />
-                        <span className="text-slate-800 dark:text-white normal-case font-mono">
+                        <span className="text-zinc-900 dark:text-zinc-100 normal-case font-mono">
                           {mcIterations}
                         </span>
                       </label>
                     </div>
                     <div className="grid grid-cols-3 gap-3 text-center">
                       <div>
-                        <p className="text-xs text-slate-500 dark:text-purple-300">p10</p>
-                        <p className="font-mono font-bold text-slate-900 dark:text-white">
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">p10</p>
+                        <p className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
                           {formatCurrency(mc.p10)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-500 dark:text-purple-300">p50</p>
-                        <p className="font-mono font-bold text-slate-900 dark:text-white">
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">p50</p>
+                        <p className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
                           {formatCurrency(mc.p50)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-500 dark:text-purple-300">p90</p>
-                        <p className="font-mono font-bold text-slate-900 dark:text-white">
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">p90</p>
+                        <p className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
                           {formatCurrency(mc.p90)}
                         </p>
                       </div>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-purple-300/80 mt-3">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-3">
                       Mean outcome: {formatCurrency(mc.mean)}
                     </p>
                   </div>
@@ -961,7 +997,7 @@ export default function AdvancedInvestmentCalculator() {
             </div>
           </div>
 
-          <p className="text-center text-xs text-slate-500 dark:text-emerald-500/90 mt-12 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 mt-12 max-w-3xl mx-auto leading-relaxed">
             Educational estimates only — not investment, tax, or legal advice. Markets are uncertain; models
             assume constant parameters, frictionless taxes except the simple LTCG slider, and no sequence-of-life
             events.

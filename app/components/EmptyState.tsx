@@ -1,10 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, ChevronRight, type LucideIcon } from "lucide-react";
+import { BookOpen, ChevronRight, FileText, Flame, Search, Star, type LucideIcon } from "lucide-react";
+
+const ICONS = {
+  BookOpen,
+  FileText,
+  Flame,
+  Search,
+  Star,
+} satisfies Record<string, LucideIcon>;
+
+const iconWrap =
+  "inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-orange-200/90 bg-orange-50 text-blue-700 shadow-sm dark:border-emerald-800/70 dark:bg-emerald-950/50 dark:text-cyan-300";
 
 type EmptyStateProps = {
   icon?: LucideIcon;
+  /** Server-safe icon selector (preferred for Server Components). */
+  iconKey?: keyof typeof ICONS;
   title: string;
   description?: string;
   ctaLabel?: string;
@@ -13,55 +26,47 @@ type EmptyStateProps = {
 };
 
 export default function EmptyState({
-  icon: Icon = BookOpen,
+  icon: iconProp,
+  iconKey,
   title,
   description,
   ctaLabel,
   ctaHref,
   compact = false,
 }: EmptyStateProps) {
+  const Icon = iconProp ?? (iconKey ? ICONS[iconKey] : BookOpen);
   return (
     <div
       className={
         compact
           ? "py-6 px-4"
-          : "py-12 sm:py-16 px-6 rounded-2xl border border-dashed border-slate-300 dark:border-purple-500/40 bg-slate-50/50 dark:bg-purple-950/20"
+          : "rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/80 px-6 py-12 sm:py-16 dark:border-zinc-700 dark:bg-zinc-900/30"
       }
     >
-      <div className="flex flex-col items-center text-center max-w-md mx-auto">
-        <div
-          className={
-            compact
-              ? "w-12 h-12 rounded-xl flex items-center justify-center mb-3"
-              : "w-16 h-16 rounded-2xl flex items-center justify-center mb-6 bg-white dark:bg-dark-900/50 shadow-lg border border-slate-200 dark:border-purple-500/30"
-          }
-        >
+      <div className="mx-auto flex max-w-md flex-col items-center text-center">
+        <div className={compact ? "mb-3" : `mb-6 ${iconWrap}`}>
           <Icon
             className={
-              compact
-                ? "h-6 w-6 text-slate-400 dark:text-purple-400"
-                : "h-8 w-8 text-purple-500 dark:text-purple-400"
+              compact ? "h-6 w-6 text-zinc-400 dark:text-zinc-400" : "h-7 w-7"
             }
           />
         </div>
         <h3
           className={
             compact
-              ? "font-display font-semibold text-slate-700 dark:text-purple-200 mb-1"
-              : "font-display text-xl font-bold text-slate-900 dark:text-purple-200 mb-2"
+              ? "mb-1 font-display font-semibold text-zinc-700 dark:text-zinc-200"
+              : "mb-2 font-display text-xl font-bold text-zinc-900 dark:text-zinc-100"
           }
         >
           {title}
         </h3>
         {description && (
-          <p className="text-slate-600 dark:text-purple-300/90 text-sm mb-4">
-            {description}
-          </p>
+          <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-300">{description}</p>
         )}
         {ctaLabel && ctaHref && (
           <Link
             href={ctaHref}
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 transition-colors text-sm"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
           >
             {ctaLabel}
             <ChevronRight className="h-4 w-4" />

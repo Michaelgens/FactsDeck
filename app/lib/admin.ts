@@ -1,4 +1,5 @@
 import { createServerClient, isSupabaseConfigured } from "./supabase/server";
+import { logSupabaseReadError } from "./supabase-read-errors";
 
 export type AdminStats = {
   totalArticles: number;
@@ -31,12 +32,51 @@ export async function getAdminStats(): Promise<AdminStats> {
       totalBookmarks: 0,
     };
   }
-  const supabase = createServerClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .select("featured, guides, likes, views, bookmarks");
-  if (error) {
-    console.error("[getAdminStats]", error.message, error.code);
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from("posts")
+      .select("featured, guides, likes, views, bookmarks");
+    if (error) {
+      logSupabaseReadError("getAdminStats", error);
+      return {
+        totalArticles: 0,
+        featuredCount: 0,
+        guidesCount: 0,
+        totalLikes: 0,
+        totalViews: 0,
+        totalBookmarks: 0,
+      };
+    }
+    const rows = (data || []) as Array<{
+      featured?: boolean;
+      guides?: boolean;
+      likes?: number;
+      views?: string;
+      bookmarks?: number;
+    }>;
+    let totalLikes = 0;
+    let totalViews = 0;
+    let totalBookmarks = 0;
+    let featuredCount = 0;
+    let guidesCount = 0;
+    for (const r of rows) {
+      totalLikes += Number(r.likes) || 0;
+      totalViews += parseViews(r.views ?? "0");
+      totalBookmarks += Number(r.bookmarks) || 0;
+      if (r.featured) featuredCount++;
+      if (r.guides) guidesCount++;
+    }
+    return {
+      totalArticles: rows.length,
+      featuredCount,
+      guidesCount,
+      totalLikes,
+      totalViews,
+      totalBookmarks,
+    };
+  } catch (e) {
+    logSupabaseReadError("getAdminStats", e);
     return {
       totalArticles: 0,
       featuredCount: 0,
@@ -46,33 +86,6 @@ export async function getAdminStats(): Promise<AdminStats> {
       totalBookmarks: 0,
     };
   }
-  const rows = (data || []) as Array<{
-    featured?: boolean;
-    guides?: boolean;
-    likes?: number;
-    views?: string;
-    bookmarks?: number;
-  }>;
-  let totalLikes = 0;
-  let totalViews = 0;
-  let totalBookmarks = 0;
-  let featuredCount = 0;
-  let guidesCount = 0;
-  for (const r of rows) {
-    totalLikes += Number(r.likes) || 0;
-    totalViews += parseViews(r.views ?? "0");
-    totalBookmarks += Number(r.bookmarks) || 0;
-    if (r.featured) featuredCount++;
-    if (r.guides) guidesCount++;
-  }
-  return {
-    totalArticles: rows.length,
-    featuredCount,
-    guidesCount,
-    totalLikes,
-    totalViews,
-    totalBookmarks,
-  };
 }
 
 /** Format large numbers for display */

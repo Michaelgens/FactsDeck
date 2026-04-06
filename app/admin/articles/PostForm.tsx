@@ -157,13 +157,26 @@ export default function PostForm({ mode, post }: PostFormProps) {
 
   return (
     <div>
-      <Link
-        href="/admin/articles"
-        className="inline-flex items-center gap-2 text-slate-600 dark:text-purple-300 hover:text-purple-600 dark:hover:text-purple-400 mb-6"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Articles
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <Link
+          href="/admin/articles"
+          className="inline-flex items-center gap-2 text-slate-600 dark:text-purple-300 hover:text-purple-600 dark:hover:text-purple-400"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Articles
+        </Link>
+        {mode === "edit" && post ? (
+          <Link
+            href={`/admin/articles/${post.id}/preview`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-purple-600 dark:text-emerald-400 hover:underline"
+          >
+            Preview article
+            <ExternalLink className="h-4 w-4" />
+          </Link>
+        ) : null}
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl">
         {error && (

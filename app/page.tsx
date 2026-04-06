@@ -10,7 +10,7 @@ const homeDescription =
   "Expert investing, banking & personal finance guides, tools & comparisons. Build financial literacy with Facts Deck — trusted by millions of readers.";
 
 export const metadata: Metadata = {
-  title: "Your Financial Knowledge Hub",
+  title: { absolute: "Facts Deck | Your Financial Knowledge Hub" },
   description: homeDescription,
   keywords: [
     "personal finance",
@@ -26,6 +26,7 @@ export const metadata: Metadata = {
     "financial literacy",
     "stock market",
     "budgeting",
+    "Crypto",
   ],
   openGraph: {
     title: "Facts Deck | Your Financial Knowledge Hub",
@@ -60,12 +61,12 @@ const jsonLd = {
   "@graph": [
     {
       "@type": "WebSite",
-      "@id": `${SITE_URL}/#website`,
+      "@id": `${SITE_URL}#website`,
       name: "Facts Deck",
       url: SITE_URL,
       description: homeDescription,
       inLanguage: "en-US",
-      publisher: { "@id": `${SITE_URL}/#organization` },
+      publisher: { "@id": `${SITE_URL}#organization` },
       potentialAction: {
         "@type": "SearchAction",
         target: {
@@ -77,7 +78,7 @@ const jsonLd = {
     },
     {
       "@type": "Organization",
-      "@id": `${SITE_URL}/#organization`,
+      "@id": `${SITE_URL}#organization`,
       name: "Facts Deck",
       url: SITE_URL,
       description: "Independent financial education — articles, guides, and tools for smarter money decisions.",
@@ -91,7 +92,7 @@ export default async function HomePage() {
     getCategoriesWithCounts(),
     getMarketData(),
   ]);
-  const sidebarTools = pickDailyTools(siteTools, 3, "home-sidebar");
+  const sidebarTools = pickDailyTools(siteTools, 5, "home-sidebar");
 
   return (
     <>
@@ -99,16 +100,18 @@ export default async function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <HomePageClient
-      featuredPosts={partitioned.featured}
-      latestPosts={partitioned.latest}
-      expertPickPosts={partitioned.expertPicks}
-      trendingPosts={partitioned.trending}
-      guidePosts={partitioned.guides}
-      categoriesWithCounts={categoriesWithCounts}
-      marketData={marketData}
-      sidebarTools={sidebarTools}
-    />
+      <div className="min-w-0 w-full">
+        <HomePageClient
+          featuredPosts={partitioned.featured}
+          latestPosts={partitioned.latest}
+          expertPickPosts={partitioned.expertPicks}
+          trendingPosts={partitioned.trending}
+          guidePosts={partitioned.guides}
+          categoriesWithCounts={categoriesWithCounts}
+          marketData={marketData}
+          sidebarTools={sidebarTools}
+        />
+      </div>
     </>
   );
 }

@@ -16,6 +16,30 @@ import {
   BookOpen as TourBook,
 } from "lucide-react";
 import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
+import { FACTS_DECK_CREDIT_SCORE_SIMULATOR } from "./credit/credit-journey-types";
+import ToolDashboardTestCta from "./ToolDashboardTestCta";
+import {
+  ToolDashboardHeroBackdrop,
+  tdGhostBtn,
+  tdHero,
+  tdHeroInner,
+  tdIconTile,
+  tdNavLink,
+  tdPage,
+} from "./tool-dashboard-ui";
+
+export type CreditScoreSimulatorInitialValues = {
+  utilizationPct?: number;
+  onTimePct?: number;
+  avgAgeYears?: number;
+  hardInquiries12m?: number;
+  accountTypes?: number;
+};
+
+type AdvancedCreditScoreSimulatorProps = {
+  initialValues?: CreditScoreSimulatorInitialValues;
+  deferWalkthrough?: boolean;
+};
 
 /** Educational model only — not a real FICO/VantageScore. Illustrative 300–850. */
 function clamp(n: number, lo: number, hi: number) {
@@ -83,11 +107,12 @@ function factorPoints(input: {
 }
 
 function band(score: number): { name: string; color: string; dark: string } {
-  if (score < 580) return { name: "Poor", color: "from-rose-500 to-red-600", dark: "text-rose-100" };
-  if (score < 670) return { name: "Fair", color: "from-amber-500 to-orange-600", dark: "text-amber-100" };
-  if (score < 740) return { name: "Good", color: "from-lime-500 to-emerald-600", dark: "text-lime-100" };
-  if (score < 800) return { name: "Very good", color: "from-emerald-500 to-teal-600", dark: "text-emerald-100" };
-  return { name: "Excellent", color: "from-cyan-500 to-blue-600", dark: "text-cyan-100" };
+  // Zinc-only editorial palette: we vary depth, not hue.
+  if (score < 580) return { name: "Poor", color: "from-zinc-600 to-zinc-800", dark: "text-zinc-100" };
+  if (score < 670) return { name: "Fair", color: "from-zinc-600 to-zinc-900", dark: "text-zinc-100" };
+  if (score < 740) return { name: "Good", color: "from-zinc-700 to-zinc-900", dark: "text-zinc-100" };
+  if (score < 800) return { name: "Very good", color: "from-zinc-800 to-zinc-950", dark: "text-zinc-100" };
+  return { name: "Excellent", color: "from-zinc-900 to-zinc-950", dark: "text-zinc-100" };
 }
 
 const PRESETS = [
@@ -96,15 +121,18 @@ const PRESETS = [
   { name: "Optimizer", util: 6, onTime: 100, ageY: 12, inq: 0, mix: 4 },
 ] as const;
 
-export default function AdvancedCreditScoreSimulator() {
+export default function AdvancedCreditScoreSimulator({
+  initialValues,
+  deferWalkthrough = false,
+}: AdvancedCreditScoreSimulatorProps = {}) {
   const [tourOpen, setTourOpen] = useState(false);
   const TOUR_ID = "credit-score-simulator";
 
-  const [utilizationPct, setUtilizationPct] = useState(28);
-  const [onTimePct, setOnTimePct] = useState(99);
-  const [avgAgeYears, setAvgAgeYears] = useState(7);
-  const [hardInquiries12m, setHardInquiries12m] = useState(1);
-  const [accountTypes, setAccountTypes] = useState(3);
+  const [utilizationPct, setUtilizationPct] = useState(initialValues?.utilizationPct ?? 28);
+  const [onTimePct, setOnTimePct] = useState(initialValues?.onTimePct ?? 99);
+  const [avgAgeYears, setAvgAgeYears] = useState(initialValues?.avgAgeYears ?? 7);
+  const [hardInquiries12m, setHardInquiries12m] = useState(initialValues?.hardInquiries12m ?? 1);
+  const [accountTypes, setAccountTypes] = useState(initialValues?.accountTypes ?? 3);
 
   const [copied, setCopied] = useState(false);
 
@@ -175,26 +203,25 @@ export default function AdvancedCreditScoreSimulator() {
   };
 
   useEffect(() => {
+    if (deferWalkthrough) return;
     if (hasCompletedWalkthrough(TOUR_ID)) return;
     const t = window.setTimeout(() => setTourOpen(true), 450);
     return () => window.clearTimeout(t);
-  }, []);
+  }, [deferWalkthrough]);
 
   const walkthroughSteps: WalkthroughStep[] = useMemo(
     () => [
       {
         id: "welcome",
         placement: "center",
-        title: "Welcome — let’s learn what moves a score",
+        title: "Welcome to the workspace",
         body: (
           <div className="space-y-3">
             <p>
-              This is a friendly, transparent credit score <strong>simulator</strong>. It’s not a real bureau score—
-              it’s a learning model so you can see how different habits can help or hurt.
+              If you completed the <strong>Facts Deck Credit Test</strong>, your sliders are pre-filled. This tour covers
+              presets, the gauge, and what-if scenarios.
             </p>
-            <p>
-              You can <strong>skip anytime</strong>. To replay later, use the <strong>Walk-through</strong> button.
-            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">Replay anytime from the Walk-through button.</p>
           </div>
         ),
       },
@@ -217,7 +244,7 @@ export default function AdvancedCreditScoreSimulator() {
         body: (
           <div className="space-y-2">
             <p>This card shows your simulated score and the rough band (Poor → Excellent).</p>
-            <p className="text-xs text-slate-500 dark:text-purple-300/90">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
               The gauge is just a visual—focus on direction, not exact points.
             </p>
           </div>
@@ -319,7 +346,7 @@ export default function AdvancedCreditScoreSimulator() {
   );
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-dark-950 dark:to-dark-900">
+    <div className={tdPage}>
       <ToolWalkthrough
         id={TOUR_ID}
         open={tourOpen}
@@ -333,24 +360,19 @@ export default function AdvancedCreditScoreSimulator() {
         }}
         steps={walkthroughSteps}
       />
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-600/12 via-transparent to-sky-600/10 dark:from-fuchsia-900/25 dark:to-sky-900/20" />
-        <div className="absolute top-24 left-8 w-72 h-72 bg-fuchsia-400/15 rounded-full blur-3xl" />
-        <div className="absolute bottom-16 right-8 w-96 h-96 bg-sky-400/15 rounded-full blur-3xl" />
+      <section className={tdHero}>
+        <ToolDashboardHeroBackdrop />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+        <div className={tdHeroInner}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-fuchsia-700 dark:text-purple-200 font-semibold hover:text-fuchsia-900 dark:hover:text-emerald-300 transition-colors"
-            >
+            <Link href="/" className={tdNavLink}>
               <ArrowLeft className="h-4 w-4" />
               Back to Home
             </Link>
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href="/post?category=Credit%20Cards&q=credit%20score"
-                className="inline-flex items-center gap-2 text-slate-700 dark:text-purple-200 font-semibold hover:text-fuchsia-800 dark:hover:text-emerald-300 transition-colors"
+                className={tdNavLink}
               >
                 <BookOpen className="h-4 w-4" />
                 Credit score guides
@@ -359,7 +381,7 @@ export default function AdvancedCreditScoreSimulator() {
               <button
                 type="button"
                 onClick={() => setTourOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-800/60 text-sm font-bold text-slate-900 dark:text-purple-100 hover:bg-slate-50 dark:hover:bg-purple-900/20"
+                className={`${tdGhostBtn} py-2 text-sm`}
                 aria-label="Open credit score simulator walk-through"
               >
                 <TourBook className="h-4 w-4" />
@@ -368,10 +390,10 @@ export default function AdvancedCreditScoreSimulator() {
               <button
                 type="button"
                 onClick={copyJson}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-800/60 text-sm font-bold text-slate-900 dark:text-purple-100 hover:bg-slate-50 dark:hover:bg-purple-900/20"
+                className={`${tdGhostBtn} py-2 text-sm`}
                 data-tour="credit-copy-json"
               >
-                {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                {copied ? <Check className="h-4 w-4 text-zinc-900 dark:text-zinc-100" /> : <Copy className="h-4 w-4" />}
                 {copied ? "Copied" : "Copy JSON"}
               </button>
             </div>
@@ -380,22 +402,20 @@ export default function AdvancedCreditScoreSimulator() {
           <div className="mt-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
             <div className="flex-1 max-w-xl">
               <div className="flex items-center gap-3">
-                <span className="w-12 h-12 rounded-2xl bg-gradient-to-br from-fuchsia-600 to-sky-600 flex items-center justify-center shadow-xl">
-                  <Activity className="h-6 w-6 text-white" />
+                <span className={tdIconTile}>
+                  <Activity className="h-6 w-6" />
                 </span>
-                <div>
-                  <h1 className="font-display text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-purple-100">
-                    Advanced Credit Score Simulator
-                  </h1>
-                  <p className="text-slate-600 dark:text-purple-200/80 mt-1">
-                    Twist the dials on the classic factor mix—see how habits might move a score band (illustrative
-                    only).
-                  </p>
-                </div>
+                <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+                  {FACTS_DECK_CREDIT_SCORE_SIMULATOR}
+                </h1>
               </div>
+              <p className="mt-2 text-zinc-600 dark:text-zinc-400 sm:ml-[4rem] leading-relaxed">
+                Twist the dials on the classic factor mix—see how habits might move a score band (illustrative
+                only).
+              </p>
 
-              <div className="mt-4 rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50/90 dark:bg-amber-900/15 px-4 py-3 text-sm text-amber-950 dark:text-amber-100/90 flex gap-2" data-tour="credit-disclaimer">
-                <Shield className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
+              <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 flex gap-2 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200" data-tour="credit-disclaimer">
+                <Shield className="h-5 w-5 shrink-0 text-zinc-900 dark:text-zinc-100" />
                 <span>
                   This is <strong>not</strong> a real FICO, VantageScore, or lender score. It’s a transparent toy
                   model for learning—your actual score depends on bureau data and proprietary formulas.
@@ -414,7 +434,7 @@ export default function AdvancedCreditScoreSimulator() {
                       setHardInquiries12m(p.inq);
                       setAccountTypes(p.mix);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-fuchsia-200 dark:border-fuchsia-500/30 bg-white dark:bg-dark-800/60 text-fuchsia-800 dark:text-fuchsia-200 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/20 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 transition-colors dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900/40"
                   >
                     <Zap className="h-3.5 w-3.5" />
                     {p.name}
@@ -422,7 +442,8 @@ export default function AdvancedCreditScoreSimulator() {
                 ))}
               </div>
             </div>
-
+            
+            {/* Simulated Credit Score Design Section */}
             <div className="w-full max-w-md mx-auto lg:mx-0">
               <div
                 className={`rounded-3xl p-8 text-white shadow-2xl bg-gradient-to-br ${b.color} relative overflow-hidden`}
@@ -450,15 +471,17 @@ export default function AdvancedCreditScoreSimulator() {
             </div>
           </div>
 
+          <ToolDashboardTestCta toolSlug="credit-score-simulator" testLabel={FACTS_DECK_CREDIT_SCORE_SIMULATOR} />
+
           <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg space-y-6" data-tour="credit-inputs">
-              <p className="text-sm font-bold text-slate-900 dark:text-purple-100 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-fuchsia-500" />
+            <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm space-y-6 dark:border-zinc-800 dark:bg-zinc-900/40" data-tour="credit-inputs">
+              <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-zinc-700 dark:text-zinc-300" />
                 Your inputs
               </p>
 
               <label className="block">
-                <span className="text-xs font-bold uppercase text-slate-500 dark:text-purple-300">
+                <span className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
                   Revolving utilization ({utilizationPct}%)
                 </span>
                 <input
@@ -467,13 +490,13 @@ export default function AdvancedCreditScoreSimulator() {
                   max={100}
                   value={utilizationPct}
                   onChange={(e) => setUtilizationPct(Number(e.target.value))}
-                  className="mt-2 w-full accent-fuchsia-600"
+                  className="mt-2 w-full accent-zinc-900 dark:accent-zinc-100"
                   data-tour="credit-utilization"
                 />
               </label>
 
               <label className="block">
-                <span className="text-xs font-bold uppercase text-slate-500 dark:text-purple-300">
+                <span className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
                   On-time payments (last 24 mo) ({onTimePct}%)
                 </span>
                 <input
@@ -482,13 +505,13 @@ export default function AdvancedCreditScoreSimulator() {
                   max={100}
                   value={onTimePct}
                   onChange={(e) => setOnTimePct(Number(e.target.value))}
-                  className="mt-2 w-full accent-emerald-600"
+                  className="mt-2 w-full accent-zinc-900 dark:accent-zinc-100"
                   data-tour="credit-payment"
                 />
               </label>
 
               <label className="block">
-                <span className="text-xs font-bold uppercase text-slate-500 dark:text-purple-300">
+                <span className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
                   Average age of accounts ({avgAgeYears} yrs)
                 </span>
                 <input
@@ -498,14 +521,14 @@ export default function AdvancedCreditScoreSimulator() {
                   step={0.5}
                   value={avgAgeYears}
                   onChange={(e) => setAvgAgeYears(Number(e.target.value))}
-                  className="mt-2 w-full accent-sky-600"
+                  className="mt-2 w-full accent-zinc-900 dark:accent-zinc-100"
                   data-tour="credit-age"
                 />
               </label>
 
               <div className="grid grid-cols-2 gap-4" data-tour="credit-inq-mix">
                 <label className="block">
-                  <span className="text-xs font-bold uppercase text-slate-500 dark:text-purple-300">
+                  <span className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
                     Hard inquiries (12 mo)
                   </span>
                   <input
@@ -514,11 +537,11 @@ export default function AdvancedCreditScoreSimulator() {
                     max={20}
                     value={hardInquiries12m}
                     onChange={(e) => setHardInquiries12m(Number(e.target.value))}
-                    className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 font-mono"
+                    className="mt-1 w-full px-3 py-2 rounded-xl border border-zinc-200 bg-white font-mono text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-bold uppercase text-slate-500 dark:text-purple-300">
+                  <span className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
                     Account types (1–6)
                   </span>
                   <input
@@ -527,15 +550,15 @@ export default function AdvancedCreditScoreSimulator() {
                     max={6}
                     value={accountTypes}
                     onChange={(e) => setAccountTypes(Number(e.target.value))}
-                    className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-900 font-mono"
+                    className="mt-1 w-full px-3 py-2 rounded-xl border border-zinc-200 bg-white font-mono text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
                   />
                 </label>
               </div>
             </div>
 
             <div className="space-y-6">
-              <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg" data-tour="credit-factor-bars">
-                <p className="text-sm font-bold text-slate-900 dark:text-purple-100 mb-4">Factor contribution (model)</p>
+              <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40" data-tour="credit-factor-bars">
+                <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-4">Factor contribution (model)</p>
                 <div className="space-y-3">
                   {(Object.keys(FACTOR_LABELS) as FactorKey[]).map((k) => {
                     const v = pts[k];
@@ -550,41 +573,41 @@ export default function AdvancedCreditScoreSimulator() {
                     const w = (v / maxPts[k]) * 100;
                     return (
                       <div key={k}>
-                        <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-purple-200">
+                        <div className="flex justify-between text-xs font-semibold text-zinc-600 dark:text-zinc-300">
                           <span>
                             {meta.label}{" "}
-                            <span className="text-slate-400 dark:text-purple-400 font-normal">({meta.weight})</span>
+                            <span className="text-zinc-400 dark:text-zinc-500 font-normal">({meta.weight})</span>
                           </span>
                           <span className="font-mono">{v} pts</span>
                         </div>
-                        <div className="mt-1 h-2 rounded-full bg-slate-100 dark:bg-dark-700 overflow-hidden">
+                        <div className="mt-1 h-2 rounded-full bg-zinc-100 dark:bg-zinc-950 overflow-hidden border border-transparent dark:border-zinc-800">
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-sky-500"
+                            className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100"
                             style={{ width: `${clamp(w, 0, 100)}%` }}
                           />
                         </div>
-                        <p className="mt-0.5 text-[11px] text-slate-500 dark:text-purple-300/80">{meta.hint}</p>
+                        <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">{meta.hint}</p>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-slate-200 dark:border-purple-500/20 bg-white/95 dark:bg-dark-800/50 p-6 shadow-lg" data-tour="credit-whatif">
-                <p className="text-sm font-bold text-slate-900 dark:text-purple-100 mb-2">What-if (same model)</p>
-                <p className="text-sm text-slate-600 dark:text-purple-200/90 mb-4">
+              <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40" data-tour="credit-whatif">
+                <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-2">What-if (same model)</p>
+                <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4">
                   If you only lowered utilization (everything else unchanged):
                 </p>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-200 dark:border-fuchsia-500/30 p-4">
-                    <p className="text-xs font-bold text-fuchsia-800 dark:text-fuchsia-200">−15% utilization</p>
-                    <p className="mt-1 text-2xl font-extrabold font-mono text-slate-900 dark:text-purple-100">
+                  <div className="rounded-2xl bg-zinc-50 border border-zinc-200 p-4 dark:bg-zinc-950 dark:border-zinc-800">
+                    <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">−15% utilization</p>
+                    <p className="mt-1 text-2xl font-extrabold font-mono text-zinc-900 dark:text-zinc-100">
                       {whatIf.payDown15}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-500/30 p-4">
-                    <p className="text-xs font-bold text-sky-800 dark:text-sky-200">−30% utilization</p>
-                    <p className="mt-1 text-2xl font-extrabold font-mono text-slate-900 dark:text-purple-100">
+                  <div className="rounded-2xl bg-zinc-50 border border-zinc-200 p-4 dark:bg-zinc-950 dark:border-zinc-800">
+                    <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">−30% utilization</p>
+                    <p className="mt-1 text-2xl font-extrabold font-mono text-zinc-900 dark:text-zinc-100">
                       {whatIf.payDown30}
                     </p>
                   </div>

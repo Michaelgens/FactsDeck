@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 import {
   getPostBySlugOrId,
   getPostContent,
-  getRelatedPosts,
   getPartitionedPosts,
   getCategoriesWithCounts,
+  getRelatedPosts,
 } from "../../lib/posts";
-import PostPageClient from "../../components/PostPageClient";
+import PostPageView from "../../components/PostPageView";
 import { SITE_URL, absoluteUrl } from "../../lib/seo";
 import { postPublicPath } from "../../lib/post-url";
 import { isUuid } from "../../lib/slug";
@@ -48,7 +48,7 @@ export async function generateMetadata({
       siteName: "Facts Deck",
       locale: "en_US",
       publishedTime: post.publishDate,
-      modifiedTime: post.createdAt || post.publishDate,
+      modifiedTime: post.publishDate,
       section: post.categories?.[0],
       tags: post.tags?.length ? post.tags : undefined,
       authors: post.author ? [post.author.name] : undefined,
@@ -94,17 +94,14 @@ export default async function PostPage({
     redirect(postPublicPath(post));
   }
 
-  const [content, relatedPosts, partitioned, categoriesWithCounts] = await Promise.all([
+  const [content, partitioned, categoriesWithCounts, relatedPosts] = await Promise.all([
     getPostContent(post.content, post.contentUrl),
-    /** Shared tags first, then same category, then other recent; first 3 for sidebar, rest for inline strip. */
-    getRelatedPosts(post.id, post.categories, post.tags, 9),
     getPartitionedPosts(post.id),
     getCategoriesWithCounts(),
+    getRelatedPosts(post.id, post.categories, post.tags, 12),
   ]);
 
-  const relatedArticles = relatedPosts.slice(0, 3);
-  const moreArticles = relatedPosts.slice(3, 9);
-  const sidebarTools = pickDailyTools(siteTools, 3, `post-article-${post.id}`);
+  const sidebarTools = pickDailyTools(siteTools, 5, `post-article-${post.id}`);
 
   const canonicalUrl = canonicalPostUrl(post);
   const imageUrl = post.image ? absoluteUrl(post.image) : undefined;
@@ -126,7 +123,7 @@ export default async function PostPage({
             }
           : undefined,
         datePublished: post.publishDate,
-        dateModified: post.createdAt || post.publishDate,
+        dateModified: post.publishDate,
         author: post.author
           ? { "@type": "Person", name: post.author.name }
           : undefined,
@@ -185,14 +182,13 @@ export default async function PostPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <PostPageClient
+      <PostPageView
         article={post}
         content={content}
         from={from}
-        relatedArticles={relatedArticles}
-        moreArticles={moreArticles}
         trendingPosts={partitioned.trending}
         guidePosts={partitioned.guides}
+        relatedPosts={relatedPosts}
         categoriesWithCounts={categoriesWithCounts}
         sidebarTools={sidebarTools}
       />

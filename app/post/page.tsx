@@ -1,13 +1,35 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getPartitionedPosts, getCategoriesWithCounts } from "../lib/posts";
 import PostListContent from "../components/PostListContent";
 import PostListLoading from "./loading";
 import { siteTools } from "../lib/site-config";
 import { pickDailyTools } from "../lib/tools-utils";
+import { absoluteUrl } from "../lib/seo";
 
-export const metadata = {
-  title: "Articles | Facts Deck",
-  description: "Browse our latest articles, guides, and expert picks on investing, banking, and personal finance.",
+const canonical = absoluteUrl("/post");
+
+const description =
+  "Browse Facts Deck articles by section—latest, featured, expert picks, guides, and trending—with search, categories, and filters.";
+
+export const metadata: Metadata = {
+  title: { absolute: "Articles | Facts Deck" },
+  description,
+  alternates: { canonical },
+  openGraph: {
+    title: "Articles | Facts Deck",
+    description,
+    url: canonical,
+    siteName: "Facts Deck",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Articles | Facts Deck",
+    description,
+  },
+  robots: { index: true, follow: true },
 };
 
 export default async function PostListPage() {
@@ -15,7 +37,7 @@ export default async function PostListPage() {
     getPartitionedPosts(),
     getCategoriesWithCounts(),
   ]);
-  const sidebarTools = pickDailyTools(siteTools, 3, "post-list-sidebar");
+  const sidebarTools = pickDailyTools(siteTools, 5, "post-list-sidebar");
 
   return (
     <Suspense fallback={<PostListLoading />}>

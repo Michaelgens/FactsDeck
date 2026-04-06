@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { getAdminStats, formatCount } from "../lib/admin";
-import { getAllPosts } from "../lib/posts";
+import { getAllPostsWithLoadError } from "../lib/posts";
 import { postPublicPath } from "../lib/post-url";
 
 function timeAgo(dateStr: string): string {
@@ -25,7 +25,8 @@ function timeAgo(dateStr: string): string {
 }
 
 export default async function AdminDashboardPage() {
-  const [stats, allPosts] = await Promise.all([getAdminStats(), getAllPosts()]);
+  const [stats, postsBundle] = await Promise.all([getAdminStats(), getAllPostsWithLoadError()]);
+  const { posts: allPosts, loadError: postsLoadError } = postsBundle;
   const latestPosts = allPosts.slice(0, 5);
 
   const statCards = [
@@ -44,6 +45,16 @@ export default async function AdminDashboardPage() {
   }));
   return (
     <div>
+      {postsLoadError && (
+        <div
+          className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-100"
+          role="alert"
+        >
+          <p className="font-semibold">Could not load articles from the database</p>
+          <p className="mt-1 text-amber-900/90 dark:text-amber-200/90">{postsLoadError}</p>
+        </div>
+      )}
+
       <div className="mb-8">
         <h1 className="font-display text-2xl md:text-3xl font-bold text-slate-900 dark:text-dark-100">
           Dashboard

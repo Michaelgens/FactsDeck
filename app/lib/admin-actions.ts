@@ -129,6 +129,7 @@ export async function createPost(
   const { error } = await supabase.from("posts").insert(row);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/admin/articles");
+  revalidatePath(`/admin/articles/${id}/preview`);
   revalidatePath("/admin");
   revalidatePath("/");
   revalidatePath("/post");
@@ -168,6 +169,8 @@ export async function updatePost(
     author_bio: data.authorBio?.trim() || null,
     author_followers: data.authorFollowers?.trim() || null,
     author_articles: data.authorArticles ?? null,
+    /** Refresh listing date on every save so edited articles surface as latest. */
+    publish_date: new Date().toISOString(),
     read_time: data.readTime.trim() || "5 min read",
     tags: Array.isArray(data.tags) ? data.tags : [],
     featured: Boolean(data.featured),
@@ -187,6 +190,7 @@ export async function updatePost(
   const { error } = await supabase.from("posts").update(row).eq("id", id);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/admin/articles");
+  revalidatePath(`/admin/articles/${id}/preview`);
   revalidatePath("/admin");
   revalidatePath("/");
   revalidatePath("/post");
@@ -213,6 +217,7 @@ export async function setPostPublished(
     revalidatePath(postPublicPath(p));
     revalidatePath(`/post/${id}`);
   }
+  revalidatePath(`/admin/articles/${id}/preview`);
   revalidatePath("/admin/articles");
   revalidatePath("/admin");
   revalidatePath("/");

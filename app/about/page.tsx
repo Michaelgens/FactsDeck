@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   Globe,
   Heart,
-  Star,
   Mail,
   Phone,
   MapPin,
@@ -33,14 +32,17 @@ import {
   Rocket,
   Brain,
   Target,
+  CheckCircle,
+  Info,
 } from "lucide-react";
 import { SITE_URL, absoluteUrl } from "../lib/seo";
 import { proxiedImageSrc } from "../lib/image-proxy";
 
 const canonical = absoluteUrl("/about");
+const LAST_UPDATED = "March 9, 2026";
 
 export const metadata: Metadata = {
-  title: { absolute: "FactsDeck | About Us" },
+  title: { absolute: "About Us | Facts Deck" },
   description:
     "Learn who Facts Deck is and how we work: editorial standards, fact-checking, corrections, sourcing, independence, and our commitment to impartial financial education.",
   keywords: [
@@ -54,7 +56,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical },
   openGraph: {
-    title: "FactsDeck | About Us",
+    title: "About Us | Facts Deck",
     description:
       "Who we are, how we edit and fact-check, and how we stay independent—Facts Deck’s About page.",
     url: canonical,
@@ -64,7 +66,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "FactsDeck | About Us",
+    title: "About Us | Facts Deck",
     description:
       "Editorial standards, fact-checking, corrections, sourcing, and independence at Facts Deck.",
   },
@@ -76,7 +78,6 @@ const teamMembers = [
     name: "Michael Genesis II",
     role: "CEO & Founder",
     image: "/first.jpeg",
-    bio: "Financial analyst with 10+ years in finance. Passionate about democratizing financial education.",
     expertise: ["Investment Strategy", "Market Analysis", "Financial Planning"],
     social: { linkedin: "#", twitter: "#" },
   },
@@ -84,7 +85,6 @@ const teamMembers = [
     name: "Emma Rodriguez",
     role: "Head of Content",
     image: "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=300",
-    bio: "Award-winning financial journalist and CFA charterholder. Making complex finance simple for everyone.",
     expertise: ["Financial Writing", "Research", "Education"],
     social: { linkedin: "#", twitter: "#" },
   },
@@ -92,7 +92,6 @@ const teamMembers = [
     name: "David Kim",
     role: "Head of Research",
     image: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=300",
-    bio: "PhD in Economics from MIT. Specializes in market research and cryptocurrency analysis.",
     expertise: ["Economic Research", "Cryptocurrency", "Market Trends"],
     social: { linkedin: "#", twitter: "#" },
   },
@@ -238,35 +237,31 @@ const values = [
     title: "Accessibility First",
     description:
       "Making financial education accessible to everyone, regardless of their background or experience level.",
-    color: "from-red-500 to-pink-500",
   },
   {
     icon: Shield,
     title: "Trust & Transparency",
     description:
       "Providing unbiased, accurate information with complete transparency about our sources and methodologies.",
-    color: "from-blue-500 to-cyan-500",
   },
   {
     icon: Lightbulb,
     title: "Innovation",
     description:
       "Continuously innovating to create better tools and content that serve our community's evolving needs.",
-    color: "from-yellow-500 to-orange-500",
   },
   {
     icon: Users,
     title: "Community Focus",
     description:
       "Building a supportive community where everyone can learn, share, and grow their financial knowledge together.",
-    color: "from-purple-500 to-indigo-500",
   },
 ];
 
 const achievements = [
   { number: "2.5M+", label: "Monthly Readers", icon: Users },
   { number: "5,000+", label: "Articles Published", icon: BookOpen },
-  { number: "6+", label: "Financial Tools", icon: Calculator },
+  { number: "10+", label: "Financial Tools", icon: Calculator },
   { number: "99%", label: "User Satisfaction", icon: Trophy },
 ];
 
@@ -334,6 +329,47 @@ const sidebarNav: { href: string; label: string }[] = [
   { href: "#get-in-touch", label: "Get In Touch" },
 ];
 
+const cardSurface =
+  "rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80";
+
+const iconWrap =
+  "inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-orange-200/90 bg-orange-50 text-blue-700 shadow-sm dark:border-emerald-800/70 dark:bg-emerald-950/50 dark:text-cyan-300";
+
+function SectionHeading({
+  kicker,
+  title,
+  description,
+  align = "left",
+  id,
+}: {
+  kicker: string;
+  title: string;
+  description: string;
+  align?: "left" | "center";
+  id?: string;
+}) {
+  return (
+    <div className={`mb-12 max-w-3xl ${align === "center" ? "mx-auto text-center" : ""}`}>
+      <p className="text-xs font-semibold tracking-widest text-orange-800/80 dark:text-cyan-400/90">{kicker}</p>
+      <div className="mt-3">
+        <h2
+          id={id}
+          className="font-display text-3xl font-bold tracking-tight text-zinc-900 md:text-4xl dark:text-zinc-100"
+        >
+          {title}
+        </h2>
+        <p
+          className={`mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300 ${
+            align === "center" ? "mx-auto max-w-3xl" : ""
+          }`}
+        >
+          {description}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 const aboutJsonLd = {
   "@context": "https://schema.org",
   "@graph": [
@@ -349,7 +385,7 @@ const aboutJsonLd = {
       "@type": "AboutPage",
       "@id": `${canonical}#webpage`,
       url: canonical,
-      name: "FactsDeck | About Us",
+      name: "About Us | Facts Deck",
       description:
         "About Facts Deck: who we are, editorial guidelines, fact-checking, corrections, sourcing, independence, and diversity commitments.",
       isPartOf: { "@id": `${SITE_URL}#website` },
@@ -394,24 +430,21 @@ function PolicyBlock({
 }) {
   const Icon = section.icon;
   return (
-    <section id={section.id} aria-labelledby={`heading-${section.id}`}>
-      <div className="flex items-start gap-4 mb-6">
-        <div className="shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
-          <Icon className="h-6 w-6 text-white" aria-hidden />
+    <section id={section.id} className="scroll-mt-24" aria-labelledby={`heading-${section.id}`}>
+      <div className="mb-6 flex items-start gap-4">
+        <div className={iconWrap}>
+          <Icon className="h-6 w-6" aria-hidden />
         </div>
         <h2
           id={`heading-${section.id}`}
-          className="font-display text-2xl md:text-3xl font-bold text-gray-900 dark:text-purple-200 pt-1"
+          className="font-display pt-1 text-2xl font-bold text-zinc-900 md:text-3xl dark:text-zinc-100"
         >
           {section.title}
         </h2>
       </div>
-      <div>
+      <div className="border-b border-zinc-200 pb-16 dark:border-zinc-800">
         {section.paragraphs.map((p, i) => (
-          <p
-            key={i}
-            className="text-gray-600 dark:text-purple-200/95 leading-relaxed text-lg mb-4 last:mb-0"
-          >
+          <p key={i} className="mb-4 text-lg leading-relaxed text-zinc-600 last:mb-0 dark:text-zinc-300">
             {p}
           </p>
         ))}
@@ -423,105 +456,124 @@ function PolicyBlock({
 export default function AboutPage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }}
-      />
-      <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-dark-950 dark:to-dark-900">
-        <section className="relative bg-gradient-to-br from-purple-600 via-purple-700 to-accent-800 dark:from-dark-900 dark:via-purple-900 dark:to-accent-900 text-white overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent dark:from-black/50" />
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-10 left-10 w-72 h-72 bg-purple-400/20 dark:bg-purple-400/30 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute bottom-10 right-10 w-96 h-96 bg-purple-400/20 dark:bg-accent-400/30 rounded-full blur-3xl animate-pulse delay-1000" />
-          </div>
-
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <div className="mb-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }} />
+      <div className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+        <section className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+          <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <Link
                 href="/"
-                className="inline-flex items-center glass-effect text-white px-6 py-3 rounded-2xl font-bold hover:bg-white/20 transition-all duration-300 backdrop-blur-lg border border-white/30 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                className="inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
               >
-                <ArrowLeft className="mr-2 h-5 w-5" />
-                Back
+                <ArrowLeft className="h-4 w-4 shrink-0" />
+                Back to home
               </Link>
-            </div>
 
-            <header className="text-center max-w-4xl mx-auto">
-              <div className="flex items-center justify-center space-x-2 mb-6">
-                <div className="flex items-center space-x-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <span className="text-purple-100 dark:text-purple-200 text-sm font-medium">
-                  Trusted financial education
+              <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
+                <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200">
+                  <BookOpen className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-emerald-400" />
+                  Editorial standards
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                  <CheckCircle className="h-3.5 w-3.5 shrink-0 text-orange-600 dark:text-cyan-400" />
+                  Updated {LAST_UPDATED}
                 </span>
               </div>
+            </div>
 
-              <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-balance">
-                About <span className="gradient-text">Facts Deck</span>
-              </h1>
+            <header className="mt-10 grid items-start gap-10 lg:grid-cols-12">
+              <div className="lg:col-span-7">
+                <p className="text-xs font-semibold tracking-widest text-orange-800/80 dark:text-cyan-400/90">ABOUT</p>
+                <h1 className="mt-3 font-display text-4xl font-bold leading-[1.08] text-balance sm:text-5xl md:text-6xl">
+                  <span className="text-blue-800 dark:text-emerald-300">About</span>{" "}
+                  <span className="text-orange-600 dark:text-cyan-400">Facts Deck</span>
+                </h1>
+                <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-600 sm:text-lg dark:text-zinc-300">
+                  Clear articles, tools, and published standards—built on accuracy, sourcing, and independence so you can
+                  learn with confidence.
+                </p>
 
-              <p className="text-xl text-purple-100 dark:text-purple-100 leading-relaxed max-w-3xl mx-auto mb-8">
-                We help people understand money with clear articles, tools, and editorial standards built
-                on accuracy, sourcing, and independence—so you can learn with confidence.
-              </p>
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <Link
+                    href="#get-in-touch"
+                    className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                  >
+                    Get in touch
+                  </Link>
+                  <Link
+                    href="#editorial-guidelines"
+                    className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/40 dark:hover:text-cyan-300"
+                  >
+                    Editorial guidelines
+                  </Link>
+                  <Link
+                    href="/tools"
+                    className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 shadow-sm transition-colors hover:border-zinc-300 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-cyan-300"
+                  >
+                    Explore tools
+                  </Link>
+                </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-                <Link
-                  href="/contact"
-                  className="group bg-white text-purple-600 px-8 py-4 rounded-2xl font-bold hover:bg-purple-50 transition-all duration-300 flex items-center justify-center shadow-2xl hover:shadow-3xl transform hover:-translate-y-2 hover:scale-105"
-                >
-                  <Mail className="mr-2 h-5 w-5 group-hover:animate-bounce" />
-                  Contact Us
-                </Link>
-                <Link
-                  href="#our-mission"
-                  className="group glass-effect text-white px-8 py-4 rounded-2xl font-bold hover:bg-white/20 transition-all duration-300 backdrop-blur-lg border border-white/30 flex items-center justify-center hover:shadow-3xl transform hover:-translate-y-2 hover:scale-105"
-                >
-                  <Heart className="mr-2 h-5 w-5" />
-                  Our mission
-                </Link>
+                <p className="mt-6 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                  Legal:{" "}
+                  <Link href="/privacy" className="font-medium text-blue-800 underline-offset-4 hover:underline dark:text-cyan-300">
+                    Privacy
+                  </Link>
+                  {" · "}
+                  <Link
+                    href="/disclaimer"
+                    className="font-medium text-blue-800 underline-offset-4 hover:underline dark:text-cyan-300"
+                  >
+                    Disclaimer
+                  </Link>
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-2xl mx-auto pb-4">
-                <div className="text-center">
-                  <div className="text-2xl lg:text-3xl font-bold">2025</div>
-                  <div className="text-sm text-purple-200 dark:text-purple-200">Founded</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl lg:text-3xl font-bold">2.5M+</div>
-                  <div className="text-sm text-purple-200 dark:text-purple-200">Readers</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl lg:text-3xl font-bold">150+</div>
-                  <div className="text-sm text-purple-200 dark:text-purple-200">Countries</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl lg:text-3xl font-bold">4.9★</div>
-                  <div className="text-sm text-purple-200 dark:text-purple-200">Rating</div>
+              <div className="lg:col-span-5">
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/35">
+                  <p className="text-xs font-semibold tracking-widest text-orange-800/90 dark:text-cyan-400/90">
+                    AT A GLANCE
+                  </p>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Founded</p>
+                      <p className="mt-1 text-lg font-semibold text-blue-800 dark:text-emerald-300">2025</p>
+                    </div>
+                    <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Readers</p>
+                      <p className="mt-1 text-lg font-semibold text-orange-600 dark:text-cyan-400">2.5M+</p>
+                    </div>
+                    <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Countries</p>
+                      <p className="mt-1 text-lg font-semibold text-blue-800 dark:text-emerald-300">150+</p>
+                    </div>
+                    <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Rating</p>
+                      <p className="mt-1 text-lg font-semibold text-orange-600 dark:text-cyan-400">4.9★</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </header>
           </div>
         </section>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="flex flex-col-reverse lg:flex-row gap-10 lg:gap-12 items-start">
-            <aside className="w-full lg:w-60 xl:w-64 shrink-0 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:order-none">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="flex flex-col-reverse items-start gap-10 lg:flex-row lg:gap-12">
+            <aside className="w-full shrink-0 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:w-60 lg:overflow-y-auto xl:w-64">
               <nav
-                className="rounded-xl border border-gray-200 dark:border-purple-500/30 bg-purple-50/70 dark:bg-dark-800/80 p-4 shadow-sm"
+                className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
                 aria-label="On this page"
               >
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-purple-400 mb-3">
+                <p className="mb-3 text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                   On this page
                 </p>
-                <ul className="space-y-0.5 text-sm border-t border-gray-200/80 dark:border-purple-500/20 pt-3">
+                <ul className="space-y-0.5 border-t border-zinc-200 pt-3 text-sm dark:border-zinc-800">
                   {sidebarNav.map((item) => (
                     <li key={item.href}>
                       <a
                         href={item.href}
-                        className="block rounded-lg px-2 py-2 text-gray-700 dark:text-purple-200/95 hover:bg-purple-100/80 dark:hover:bg-purple-900/40 hover:text-purple-800 dark:hover:text-white transition-colors leading-snug"
+                        className="block rounded-lg px-2 py-2 leading-snug text-zinc-700 transition-colors hover:bg-orange-50 hover:text-blue-800 dark:text-zinc-200 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
                       >
                         {item.label}
                       </a>
@@ -534,145 +586,99 @@ export default function AboutPage() {
             <div className="min-w-0 flex-1 space-y-20 max-w-4xl">
               <PolicyBlock section={whoWeAreSection} />
 
-              <section id="our-mission" aria-labelledby="heading-our-mission">
-                <h2
+              <section id="our-mission" className="scroll-mt-24" aria-labelledby="heading-our-mission">
+                <SectionHeading
                   id="heading-our-mission"
-                  className="font-display text-3xl md:text-4xl font-bold text-gray-900 dark:text-purple-200 mb-6 text-center"
-                >
-                  Our Mission
-                </h2>
-                <p className="text-xl text-gray-600 dark:text-purple-200 leading-relaxed max-w-4xl mx-auto text-center mb-12">
-                  To make financial literacy accessible to everyone by providing clear, actionable, and unbiased
-                  financial education. We believe that everyone deserves the knowledge and tools to build a secure
-                  financial future.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                  kicker="MISSION"
+                  title="Our mission"
+                  align="center"
+                  description="To make financial literacy accessible with clear, actionable, unbiased education—so everyone has the knowledge and tools to build a more secure future."
+                />
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
                   {missionFeatures.map((feature, index) => (
-                    <div key={index} className="text-center group">
-                      <div className="bg-gradient-to-br from-purple-500 to-purple-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                        <feature.icon className="h-8 w-8 text-white" />
+                    <div key={index} className={`${cardSurface} p-6 text-center`}>
+                      <div className={`${iconWrap} mx-auto mb-4`}>
+                        <feature.icon className="h-6 w-6" aria-hidden />
                       </div>
-                      <h3 className="font-display font-bold text-xl text-gray-900 dark:text-purple-200 mb-4 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
-                        {feature.title}
-                      </h3>
-                      <p className="text-gray-600 dark:text-purple-200 leading-relaxed group-hover:scale-[1.02] transition-transform duration-300">
-                        {feature.description}
-                      </p>
+                      <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-100">{feature.title}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">{feature.description}</p>
                     </div>
                   ))}
                 </div>
               </section>
 
-              <section id="our-values" aria-labelledby="heading-our-values">
-                <div className="text-center mb-12">
-                  <h2
-                    id="heading-our-values"
-                    className="font-display text-3xl md:text-4xl font-bold text-gray-900 dark:text-purple-200 mb-6"
-                  >
-                    Our Values
-                  </h2>
-                  <p className="text-xl text-gray-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-                    These core values guide everything we do and shape how we serve our community.
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <section id="our-values" className="scroll-mt-24" aria-labelledby="heading-our-values">
+                <SectionHeading
+                  id="heading-our-values"
+                  kicker="VALUES"
+                  title="What we stand for"
+                  align="center"
+                  description="Principles that guide how we serve readers and build the site."
+                />
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   {values.map((value, index) => (
-                    <div
-                      key={index}
-                      className="bg-white dark:bg-gradient-to-br dark:from-dark-800 dark:to-purple-900/50 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-purple-500/30 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 group"
-                    >
-                      <div
-                        className={`w-16 h-16 bg-gradient-to-br ${value.color} rounded-2xl flex items-center justify-center mb-6 shadow-lg`}
-                      >
-                        <value.icon className="h-8 w-8 text-white" />
+                    <div key={index} className={`${cardSurface} p-8`}>
+                      <div className={`${iconWrap} mb-5`}>
+                        <value.icon className="h-6 w-6" aria-hidden />
                       </div>
-                      <h3 className="font-display font-bold text-2xl text-gray-900 dark:text-purple-200 mb-4 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
-                        {value.title}
-                      </h3>
-                      <p className="text-gray-600 dark:text-purple-200 leading-relaxed text-lg">
-                        {value.description}
-                      </p>
+                      <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-100">{value.title}</h3>
+                      <p className="mt-3 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">{value.description}</p>
                     </div>
                   ))}
                 </div>
               </section>
 
-              <section id="our-impact" aria-labelledby="heading-our-impact">
-                <div className="text-center mb-12">
-                  <h2
-                    id="heading-our-impact"
-                    className="font-display text-3xl md:text-4xl font-bold text-gray-900 dark:text-purple-200 mb-6"
-                  >
-                    Our Impact
-                  </h2>
-                  <p className="text-xl text-gray-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-                    Numbers that reflect our commitment to serving the global financial education community.
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <section id="our-impact" className="scroll-mt-24" aria-labelledby="heading-our-impact">
+                <SectionHeading
+                  id="heading-our-impact"
+                  kicker="IMPACT"
+                  title="By the numbers"
+                  align="center"
+                  description="A snapshot of scale and engagement—illustrative of our commitment to the community."
+                />
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                   {achievements.map((achievement, index) => (
-                    <div
-                      key={index}
-                      className="text-center group bg-white dark:bg-gradient-to-br dark:from-dark-800 dark:to-purple-900/50 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-purple-500/30 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2"
-                    >
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <achievement.icon className="h-6 w-6 text-white" />
+                    <div key={index} className={`${cardSurface} p-6 text-center`}>
+                      <div className={`${iconWrap} mx-auto mb-4`}>
+                        <achievement.icon className="h-6 w-6" aria-hidden />
                       </div>
-                      <div className="text-2xl font-bold text-gray-900 dark:text-purple-200 mb-2 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
-                        {achievement.number}
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-purple-200">{achievement.label}</div>
+                      <div className="text-2xl font-bold text-blue-800 dark:text-emerald-300">{achievement.number}</div>
+                      <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{achievement.label}</div>
                     </div>
                   ))}
                 </div>
               </section>
 
-              <section id="our-journey" aria-labelledby="heading-our-journey">
-                <div className="text-center mb-12">
-                  <h2
-                    id="heading-our-journey"
-                    className="font-display text-3xl md:text-4xl font-bold text-gray-900 dark:text-purple-200 mb-6"
-                  >
-                    Our Journey
-                  </h2>
-                  <p className="text-xl text-gray-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-                    From a simple idea to a global platform serving millions of users worldwide.
-                  </p>
-                </div>
-                <div className="relative max-w-3xl mx-auto">
-                  <div className="absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-gradient-to-b from-purple-500 to-accent-500 rounded-full hidden sm:block" />
-                  <div className="space-y-12">
-                    {timeline.map((item, index) => (
-                      <div
-                        key={index}
-                        className={`flex flex-col sm:flex-row items-center sm:items-start gap-4 ${
-                          index % 2 === 0 ? "sm:flex-row" : "sm:flex-row-reverse"
-                        }`}
-                      >
-                        <div
-                          className={`w-full sm:w-[calc(50%-2rem)] ${
-                            index % 2 === 0 ? "sm:pr-8 sm:text-right" : "sm:pl-8 sm:text-left"
-                          }`}
-                        >
-                          <div className="bg-white dark:bg-gradient-to-br dark:from-dark-800 dark:to-purple-900/50 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-purple-500/30 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                            <div className="text-purple-600 dark:text-purple-400 font-bold text-lg mb-2">
-                              {item.year}
-                            </div>
-                            <h3 className="font-display font-bold text-xl text-gray-900 dark:text-purple-200 mb-3">
-                              {item.title}
-                            </h3>
-                            <p className="text-gray-600 dark:text-purple-200 leading-relaxed">
-                              {item.description}
-                            </p>
-                          </div>
+              <section id="our-journey" className="scroll-mt-24" aria-labelledby="heading-our-journey">
+                <SectionHeading
+                  id="heading-our-journey"
+                  kicker="JOURNEY"
+                  title="Our journey"
+                  align="center"
+                  description="Milestones from launch to today—how we’ve grown the platform and the product."
+                />
+                <div className="mx-auto max-w-3xl space-y-4">
+                  {timeline.map((item, index) => (
+                    <div
+                      key={item.year}
+                      className={`${cardSurface} p-6`}
+                    >
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+                        <div className={iconWrap}>
+                          <item.icon className="h-6 w-6 shrink-0" aria-hidden />
                         </div>
-                        <div className="relative z-10 w-14 h-14 shrink-0 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                          <item.icon className="h-7 w-7 text-white" />
+                        <div>
+                          <p className="text-xs font-semibold tracking-widest text-orange-800/90 dark:text-cyan-400/90">
+                            {item.year}
+                          </p>
+                          <h3 className="font-display mt-1 text-xl font-bold text-zinc-900 dark:text-zinc-100">
+                            {item.title}
+                          </h3>
+                          <p className="mt-2 leading-relaxed text-zinc-600 dark:text-zinc-300">{item.description}</p>
                         </div>
-                        <div className="hidden sm:block sm:w-[calc(50%-2rem)]" />
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
               </section>
 
@@ -683,66 +689,50 @@ export default function AboutPage() {
               </div>
 
               <section
-                className="mt-8"
                 id="meet-our-senior-management-team"
+                className="scroll-mt-24"
                 aria-labelledby="heading-senior-team"
               >
-                <div className="text-center mb-16">
-                  <h2
-                    id="heading-senior-team"
-                    className="font-display text-3xl md:text-4xl font-bold text-gray-900 dark:text-purple-200 mb-6"
-                  >
-                    Meet Our Senior Management Team
-                  </h2>
-                  <p className="text-xl text-gray-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-                    Leaders across editorial, technology, and research guiding Facts Deck&apos;s mission to make
-                    financial education accessible and trustworthy.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto">
+                <SectionHeading
+                  id="heading-senior-team"
+                  kicker="TEAM"
+                  title="Senior leadership"
+                  align="center"
+                  description="Editorial, technology, and research leaders guiding Facts Deck’s mission—accessible, trustworthy financial education."
+                />
+                <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {teamMembers.map((member, index) => (
-                    <div
-                      key={index}
-                      className="bg-white dark:bg-gradient-to-br dark:from-dark-800 dark:to-purple-900/50 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-purple-500/30 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 text-center group"
-                    >
+                    <div key={index} className={`${cardSurface} p-6 text-center`}>
                       <Image
                         src={proxiedImageSrc(member.image)}
                         alt={member.name}
                         width={96}
                         height={96}
-                        className="w-24 h-24 rounded-full object-cover mx-auto mb-6 border-4 border-white dark:border-purple-500/50 shadow-lg"
+                        className="mx-auto mb-6 h-24 w-24 rounded-full border-4 border-white object-cover shadow-sm dark:border-zinc-800"
                       />
-                      <h3 className="font-display font-bold text-xl text-gray-900 dark:text-purple-200 mb-2">
-                        {member.name}
-                      </h3>
-                      <p className="text-purple-600 dark:text-purple-400 font-semibold mb-4 group-hover:text-gray-600 dark:group-hover:text-emerald-400 transition-colors">
-                        {member.role}
-                      </p>
-                      <p className="text-gray-600 dark:text-purple-200 text-sm leading-relaxed mb-4">
-                        {member.bio}
-                      </p>
-                      <div className="flex flex-wrap gap-2 justify-center mb-4">
+                      <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-100">{member.name}</h3>
+                      <p className="mb-4 font-semibold text-zinc-700 transition-colors dark:text-zinc-300">{member.role}</p>
+                      <div className="mb-4 flex flex-wrap justify-center gap-2">
                         {member.expertise.map((skill, skillIndex) => (
                           <span
                             key={skillIndex}
-                            className="bg-purple-100 text-purple-600 dark:bg-yellow-900/30 dark:text-yellow-400 px-3 py-1 rounded-full text-xs font-semibold"
+                            className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-200"
                           >
                             {skill}
                           </span>
                         ))}
                       </div>
-                      <div className="flex justify-center space-x-3">
+                      <div className="flex justify-center space-x-2">
                         <a
                           href={member.social.linkedin}
-                          className="text-gray-600 dark:text-white hover:text-purple-500 dark:hover:text-emerald-400 transition-colors"
+                          className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
                           aria-label={`${member.name} on LinkedIn`}
                         >
                           <Linkedin className="h-5 w-5" />
                         </a>
                         <a
                           href={member.social.twitter}
-                          className="text-gray-600 dark:text-white hover:text-purple-500 dark:hover:text-emerald-400 transition-colors"
+                          className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
                           aria-label={`${member.name} on X`}
                         >
                           <Twitter className="h-5 w-5" />
@@ -755,94 +745,81 @@ export default function AboutPage() {
 
               <section
                 id="get-in-touch"
-                className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-dark-800 dark:to-purple-900/50 rounded-3xl p-8 md:p-12"
+                className="scroll-mt-24 rounded-2xl border border-zinc-200 bg-zinc-50 p-8 md:p-12 dark:border-zinc-800 dark:bg-zinc-900/35"
                 aria-labelledby="heading-contact"
               >
-                <div className="text-center mb-12">
-                  <h2
-                    id="heading-contact"
-                    className="font-display text-3xl md:text-4xl font-bold text-gray-900 dark:text-purple-200 mb-6"
+                <div className={`${iconWrap} mx-auto mb-6`}>
+                  <Info className="h-7 w-7" aria-hidden />
+                </div>
+                <h2
+                  id="heading-contact"
+                  className="text-center font-display text-3xl font-bold text-zinc-900 md:text-4xl dark:text-zinc-100"
+                >
+                  Get in touch
+                </h2>
+                <p className="mx-auto mt-3 max-w-2xl text-center text-lg text-zinc-600 dark:text-zinc-300">
+                  Questions, ideas, or partnerships—we read what you send and route it to the right team.
+                </p>
+
+                <div className="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-3">
+                  <div className="rounded-xl border border-zinc-200 bg-white/80 p-5 text-center dark:border-zinc-800 dark:bg-zinc-950/80">
+                    <Mail className="mx-auto mb-3 h-6 w-6 text-blue-600 dark:text-emerald-400" aria-hidden />
+                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Email</h3>
+                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">General inquiries</p>
+                    <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">hello@factsdeck.com</p>
+                  </div>
+                  <div className="rounded-xl border border-zinc-200 bg-white/80 p-5 text-center dark:border-zinc-800 dark:bg-zinc-950/80">
+                    <Phone className="mx-auto mb-3 h-6 w-6 text-orange-600 dark:text-cyan-400" aria-hidden />
+                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Phone</h3>
+                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">9AM – 6PM EST</p>
+                    <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">+44 *** *** ****</p>
+                  </div>
+                  <div className="rounded-xl border border-zinc-200 bg-white/80 p-5 text-center dark:border-zinc-800 dark:bg-zinc-950/80">
+                    <MapPin className="mx-auto mb-3 h-6 w-6 text-blue-600 dark:text-emerald-400" aria-hidden />
+                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Office</h3>
+                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">By appointment</p>
+                    <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">Belfast, NI, UK</p>
+                  </div>
+                </div>
+
+                <div className="mt-10 flex justify-center space-x-3">
+                  <a
+                    href="#"
+                    className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+                    aria-label="Facebook"
                   >
-                    Get In Touch
-                  </h2>
-                  <p className="text-xl text-gray-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-                    Have questions, suggestions, or want to partner with us? We&apos;d love to hear from you.
-                  </p>
+                    <Facebook className="h-7 w-7" />
+                  </a>
+                  <a
+                    href="#"
+                    className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+                    aria-label="X"
+                  >
+                    <Twitter className="h-7 w-7" />
+                  </a>
+                  <a
+                    href="#"
+                    className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+                    aria-label="LinkedIn"
+                  >
+                    <Linkedin className="h-7 w-7" />
+                  </a>
+                  <a
+                    href="#"
+                    className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+                    aria-label="Instagram"
+                  >
+                    <Instagram className="h-7 w-7" />
+                  </a>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                      <Mail className="h-8 w-8 text-white" />
-                    </div>
-                    <h3 className="font-display font-bold text-xl text-gray-900 dark:text-purple-200 mb-3">
-                      Email Us
-                    </h3>
-                    <p className="text-gray-600 dark:text-purple-200 mb-2">General inquiries</p>
-                    <p className="text-purple-600 dark:text-purple-400 font-semibold">hello@factsdeck.com</p>
-                  </div>
-
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                      <Phone className="h-8 w-8 text-white" />
-                    </div>
-                    <h3 className="font-display font-bold text-xl text-gray-900 dark:text-purple-200 mb-3">
-                      Call Us
-                    </h3>
-                    <p className="text-gray-600 dark:text-purple-200 mb-2">Business hours: 9AM - 6PM EST</p>
-                    <p className="text-purple-600 dark:text-purple-400 font-semibold">+44 *** *** ****</p>
-                  </div>
-
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                      <MapPin className="h-8 w-8 text-white" />
-                    </div>
-                    <h3 className="font-display font-bold text-xl text-gray-900 dark:text-purple-200 mb-3">
-                      Visit Us
-                    </h3>
-                    <p className="text-gray-600 dark:text-purple-200 mb-2">Belfast, NI, UK</p>
-                    <p className="text-purple-600 dark:text-purple-400 font-semibold">********</p>
-                  </div>
-                </div>
-
-                <div className="text-center">
-                  <div className="flex justify-center space-x-6 mb-8">
-                    <a
-                      href="#"
-                      className="text-gray-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-emerald-400 transition-colors transform hover:scale-110"
-                      aria-label="Facebook"
-                    >
-                      <Facebook className="h-8 w-8" />
-                    </a>
-                    <a
-                      href="#"
-                      className="text-gray-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-emerald-400 transition-colors transform hover:scale-110"
-                      aria-label="X"
-                    >
-                      <Twitter className="h-8 w-8" />
-                    </a>
-                    <a
-                      href="#"
-                      className="text-gray-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-emerald-400 transition-colors transform hover:scale-110"
-                      aria-label="LinkedIn"
-                    >
-                      <Linkedin className="h-8 w-8" />
-                    </a>
-                    <a
-                      href="#"
-                      className="text-gray-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-emerald-400 transition-colors transform hover:scale-110"
-                      aria-label="Instagram"
-                    >
-                      <Instagram className="h-8 w-8" />
-                    </a>
-                  </div>
-
+                <div className="mt-10 text-center">
                   <Link
                     href="/contact"
-                    className="inline-flex items-center bg-gradient-to-r from-purple-600 to-accent-600 text-white px-8 py-4 rounded-2xl font-bold hover:from-purple-700 hover:to-accent-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-8 py-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
                   >
-                    <Zap className="mr-2 h-5 w-5" />
-                    Start Your Journey
+                    <Zap className="h-5 w-5" aria-hidden />
+                    Open contact page
                   </Link>
                 </div>
               </section>

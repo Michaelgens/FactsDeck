@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Sparkles,
   Telescope,
   Orbit,
   Lightbulb,
@@ -10,14 +9,16 @@ import {
   Rocket,
   Mail,
   Compass,
-  Stars,
+  CheckCircle,
+  Briefcase,
 } from "lucide-react";
 import { absoluteUrl } from "../lib/seo";
 
 const canonical = absoluteUrl("/careers");
+const LAST_UPDATED = "March 9, 2026";
 
 export const metadata: Metadata = {
-  title: { absolute: "FactsDeck | Careers" },
+  title: { absolute: "Careers | Facts Deck" },
   description:
     "Build the future of financial education with Facts Deck. No open roles right now—learn how we work, what we value, and how to stay on our radar.",
   keywords: [
@@ -28,9 +29,9 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical },
   openGraph: {
-    title: "FactsDeck | Careers",
+    title: "Careers | Facts Deck",
     description:
-      "We’re assembling a crew for clearer money stories—culture, craft, and how to wave from the launchpad.",
+      "We’re assembling a crew for clearer money stories—culture, craft, and how to stay on our radar.",
     url: canonical,
     siteName: "Facts Deck",
     type: "website",
@@ -38,7 +39,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "FactsDeck | Careers",
+    title: "Careers | Facts Deck",
     description: "Facts Deck careers: mission, culture, and staying in orbit—no listings yet, lots of signal.",
   },
   robots: { index: true, follow: true },
@@ -48,12 +49,14 @@ const signals = [
   {
     icon: Telescope,
     title: "Explainers who obsess over footnotes",
-    blurb: "You get joy from turning a dense IRS paragraph or fund prospectus into something a friend would actually read.",
+    blurb:
+      "You get joy from turning a dense IRS paragraph or fund prospectus into something a friend would actually read.",
   },
   {
     icon: Orbit,
     title: "Product minds who respect the math",
-    blurb: "You ship interfaces where sliders and disclaimers feel honest—not flashy charts that oversell certainty.",
+    blurb:
+      "You ship interfaces where sliders and disclaimers feel honest—not flashy charts that oversell certainty.",
   },
   {
     icon: Lightbulb,
@@ -67,163 +70,247 @@ const signals = [
   },
 ];
 
+const cardSurface =
+  "rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80";
+
+const iconWrap =
+  "inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-orange-200/90 bg-orange-50 text-blue-700 shadow-sm dark:border-emerald-800/70 dark:bg-emerald-950/50 dark:text-cyan-300";
+
+function SectionHeading({
+  kicker,
+  title,
+  description,
+}: {
+  kicker: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="mb-12 max-w-3xl">
+      <p className="text-xs font-semibold tracking-widest text-orange-800/80 dark:text-cyan-400/90">{kicker}</p>
+      <div className="mt-3">
+        <div>
+          <h2 className="font-display text-3xl font-bold tracking-tight text-zinc-900 md:text-4xl dark:text-zinc-100">
+            {title}
+          </h2>
+          <p className="mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">{description}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CareersPage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-dark-950 dark:via-slate-900 dark:to-purple-950/40">
-      <section className="relative overflow-hidden border-b border-purple-200/40 dark:border-purple-500/20 bg-gradient-to-br from-indigo-950 via-purple-900 to-amber-950/80 text-white">
-        <div className="absolute inset-0 opacity-40">
-          <div className="absolute top-20 left-[10%] w-72 h-72 rounded-full bg-violet-500/30 blur-3xl" />
-          <div className="absolute bottom-10 right-[15%] w-96 h-96 rounded-full bg-amber-500/20 blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(90vw,42rem)] h-[min(90vw,42rem)] rounded-full border border-white/10 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_50%)]" />
-        </div>
+    <div className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      <section className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <Link
+              href="/"
+              className="inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+            >
+              <ArrowLeft className="h-4 w-4 shrink-0" />
+              Back to home
+            </Link>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
-          <Link
-            href="/"
-            className="inline-flex items-center glass-effect text-white px-6 py-3 rounded-xl font-bold hover:bg-white/20 transition-all duration-300 mb-8"
-          >
-            <ArrowLeft className="mr-2 h-5 w-5" />
-            Back
-          </Link>
-
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold uppercase tracking-widest text-amber-200/90 mb-6">
-              <Stars className="h-3.5 w-3.5" />
-              Launchpad, not job board
-            </div>
-
-            <h1 className="font-display text-4xl md:text-6xl font-bold mb-6 text-balance leading-tight">
-              Careers at{" "}
-              <span className="bg-gradient-to-r from-amber-200 via-white to-violet-200 bg-clip-text text-transparent">
-                Facts Deck
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
+              <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200">
+                <Briefcase className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-emerald-400" />
+                No open roles today
               </span>
-            </h1>
-
-            <p className="text-lg md:text-xl text-white/85 leading-relaxed max-w-2xl mx-auto mb-8">
-              We&apos;re building a place where money makes sense—without the hype. There are{" "}
-              <strong className="text-white">no open roles posted today</strong>, but the mission is very much in
-              motion. This page is our open frequency: who we are, how we work, and how to stay in orbit.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <a
-                href="mailto:careers@factsdeck.com?subject=Future%20at%20Facts%20Deck"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white text-purple-900 font-bold hover:bg-amber-100 transition-colors shadow-lg"
-              >
-                <Mail className="h-5 w-5" />
-                Ping the launchpad
-              </a>
-              <Link
-                href="/about"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl border border-white/40 text-white font-semibold hover:bg-white/10 transition-colors"
-              >
-                <Compass className="h-5 w-5" />
-                Read our standards
-              </Link>
+              <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                <CheckCircle className="h-3.5 w-3.5 shrink-0 text-orange-600 dark:text-cyan-400" />
+                Updated {LAST_UPDATED}
+              </span>
             </div>
+          </div>
+
+          <div className="mt-10 grid gap-10 lg:grid-cols-12 lg:items-end">
+            <div className="lg:col-span-7">
+              <p className="text-xs font-semibold tracking-widest text-orange-800/80 dark:text-cyan-400/90">
+                CAREERS
+              </p>
+              <h1 className="mt-3 font-display text-4xl font-bold leading-[1.08] text-balance sm:text-5xl md:text-6xl">
+                <span className="text-blue-800 dark:text-emerald-300">Careers</span>{" "}
+                <span className="text-orange-600 dark:text-cyan-400">at Facts Deck</span>
+              </h1>
+              <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-600 sm:text-lg dark:text-zinc-300">
+                We build clear, sourced financial education—without the hype. We don&apos;t have roles posted today, but we
+                keep a high-signal inbox for people who care about craft and readers.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <a
+                  href="mailto:careers@factsdeck.com?subject=Future%20at%20Facts%20Deck"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                >
+                  <Mail className="h-5 w-5 shrink-0" aria-hidden />
+                  careers@factsdeck.com
+                </a>
+                <Link
+                  href="#how-we-work"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/40 dark:hover:text-cyan-300"
+                >
+                  How we work
+                </Link>
+                <Link
+                  href="#signals"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 shadow-sm transition-colors hover:border-zinc-300 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-cyan-300"
+                >
+                  Profiles we seek
+                </Link>
+              </div>
+
+              <p className="mt-6 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                Reaching out? Include what you want to build and one or two links that show your craft.
+              </p>
+            </div>
+
+            <aside className="lg:col-span-5">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/35">
+                <p className="text-xs font-semibold tracking-widest text-orange-800/90 dark:text-cyan-400/90">
+                  AT A GLANCE
+                </p>
+                <ul className="mt-4 space-y-3 text-sm text-zinc-700 dark:text-zinc-300">
+                  <li className="flex gap-3">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600 dark:bg-emerald-400" />
+                    Editorial accuracy and independence are non-negotiable—see About.
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500 dark:bg-cyan-400" />
+                    New listings will appear here and on our channels when we post.
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600 dark:bg-emerald-400" />
+                    We&apos;d rather wait for fit than hire fast and misalign.
+                  </li>
+                </ul>
+              </div>
+            </aside>
           </div>
         </div>
       </section>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20 space-y-16">
-        <section className="text-center">
-          <div className="inline-flex p-3 rounded-2xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 mb-4">
-            <Rocket className="h-8 w-8" />
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <section id="hiring" className="mb-20 scroll-mt-24">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className={`${iconWrap} mx-auto mb-6`}>
+              <Rocket className="h-7 w-7" aria-hidden />
+            </div>
+            <p className="text-xs font-semibold tracking-widest text-orange-800/80 dark:text-cyan-400/90">OPEN ROLES</p>
+            <h2 className="mt-2 font-display text-3xl font-bold text-zinc-900 md:text-4xl dark:text-zinc-100">
+              The deck is still being shuffled
+            </h2>
+            <p className="mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
+              Startups that teach finance don&apos;t win by hiring fast—they win by hiring{" "}
+              <span className="font-semibold text-zinc-900 dark:text-zinc-100">right</span>. We&apos;d rather leave chairs
+              empty than fill them with misaligned energy. When we post roles, they&apos;ll live here. Until then, treat
+              this page as a <span className="font-medium text-zinc-800 dark:text-zinc-200">signal booster</span> for
+              kindred spirits.
+            </p>
           </div>
-          <h2 className="font-display text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-4">
-            The deck is still being shuffled
-          </h2>
-          <p className="text-slate-600 dark:text-purple-200/90 leading-relaxed text-lg">
-            Startups that teach finance don&apos;t win by hiring fast—they win by hiring{" "}
-            <em className="text-purple-700 dark:text-purple-300 not-italic font-semibold">right</em>. We&apos;d
-            rather leave chairs empty than fill them with misaligned energy. When we post roles, they&apos;ll
-            live here and on our channels. Until then, consider this a{" "}
-            <span className="text-purple-600 dark:text-emerald-400 font-medium">signal booster</span> for kindred
-            spirits.
-          </p>
         </section>
 
-        <section>
-          <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-500" />
-            How we work (the short version)
-          </h2>
-          <ul className="mt-4 space-y-3 text-slate-600 dark:text-purple-200/90">
-            <li className="flex gap-3">
-              <span className="text-purple-500 font-mono font-bold">01</span>
-              <span>
-                <strong className="text-slate-800 dark:text-white">Editorial gravity.</strong> Accuracy, sourcing,
-                and independence aren&apos;t slogans—they&apos;re in our About page for a reason.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-purple-500 font-mono font-bold">02</span>
-              <span>
-                <strong className="text-slate-800 dark:text-white">Tools with humility.</strong> Calculators should
+        <section id="how-we-work" className="mb-20 scroll-mt-24 rounded-2xl border border-zinc-200 bg-zinc-50/90 px-4 py-14 sm:px-8 lg:px-10 dark:border-zinc-800 dark:bg-zinc-900/25">
+          <SectionHeading
+            kicker="CULTURE"
+            title="How we work"
+            description="Principles that show up in our About page and in how we ship articles and tools."
+          />
+
+          <div className="mx-auto max-w-3xl space-y-4">
+            <div className="flex gap-4 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+              <span className="font-mono text-sm font-bold tabular-nums text-blue-800 dark:text-emerald-300">01</span>
+              <p className="text-zinc-600 dark:text-zinc-300">
+                <strong className="text-zinc-900 dark:text-zinc-100">Editorial gravity.</strong> Accuracy, sourcing, and
+                independence aren&apos;t slogans—they&apos;re spelled out on our About page for a reason.
+              </p>
+            </div>
+            <div className="flex gap-4 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+              <span className="font-mono text-sm font-bold tabular-nums text-orange-600 dark:text-cyan-400">02</span>
+              <p className="text-zinc-600 dark:text-zinc-300">
+                <strong className="text-zinc-900 dark:text-zinc-100">Tools with humility.</strong> Calculators should
                 educate, not imply false precision. We label uncertainty where it belongs.
-              </span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-purple-500 font-mono font-bold">03</span>
-              <span>
-                <strong className="text-slate-800 dark:text-white">Async-friendly, human at the core.</strong> Deep
-                work wins; meetings are for decisions, not theater.
-              </span>
-            </li>
-          </ul>
+              </p>
+            </div>
+            <div className="flex gap-4 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+              <span className="font-mono text-sm font-bold tabular-nums text-blue-800 dark:text-emerald-300">03</span>
+              <p className="text-zinc-600 dark:text-zinc-300">
+                <strong className="text-zinc-900 dark:text-zinc-100">Async-friendly, human at the core.</strong> Deep work
+                wins; meetings are for decisions, not theater.
+              </p>
+            </div>
+          </div>
         </section>
 
-        <section>
-          <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-6 text-center">
-            Constellations we&apos;re curious about
-          </h2>
-          <p className="text-center text-slate-600 dark:text-purple-200/85 mb-10 max-w-xl mx-auto">
-            Not job descriptions—just gravitational pulls. If several of these feel like you, we&apos;d love a
-            note for the future.
-          </p>
-          <div className="grid sm:grid-cols-2 gap-5">
+        <section id="signals" className="mb-20 scroll-mt-24">
+          <SectionHeading
+            kicker="PROFILES"
+            title="Constellations we’re curious about"
+            description="Not job descriptions—gravitational pulls. If several of these feel like you, we’d love a note for the future."
+          />
+
+          <div className="grid gap-6 sm:grid-cols-2">
             {signals.map((s) => {
               const Icon = s.icon;
               return (
-                <div
-                  key={s.title}
-                  className="rounded-2xl border border-slate-200 dark:border-purple-500/25 bg-slate-50/80 dark:bg-dark-900/50 p-6 hover:border-purple-300 dark:hover:border-purple-500/40 transition-colors"
-                >
-                  <Icon className="h-8 w-8 text-purple-600 dark:text-emerald-400 mb-3" />
-                  <h3 className="font-display font-bold text-slate-900 dark:text-white mb-2">{s.title}</h3>
-                  <p className="text-sm text-slate-600 dark:text-purple-200/85 leading-relaxed">{s.blurb}</p>
+                <div key={s.title} className={`${cardSurface} p-6`}>
+                  <div className={`${iconWrap} mb-5`}>
+                    <Icon className="h-6 w-6" aria-hidden />
+                  </div>
+                  <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-100">{s.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">{s.blurb}</p>
                 </div>
               );
             })}
           </div>
         </section>
 
-        <section className="rounded-3xl bg-gradient-to-br from-purple-600 to-indigo-700 dark:from-purple-800 dark:to-indigo-950 text-white p-8 md:p-10 text-center shadow-xl shadow-purple-500/20">
-          <h2 className="font-display text-2xl font-bold mb-3">Stay on the trajectory</h2>
-          <p className="text-white/90 leading-relaxed mb-6 max-w-lg mx-auto">
-            Send a short hello: who you are, what you&apos;d want to build at Facts Deck, and a link or two that
-            shows your craft. We read everything; we reply when there&apos;s a clear next step—even if that step
-            is &quot;let&apos;s reconnect in six months.&quot;
+        <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-8 text-center shadow-sm md:p-12 dark:border-zinc-800 dark:bg-zinc-900/35">
+          <div className={`${iconWrap} mx-auto mb-6`}>
+            <Mail className="h-7 w-7" aria-hidden />
+          </div>
+          <h2 className="font-display text-2xl font-bold text-zinc-900 md:text-3xl dark:text-zinc-100">
+            Stay on the trajectory
+          </h2>
+          <p className="mx-auto mt-3 max-w-lg text-zinc-600 dark:text-zinc-300">
+            Send a short hello: who you are, what you&apos;d want to build at Facts Deck, and a link or two that shows your
+            craft. We read everything; we reply when there&apos;s a clear next step—even if that&apos;s &quot;let&apos;s
+            reconnect in six months.&quot;
           </p>
           <a
             href="mailto:careers@factsdeck.com?subject=Hello%20from%20orbit"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-purple-800 font-bold hover:bg-amber-100 transition-colors"
+            className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
           >
-            <Mail className="h-5 w-5" />
+            <Mail className="h-5 w-5 shrink-0" aria-hidden />
             careers@factsdeck.com
           </a>
-          <p className="text-xs text-white/70 mt-6">
+          <p className="mt-6 text-xs text-zinc-500 dark:text-zinc-400">
             No automated keyword filters—just humans, coffee, and inbox discipline.
           </p>
         </section>
 
-        <p className="text-center text-sm text-slate-500 dark:text-purple-400/80">
-          <Link href="/contact" className="text-purple-600 dark:text-emerald-400 hover:underline font-medium">
+        <p className="mt-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+          <Link
+            href="/contact"
+            className="font-medium text-blue-800 underline-offset-4 hover:underline dark:text-cyan-300"
+          >
             General contact
           </Link>
           {" · "}
-          <Link href="/about" className="text-purple-600 dark:text-emerald-400 hover:underline font-medium">
+          <Link
+            href="/about"
+            className="font-medium text-blue-800 underline-offset-4 hover:underline dark:text-cyan-300"
+          >
             About &amp; editorial
+          </Link>
+          {" · "}
+          <Link
+            href="/post"
+            className="font-medium text-blue-800 underline-offset-4 hover:underline dark:text-cyan-300"
+          >
+            Read the site
           </Link>
         </p>
       </div>

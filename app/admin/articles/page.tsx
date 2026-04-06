@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FileText, Plus } from "lucide-react";
-import { getAllPosts } from "../../lib/posts";
+import { getAllPostsWithLoadError } from "../../lib/posts";
 import AdminArticleRow from "./AdminArticleRow";
 import AdminFilterBar from "../components/AdminFilterBar";
 import AdminPagination from "../components/AdminPagination";
@@ -21,7 +21,7 @@ export default async function AdminArticlesPage({
     ? Number(params.limit)
     : 10;
 
-  const allPosts = await getAllPosts();
+  const { posts: allPosts, loadError } = await getAllPostsWithLoadError();
 
   const ql = q.toLowerCase();
   const filtered = allPosts.filter((p) => {
@@ -47,6 +47,16 @@ export default async function AdminArticlesPage({
 
   return (
     <div>
+      {loadError && (
+        <div
+          className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-100"
+          role="alert"
+        >
+          <p className="font-semibold">Could not load articles from the database</p>
+          <p className="mt-1 text-amber-900/90 dark:text-amber-200/90">{loadError}</p>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="font-display text-2xl md:text-3xl font-bold text-slate-900 dark:text-dark-100">

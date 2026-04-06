@@ -1,98 +1,121 @@
+function Pulse({ className }: { className?: string }) {
+  return <div className={`animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800 ${className ?? ""}`} />;
+}
+
 export default function PostLoading() {
   return (
-    <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-dark-950 dark:to-dark-900">
-      <section className="relative bg-gradient-to-br from-purple-600 via-purple-700 to-accent-800 dark:from-dark-900 dark:via-purple-900 dark:to-accent-900 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent dark:from-black/50" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
-          <div className="h-11 w-40 bg-white/20 rounded-xl mb-6 animate-pulse" />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
-            <div className="lg:col-span-2 space-y-4">
-              <div className="flex gap-4">
-                <div className="h-6 w-20 bg-white/20 rounded-full animate-pulse" />
-                <div className="h-6 w-24 bg-white/20 rounded animate-pulse" />
-                <div className="h-6 w-16 bg-white/20 rounded animate-pulse" />
-              </div>
-              <div className="h-10 md:h-14 lg:h-16 w-full max-w-2xl bg-white/20 rounded-2xl animate-pulse" />
-              <div className="h-5 w-full max-w-xl bg-white/20 rounded animate-pulse" />
-              <div className="flex items-center gap-4 pt-4">
-                <div className="h-14 w-14 rounded-full bg-white/20 animate-pulse" />
-                <div className="space-y-2">
-                  <div className="h-4 w-32 bg-white/20 rounded animate-pulse" />
-                  <div className="h-3 w-40 bg-white/20 rounded animate-pulse" />
+    <div className="min-h-screen bg-white dark:bg-zinc-950">
+      {/* Hero — matches PostPageView / PostListContent (no mesh gradients) */}
+      <section className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-8">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <Pulse className="h-10 w-40 rounded-full" />
+              <Pulse className="h-5 w-44" />
+            </div>
+            <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+              <div className="space-y-4 lg:col-span-7">
+                <Pulse className="h-4 w-36" />
+                <Pulse className="h-4 w-48" />
+                <Pulse className="h-12 w-full max-w-3xl rounded-2xl sm:h-14" />
+                <Pulse className="h-5 w-full max-w-2xl" />
+                <div className="flex gap-2">
+                  <Pulse className="h-7 w-20 rounded-full" />
+                  <Pulse className="h-7 w-24 rounded-full" />
+                </div>
+                <div className="flex flex-wrap items-center gap-4 border-t border-zinc-100 pt-6 dark:border-zinc-800/90">
+                  <Pulse className="h-14 w-14 shrink-0 rounded-full" />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <Pulse className="h-4 w-36" />
+                    <Pulse className="h-3 w-52" />
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-6 pt-2">
-                <div className="h-4 w-16 bg-white/20 rounded animate-pulse" />
-                <div className="h-4 w-16 bg-white/20 rounded animate-pulse" />
-                <div className="h-4 w-16 bg-white/20 rounded animate-pulse" />
+              <div className="lg:col-span-5">
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50/80 p-3 dark:border-zinc-800 dark:bg-zinc-900/40">
+                  <Pulse className="aspect-[16/10] w-full rounded-xl lg:min-h-[260px]" />
+                  <Pulse className="mx-auto mt-3 h-3 w-48" />
+                </div>
               </div>
             </div>
-            <div className="lg:col-span-1">
-              <div className="h-48 md:h-64 lg:h-80 bg-white/20 rounded-2xl animate-pulse" />
+            <div className="flex flex-wrap gap-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Pulse key={i} className="h-10 w-28 rounded-xl" />
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3">
-            <article className="prose prose-slate dark:prose-invert max-w-none">
-              <div className="space-y-4">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                  <div key={i} className="space-y-2">
-                    <div
-                      className="h-4 bg-slate-200 dark:bg-dark-800 rounded animate-pulse"
-                      style={{ width: i % 3 === 0 ? "85%" : "100%" }}
-                    />
-                    <div
-                      className="h-4 bg-slate-200 dark:bg-dark-800 rounded animate-pulse"
-                      style={{ width: i % 2 === 0 ? "95%" : "100%" }}
-                    />
-                    <div
-                      className="h-4 bg-slate-200 dark:bg-dark-800 rounded animate-pulse"
-                      style={{ width: "70%" }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </article>
+      <section className="sticky top-16 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <Pulse className="h-12 w-full max-w-md rounded-xl" />
+            <Pulse className="h-5 w-32" />
           </div>
+        </div>
+      </section>
 
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white dark:bg-dark-900/50 rounded-xl p-6 border border-slate-200 dark:border-purple-500/30">
-              <div className="h-6 w-36 bg-slate-200 dark:bg-dark-800 rounded mb-4 animate-pulse" />
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex gap-3">
-                    <div className="h-12 w-12 rounded-lg bg-slate-200 dark:bg-dark-800 animate-pulse flex-shrink-0" />
-                    <div className="flex-1 space-y-1">
-                      <div className="h-4 w-full bg-slate-200 dark:bg-dark-800 rounded animate-pulse" />
-                      <div className="h-3 w-20 bg-slate-200 dark:bg-dark-800 rounded animate-pulse" />
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
+          <div className="min-w-0 space-y-8 lg:col-span-8">
+            <Pulse className="h-24 w-full rounded-2xl border border-zinc-200 dark:border-zinc-800" />
+            <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-8">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div key={i} className="space-y-2">
+                  <div
+                    className="h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800"
+                    style={{ width: i % 3 === 0 ? "85%" : "100%" }}
+                  />
+                  <div
+                    className="h-4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800"
+                    style={{ width: i % 2 === 0 ? "95%" : "100%" }}
+                  />
+                  <div className="h-4 w-[70%] animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-zinc-200 pt-10 dark:border-zinc-800">
+              <Pulse className="mb-6 h-8 w-56" />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+                  <div
+                    key={i}
+                    className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
+                  >
+                    <Pulse className="h-36 w-full rounded-none sm:h-40" />
+                    <div className="space-y-2 p-4">
+                      <Pulse className="h-3 w-24" />
+                      <Pulse className="h-4 w-full" />
+                      <Pulse className="h-3 w-full" />
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-
-            <div className="bg-white dark:bg-dark-900/50 rounded-xl p-6 border border-slate-200 dark:border-purple-500/30">
-              <div className="h-6 w-28 bg-slate-200 dark:bg-dark-800 rounded mb-4 animate-pulse" />
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="h-12 bg-slate-200 dark:bg-dark-800 rounded-xl animate-pulse" />
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-dark-900/50 rounded-xl p-6 border border-slate-200 dark:border-purple-500/30">
-              <div className="h-6 w-32 bg-slate-200 dark:bg-dark-800 rounded mb-4 animate-pulse" />
-              <div className="space-y-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-10 bg-slate-200 dark:bg-dark-800 rounded-lg animate-pulse" />
-                ))}
-              </div>
-            </div>
           </div>
+
+          <aside className="space-y-8 lg:col-span-4">
+            {[1, 2, 3, 4, 5].map((panel) => (
+              <div
+                key={panel}
+                className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6"
+              >
+                <Pulse className="h-6 w-48 border-b border-zinc-100 pb-3 dark:border-zinc-800" />
+                <div className="mt-4 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
+                  {[1, 2, 3, 4, 5].map((row) => (
+                    <div key={row} className="flex gap-3 py-3.5 first:pt-0">
+                      <Pulse className="h-8 w-8 shrink-0 rounded-lg" />
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <Pulse className="h-4 w-full" />
+                        <Pulse className="h-3 w-20" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </aside>
         </div>
       </div>
     </div>

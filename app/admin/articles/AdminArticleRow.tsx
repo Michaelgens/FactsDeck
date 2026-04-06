@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FileText, Pencil, Trash2, Globe, EyeOff } from "lucide-react";
+import { FileText, Pencil, Trash2, Globe, EyeOff, Eye } from "lucide-react";
 import { updatePostFlags, deletePost, setPostPublished } from "../../lib/admin-actions";
 import type { Post } from "../../lib/types";
 import { postPublicPath } from "../../lib/post-url";
@@ -143,18 +143,25 @@ export default function AdminArticleRow({ article }: { article: Post }) {
         >
           <Trash2 className="h-4 w-4" />
         </button>
-        {article.published ? (
+        <div className="flex flex-col items-end gap-1">
           <Link
-            href={postPublicPath(article)}
-            className="text-sm text-purple-600 dark:text-purple-400 font-semibold hover:text-purple-700 dark:hover:text-emerald-400"
+            href={`/admin/articles/${article.id}/preview`}
+            className="inline-flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400 font-semibold hover:text-purple-700 dark:hover:text-emerald-400"
+            title="Preview as it will appear on the site (works for hidden drafts)"
           >
-            View
+            <Eye className="h-3.5 w-3.5" />
+            Preview
           </Link>
-        ) : (
-          <span className="text-xs text-slate-400 dark:text-purple-500 font-medium" title="Publish to enable public URL">
-            —
-          </span>
-        )}
+          {article.published ? (
+            <Link
+              href={postPublicPath(article)}
+              className="text-xs text-slate-500 dark:text-purple-500 hover:text-purple-600 dark:hover:text-emerald-400"
+              title="Open public article URL"
+            >
+              View live →
+            </Link>
+          ) : null}
+        </div>
       </div>
     </li>
   );

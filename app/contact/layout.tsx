@@ -5,7 +5,7 @@ import { absoluteUrl } from "../lib/seo";
 const canonical = absoluteUrl("/contact");
 
 export const metadata: Metadata = {
-  title: { absolute: "FactsDeck | Contact Us" },
+  title: { absolute: "Contact Us | Facts Deck" },
   description:
     "Reach Facts Deck for editorial pitches, partnerships, technical help, press, or general questions. Office hours, departments, and contact form.",
   keywords: [
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical },
   openGraph: {
-    title: "FactsDeck | Contact Us",
+    title: "Contact Us | Facts Deck",
     description: "Get in touch with Facts Deck—support, editorial, partnerships, and more.",
     url: canonical,
     siteName: "Facts Deck",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "FactsDeck | Contact Us",
+    title: "Contact Us | Facts Deck",
     description: "Contact Facts Deck for questions, tools help, or collaboration.",
   },
   robots: { index: true, follow: true },

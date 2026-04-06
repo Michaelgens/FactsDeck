@@ -97,6 +97,15 @@ body {
   overflow: hidden;
 }
 
+/* Hide scrollbar (e.g. category marquee) while keeping overflow scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Glass effect for hero sections */
 .glass-effect {
   backdrop-filter: blur(20px);

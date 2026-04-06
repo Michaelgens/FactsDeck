@@ -1,5 +1,6 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { createServerClient, isSupabaseConfigured } from "./supabase/server";
+import { logSupabaseReadError, readErrorMessage } from "./supabase-read-errors";
 import type { Post, PostSummary } from "./types";
 import { isUuid } from "./slug";
 
@@ -223,19 +224,49 @@ export async function getPartitionedPosts(
   return partitionPostsBySection(all, excludeId);
 }
 
+async function getAllPostsInternal(): Promise<{ posts: Post[]; loadError: string | null }> {
+  if (!isSupabaseConfigured()) {
+    return { posts: [], loadError: null };
+  }
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .order("publish_date", { ascending: false });
+    if (error) {
+      logSupabaseReadError("getAllPosts", error);
+      return { posts: [], loadError: readErrorMessage(error) };
+    }
+    return { posts: (data || []).map(rowToPost), loadError: null };
+  } catch (e) {
+    logSupabaseReadError("getAllPosts", e);
+    return { posts: [], loadError: readErrorMessage(e) };
+  }
+}
+
 /** All posts (for filtering by type/category/search) */
 export async function getAllPosts(): Promise<Post[]> {
-  if (!isSupabaseConfigured()) return [];
-  const supabase = createServerClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .select("*")
-    .order("publish_date", { ascending: false });
-  if (error) {
-    console.error("[getAllPosts]", error.message, error.code);
-    return [];
+  const { posts } = await getAllPostsInternal();
+  return posts;
+}
+
+/**
+ * Same data as {@link getAllPosts}, plus a user-facing message when the DB cannot be reached
+ * (e.g. `TypeError: fetch failed`) or Supabase returns an error. Use in admin UI.
+ */
+export async function getAllPostsWithLoadError(): Promise<{
+  posts: Post[];
+  loadError: string | null;
+}> {
+  if (!isSupabaseConfigured()) {
+    return {
+      posts: [],
+      loadError:
+        "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY) to .env.local.",
+    };
   }
-  return (data || []).map(rowToPost);
+  return getAllPostsInternal();
 }
 
 /** Get single post by id */
@@ -429,7 +460,7 @@ export async function getCategoriesWithCounts(): Promise<CategoryWithCount[]> {
 
   const { categories } = await import("./site-config");
   const metaMap = new Map(categories.map((c) => [c.name, c]));
-  const fallbackColor = "from-purple-500 to-purple-600";
+  const fallbackColor = "from-zinc-800 to-zinc-900";
   const fallbackIcon = "BookOpen";
 
   const result: CategoryWithCount[] = withArticles

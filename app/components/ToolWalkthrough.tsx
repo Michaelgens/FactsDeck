@@ -9,11 +9,19 @@ export type WalkthroughStep = {
   id: string;
   /** CSS selector for a target element (recommend: [data-tour="..."]). */
   target?: string;
-  title: string;
+  /** Omit or leave empty for hero intro slides (branding lives in `body`). */
+  title?: string;
   body: React.ReactNode;
   placement?: WalkthroughPlacement;
   /** Called when this step becomes active (useful for switching tabs, etc.). */
   onEnter?: () => void;
+  /** Larger card, no title line — use with rich `body` (e.g. Facts Deck + tool name). */
+  layout?: "default" | "hero";
+  skipLabel?: string;
+  /** Non-final step primary button (default “Next”). */
+  nextLabel?: string;
+  /** Final step primary button (default “Done”). */
+  doneLabel?: string;
 };
 
 type ToolWalkthroughProps = {
@@ -247,13 +255,13 @@ export default function ToolWalkthrough({
           <div
             className={`absolute left-0 top-0 w-full transition-opacity duration-200 ${
               entered ? "opacity-100" : "opacity-0"
-            } bg-slate-950/70`}
+            } bg-zinc-950/70`}
             style={{ height: safeRect.top }}
           />
           <div
             className={`absolute left-0 transition-opacity duration-200 ${
               entered ? "opacity-100" : "opacity-0"
-            } bg-slate-950/70`}
+            } bg-zinc-950/70`}
             style={{
               top: safeRect.top,
               height: safeRect.height,
@@ -263,7 +271,7 @@ export default function ToolWalkthrough({
           <div
             className={`absolute transition-opacity duration-200 ${
               entered ? "opacity-100" : "opacity-0"
-            } bg-slate-950/70`}
+            } bg-zinc-950/70`}
             style={{
               top: safeRect.top,
               height: safeRect.height,
@@ -274,7 +282,7 @@ export default function ToolWalkthrough({
           <div
             className={`absolute left-0 transition-opacity duration-200 ${
               entered ? "opacity-100" : "opacity-0"
-            } bg-slate-950/70`}
+            } bg-zinc-950/70`}
             style={{
               top: safeRect.top + safeRect.height,
               height: Math.max(0, window.innerHeight - (safeRect.top + safeRect.height)),
@@ -284,7 +292,7 @@ export default function ToolWalkthrough({
         </>
       ) : (
         <div
-          className={`absolute inset-0 bg-slate-950/70 transition-opacity duration-200 ${
+          className={`absolute inset-0 bg-zinc-950/70 transition-opacity duration-200 ${
             entered ? "opacity-100" : "opacity-0"
           }`}
         />
@@ -293,7 +301,7 @@ export default function ToolWalkthrough({
       {/* Focus ring */}
       {safeRect && (
         <div
-          className={`absolute ring-[2.5px] ring-amber-300 shadow-[0_10px_40px_rgba(0,0,0,0.35)] transition-[transform,opacity] duration-200 ${
+          className={`absolute ring-[2.5px] ring-zinc-200 dark:ring-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,0.35)] transition-[transform,opacity] duration-200 ${
             entered ? "opacity-100 scale-100" : "opacity-0 scale-[0.98]"
           }`}
           style={{
@@ -308,25 +316,27 @@ export default function ToolWalkthrough({
       {/* Tooltip */}
       <div
         ref={tooltipRef}
-        className={`absolute w-[min(92vw,520px)] rounded-2xl border border-white/15 bg-white/95 text-slate-900 shadow-2xl dark:bg-dark-900/95 dark:text-purple-100 dark:border-purple-500/35 transition-[transform,opacity] duration-200 ${
-          entered ? "opacity-100 scale-100" : "opacity-0 scale-[0.98]"
-        }`}
+        className={`absolute rounded-2xl border border-zinc-200 bg-white text-zinc-900 shadow-2xl dark:bg-zinc-950 dark:text-zinc-100 dark:border-zinc-800 transition-[transform,opacity] duration-200 ${
+          step.layout === "hero" ? "w-[min(94vw,560px)]" : "w-[min(92vw,520px)]"
+        } ${entered ? "opacity-100 scale-100" : "opacity-0 scale-[0.98]"}`}
         style={{ left: tooltipPos.left, top: tooltipPos.top, width: tooltipPos.width }}
         role="dialog"
         aria-modal="true"
         aria-label="Walk-through"
       >
-        <div className="relative overflow-hidden rounded-t-2xl border-b border-slate-200/70 dark:border-purple-500/25">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-600/15 via-amber-500/10 to-transparent dark:from-purple-500/15 dark:via-emerald-500/10" />
+        <div className="relative overflow-hidden rounded-t-2xl border-b border-zinc-200 dark:border-zinc-800">
+          <div className="absolute inset-0 bg-gradient-to-br from-zinc-900/5 via-transparent to-transparent dark:from-white/5" />
           <div className="relative flex items-start justify-between gap-3 p-4">
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-purple-400 flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-amber-500" aria-hidden />
+            <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-zinc-700 dark:text-zinc-300" aria-hidden />
               Walk-through • Step {idx + 1} of {steps.length}
             </p>
-            <h3 className="font-display text-lg font-bold text-slate-900 dark:text-purple-100 mt-1 leading-snug">
-              {step.title}
-            </h3>
+            {step.title ? (
+              <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-1 leading-snug">
+                {step.title}
+              </h3>
+            ) : null}
           </div>
           <button
             type="button"
@@ -334,7 +344,7 @@ export default function ToolWalkthrough({
               if (markCompleteOnClose) setWalkthroughCompleted(id);
               onClose();
             }}
-            className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-purple-900/25 transition-colors"
+            className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
             aria-label="Close walk-through"
           >
             <X className="h-5 w-5" aria-hidden />
@@ -342,28 +352,32 @@ export default function ToolWalkthrough({
           </div>
         </div>
 
-        <div className="p-4 text-sm leading-relaxed text-slate-700 dark:text-purple-200/90 max-h-[60vh] overflow-auto">
+        <div
+          className={`p-4 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 max-h-[60vh] overflow-auto ${
+            step.layout === "hero" ? "pt-2" : ""
+          }`}
+        >
           {step.body}
         </div>
 
-        <div className="flex items-center justify-between gap-3 p-4 border-t border-slate-200/70 dark:border-purple-500/25">
+        <div className="flex flex-col gap-3 border-t border-zinc-200 p-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
           <button
             type="button"
             onClick={() => {
               setWalkthroughCompleted(id);
               onClose();
             }}
-            className="text-sm font-semibold text-slate-600 hover:text-slate-900 dark:text-purple-300 dark:hover:text-emerald-300 transition-colors"
+            className="inline-flex min-h-[44px] min-w-[10rem] items-center justify-center rounded-xl border-2 border-zinc-300 bg-white px-4 py-2.5 text-sm font-bold text-zinc-800 shadow-sm transition-colors hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
           >
-            Skip
+            {step.skipLabel ?? "Skip"}
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={() => setIdx((v) => clamp(v - 1, 0, steps.length - 1))}
               disabled={isFirst}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-purple-500/30 bg-white dark:bg-dark-850/60 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-purple-900/25 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-sm font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-900/40 disabled:opacity-50 disabled:pointer-events-none transition-colors"
             >
               <ChevronLeft className="h-4 w-4" aria-hidden />
               Back
@@ -379,10 +393,10 @@ export default function ToolWalkthrough({
                 }
                 setIdx((v) => clamp(v + 1, 0, steps.length - 1));
               }}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-sm font-semibold transition-colors shadow-lg shadow-purple-500/20"
+              className="inline-flex min-h-[44px] min-w-[10rem] items-center justify-center gap-1.5 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
             >
-              {isLast ? "Done" : "Next"}
-              <ChevronRight className="h-4 w-4" aria-hidden />
+              {isLast ? step.doneLabel ?? "Done" : step.nextLabel ?? "Next"}
+              {!isLast && <ChevronRight className="h-4 w-4" aria-hidden />}
             </button>
           </div>
         </div>

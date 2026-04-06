@@ -2,9 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Shield,
-  Lock,
-  Eye,
   Database,
   Cookie,
   Globe,
@@ -18,13 +15,15 @@ import {
   Mail,
   Phone,
   Building,
+  Shield,
 } from "lucide-react";
 import { absoluteUrl } from "../lib/seo";
 
 const canonical = absoluteUrl("/privacy");
+const LAST_UPDATED = "March 9, 2026";
 
 export const metadata: Metadata = {
-  title: { absolute: "FactsDeck | Privacy Policy" },
+  title: { absolute: "Privacy Policy | Facts Deck" },
   description:
     "How Facts Deck collects, uses, and protects personal information when you use our site, newsletters, and tools—aligned with our commitment to transparency and reader trust.",
   keywords: [
@@ -37,7 +36,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical },
   openGraph: {
-    title: "FactsDeck | Privacy Policy",
+    title: "Privacy Policy | Facts Deck",
     description:
       "Facts Deck’s privacy policy: what we collect, how we use it, your rights, cookies, and how to contact us.",
     url: canonical,
@@ -47,7 +46,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "FactsDeck | Privacy Policy",
+    title: "Privacy Policy | Facts Deck",
     description: "How Facts Deck handles personal data and respects your privacy choices.",
   },
   robots: { index: true, follow: true },
@@ -59,28 +58,24 @@ const privacySections = [
     title: "Information We Collect",
     content:
       "We collect information you provide directly to us, such as when you create an account, subscribe to our newsletter, or contact us. This includes your name, email address, and any other information you choose to provide. We also automatically collect certain information about your device and how you interact with our services.",
-    color: "from-blue-500 to-blue-600",
   },
   {
-    icon: Eye,
+    icon: Info,
     title: "How We Use Your Information",
     content:
       "We use the information we collect to provide, maintain, and improve our services, send you technical notices and support messages, respond to your comments and questions, and communicate with you about products, services, and events. We may also use your information for research and analytics purposes.",
-    color: "from-emerald-500 to-emerald-600",
   },
   {
-    icon: Shield,
+    icon: CheckCircle,
     title: "Information Sharing",
     content:
       "We do not sell your personal information to data brokers or marketing lists. We may share information with trusted service providers (for example hosting, email delivery, or analytics) who process data on our behalf under contract and only for the purposes we describe. We may also disclose information when required by law or to protect our rights and users. Where we use affiliate or partner technologies, we align disclosures with our editorial standards described on our About page.",
-    color: "from-purple-500 to-purple-600",
   },
   {
-    icon: Lock,
+    icon: Settings,
     title: "Data Security",
     content:
       "We implement appropriate technical and organizational security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the internet is 100% secure, so we cannot guarantee absolute security.",
-    color: "from-red-500 to-red-600",
   },
 ];
 
@@ -89,25 +84,21 @@ const dataTypes = [
     category: "Account Information",
     items: ["Name and email address", "Profile information", "Account preferences", "Subscription status"],
     icon: User,
-    color: "from-blue-500 to-blue-600",
   },
   {
     category: "Usage Data",
     items: ["Pages visited and time spent", "Articles read and bookmarked", "Search queries", "Device and browser information"],
-    icon: Eye,
-    color: "from-emerald-500 to-emerald-600",
+    icon: Database,
   },
   {
     category: "Communication Data",
     items: ["Contact form submissions", "Email communications", "Support ticket information", "Newsletter preferences"],
     icon: Mail,
-    color: "from-purple-500 to-purple-600",
   },
   {
     category: "Technical Data",
     items: ["IP address and location", "Device identifiers", "Browser type and version", "Operating system"],
     icon: Settings,
-    color: "from-orange-500 to-orange-600",
   },
 ];
 
@@ -136,13 +127,13 @@ const complianceStandards = [
     title: "CCPA / CPRA awareness",
     description:
       "California residents may have additional rights (e.g., to know, delete, and opt out of certain sales or sharing). Contact us to exercise those rights; we describe our practices in good faith and update this policy when our processing changes.",
-    icon: Shield,
+    icon: CheckCircle,
   },
   {
     title: "Security measures",
     description:
       "We use technical and organizational measures appropriate to our size and risk to protect personal information. No online service can guarantee perfect security; see our Data Security section.",
-    icon: Lock,
+    icon: Settings,
   },
   {
     title: "Transparency",
@@ -152,115 +143,178 @@ const complianceStandards = [
   },
 ];
 
+const cardSurface =
+  "rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80";
+
+const iconWrap =
+  "inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-orange-200/90 bg-orange-50 text-blue-700 shadow-sm dark:border-emerald-800/70 dark:bg-emerald-950/50 dark:text-cyan-300";
+
+function SectionHeading({
+  kicker,
+  title,
+  description,
+}: {
+  kicker: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="mb-12 max-w-3xl">
+      <p className="text-xs font-semibold tracking-widest text-orange-800/80 dark:text-cyan-400/90">{kicker}</p>
+      <div className="mt-3">
+        <div>
+          <h2 className="font-display text-3xl font-bold tracking-tight text-zinc-900 md:text-4xl dark:text-zinc-100">
+            {title}
+          </h2>
+          <p className="mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">{description}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-dark-950">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-purple-600 via-purple-700 to-amber-800 dark:from-dark-900 dark:via-dark-850 dark:to-dark-900 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent" />
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-10 left-10 w-72 h-72 bg-purple-400/20 dark:bg-purple-400/30 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-purple-400/20 dark:bg-amber-400/30 rounded-full blur-3xl" />
-        </div>
+    <div className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      {/* Hero — flat, no gradients; brand accents match Header/Footer */}
+      <section className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <Link
+              href="/"
+              className="inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+            >
+              <ArrowLeft className="h-4 w-4 shrink-0" />
+              Back to home
+            </Link>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <Link
-            href="/"
-            className="inline-flex items-center glass-effect text-white px-6 py-3 rounded-xl font-bold hover:bg-white/20 transition-all duration-300 mb-8"
-          >
-            <ArrowLeft className="mr-2 h-5 w-5" />
-            Back
-          </Link>
-
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="flex items-center justify-center space-x-2 mb-6">
-              <Lock className="h-6 w-6 text-emerald-400" />
-              <span className="text-purple-100 dark:text-purple-200 text-sm font-medium">
-                Privacy-focused • Transparent • Educational platform
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
+              <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200">
+                <CheckCircle className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-emerald-400" />
+                Updated {LAST_UPDATED}
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                <Shield className="h-3.5 w-3.5 shrink-0 text-orange-600 dark:text-cyan-400" />
+                We don’t sell personal information
               </span>
             </div>
+          </div>
 
-            <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-balance">
-              Privacy <span className="gradient-text">Policy</span>
-            </h1>
+          <div className="mt-10 grid gap-10 lg:grid-cols-12 lg:items-end">
+            <div className="lg:col-span-7">
+              <p className="text-xs font-semibold tracking-widest text-orange-800/80 dark:text-cyan-400/90">
+                TRUST &amp; PRIVACY
+              </p>
+              <h1 className="mt-3 font-display text-4xl font-bold leading-[1.08] text-balance sm:text-5xl md:text-6xl">
+                <span className="text-blue-800 dark:text-emerald-300">Privacy</span>{" "}
+                <span className="text-orange-600 dark:text-cyan-400">Policy</span>
+              </h1>
+              <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-600 sm:text-lg dark:text-zinc-300">
+                Plain-language summary of what we collect, why we use it, and the choices you have across{" "}
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">Facts Deck</span> articles, tools, and email.
+              </p>
 
-            <p className="text-xl text-purple-100 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto mb-8">
-              Your privacy is important to us. This policy explains how we collect, use, and protect your personal information when you use Facts Deck.
-            </p>
-
-            <div className="bg-purple-500/20 dark:bg-emerald-500/20 border border-purple-400/30 dark:border-emerald-400/30 rounded-xl p-6 backdrop-blur-sm">
-              <div className="flex items-center justify-center space-x-3 mb-4">
-                <CheckCircle className="h-6 w-6 text-purple-400 dark:text-emerald-400" />
-                <span className="font-bold text-lg">Privacy Commitment</span>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Link
+                  href="#what-we-collect"
+                  className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                >
+                  What we collect
+                </Link>
+                <Link
+                  href="#your-rights"
+                  className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/40 dark:hover:text-cyan-300"
+                >
+                  Your rights
+                </Link>
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/40 dark:hover:text-cyan-300"
+                >
+                  Contact privacy
+                </Link>
               </div>
-              <p className="text-purple-100 dark:text-emerald-100">
-                Last updated: March 9, 2026 • We do not sell your personal information to data brokers; see
-                sharing and affiliate disclosures below and on our{" "}
-                <Link href="/about" className="underline font-semibold hover:text-white">
+
+              <p className="mt-6 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                Editorial and affiliate transparency: see our{" "}
+                <Link href="/about" className="font-medium text-blue-800 underline-offset-4 hover:underline dark:text-cyan-300">
                   About
                 </Link>{" "}
                 page.
               </p>
             </div>
+
+            <aside className="lg:col-span-5">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/35">
+                <p className="text-xs font-semibold tracking-widest text-orange-800/90 dark:text-cyan-400/90">
+                  AT A GLANCE
+                </p>
+                <ul className="mt-4 space-y-3 text-sm text-zinc-700 dark:text-zinc-300">
+                  <li className="flex gap-3">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600 dark:bg-emerald-400" />
+                    No sale of personal data to data brokers.
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500 dark:bg-cyan-400" />
+                    Vendors process data only under contract and for disclosed purposes.
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600 dark:bg-emerald-400" />
+                    You can request access, correction, or deletion where applicable.
+                  </li>
+                </ul>
+              </div>
+            </aside>
           </div>
         </div>
       </section>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {/* Privacy Principles */}
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        {/* Principles */}
         <section className="mb-20">
-          <div className="text-center mb-16">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-slate-900 dark:text-purple-200 mb-6">Our Privacy Principles</h2>
-            <p className="text-xl text-slate-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-              We believe in transparency, user control, and responsible data handling in everything we do.
-            </p>
-          </div>
+          <SectionHeading
+            kicker="PRINCIPLES"
+            title="How we think about privacy"
+            description="Transparency, proportionality, and control—consistent with how we build reader trust across the site."
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {privacySections.map((section, index) => (
-              <div
-                key={index}
-                className="group bg-white dark:bg-dark-900/50 dark:border-purple-500/30 rounded-2xl p-8 shadow-lg border border-slate-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-2"
-              >
-                <div className={`w-16 h-16 bg-gradient-to-br ${section.color} rounded-2xl flex items-center justify-center mb-6 shadow-lg`}>
-                  <section.icon className="h-8 w-8 text-white" />
+              <div key={index} className={cardSurface}>
+                <div className={`${iconWrap} mb-6`}>
+                  <section.icon className="h-6 w-6" aria-hidden />
                 </div>
-                <h3 className="font-display font-bold text-2xl text-slate-900 dark:text-purple-200 mb-4 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
+                <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-100 md:text-2xl">
                   {section.title}
                 </h3>
-                <p className="text-slate-600 dark:text-purple-200 leading-relaxed text-lg">{section.content}</p>
+                <p className="mt-3 leading-relaxed text-zinc-600 dark:text-zinc-300">{section.content}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Data We Collect */}
-        <section className="mb-20">
-          <div className="text-center mb-16">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-slate-900 dark:text-purple-200 mb-6">Types of Data We Collect</h2>
-            <p className="text-xl text-slate-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-              Here&apos;s a detailed breakdown of the information we collect and why we need it.
-            </p>
-          </div>
+        {/* Data */}
+        <section id="what-we-collect" className="mb-20 scroll-mt-24 rounded-2xl border border-zinc-200 bg-zinc-50/90 px-4 py-14 sm:px-8 lg:px-10 dark:border-zinc-800 dark:bg-zinc-900/25">
+          <SectionHeading
+            kicker="DATA INVENTORY"
+            title="Types of data we collect"
+            description="A practical breakdown of categories—not an exhaustive legal annex. Specific fields depend on what you choose to share and which features you use."
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {dataTypes.map((dataType, index) => (
-              <div
-                key={index}
-                className="group bg-white dark:bg-dark-900/50 dark:border-purple-500/30 rounded-2xl p-8 shadow-lg border border-slate-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-2"
-              >
-                <div className={`w-16 h-16 bg-gradient-to-br ${dataType.color} rounded-2xl flex items-center justify-center mb-6 shadow-lg`}>
-                  <dataType.icon className="h-8 w-8 text-white" />
+              <div key={index} className={`${cardSurface} bg-white dark:bg-zinc-950`}>
+                <div className={`${iconWrap} mb-6`}>
+                  <dataType.icon className="h-6 w-6" aria-hidden />
                 </div>
-                <h3 className="font-display font-bold text-2xl text-slate-900 dark:text-purple-200 mb-6 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
+                <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-100 md:text-2xl">
                   {dataType.category}
                 </h3>
-                <ul className="space-y-3">
+                <ul className="mt-5 space-y-3">
                   {dataType.items.map((item, itemIndex) => (
-                    <li key={itemIndex} className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-purple-500 dark:bg-purple-400 rounded-full mt-2 flex-shrink-0" />
-                      <span className="text-slate-600 dark:text-purple-200 leading-relaxed">{item}</span>
+                    <li key={itemIndex} className="flex items-start gap-3">
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500 dark:bg-cyan-400" />
+                      <span className="leading-relaxed text-zinc-600 dark:text-zinc-300">{item}</span>
                     </li>
                   ))}
                 </ul>
@@ -269,31 +323,30 @@ export default function PrivacyPage() {
           </div>
         </section>
 
-        {/* Your Rights */}
-        <section className="mb-20">
-          <div className="text-center mb-16">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-slate-900 dark:text-purple-200 mb-6">Your Privacy Rights</h2>
-            <p className="text-xl text-slate-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-              You have full control over your personal information. Here&apos;s what you can do.
-            </p>
-          </div>
+        {/* Rights */}
+        <section id="your-rights" className="mb-20 scroll-mt-24">
+          <SectionHeading
+            kicker="YOUR CHOICES"
+            title="Privacy rights & requests"
+            description="Depending on where you live, you may have statutory rights. These actions describe what you can ask for in principle—fulfillment depends on verification and applicable law."
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {userRights.map((right, index) => (
               <div
                 key={index}
-                className="group text-center bg-white dark:bg-dark-900/50 dark:border-purple-500/30 rounded-2xl p-6 shadow-lg border border-slate-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-2"
+                className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <right.icon className="h-8 w-8 text-white" />
+                <div className={`${iconWrap} mx-auto mb-5`}>
+                  <right.icon className="h-6 w-6" aria-hidden />
                 </div>
-                <h3 className="font-display font-bold text-xl text-slate-900 dark:text-purple-200 mb-4 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
-                  {right.title}
-                </h3>
-                <p className="text-slate-600 dark:text-purple-200 leading-relaxed mb-6">{right.description}</p>
+                <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-100">{right.title}</h3>
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
+                  {right.description}
+                </p>
                 <button
                   type="button"
-                  className="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-4 py-2 rounded-xl font-semibold hover:bg-purple-200 dark:hover:bg-emerald-900/30 hover:text-purple-700 dark:hover:text-emerald-400 transition-colors text-sm"
+                  className="mt-6 inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-blue-800 shadow-sm transition-colors hover:bg-orange-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-cyan-300 dark:hover:bg-emerald-950/50"
                 >
                   {right.action}
                 </button>
@@ -302,50 +355,44 @@ export default function PrivacyPage() {
           </div>
         </section>
 
-        {/* Cookie Policy */}
+        {/* Cookies */}
         <section className="mb-20">
-          <div className="text-center mb-16">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-slate-900 dark:text-purple-200 mb-6">Cookie Policy</h2>
-            <p className="text-xl text-slate-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-              We use cookies to enhance your experience and provide personalized content.
-            </p>
-          </div>
+          <SectionHeading
+            kicker="COOKIES & SIMILAR TECH"
+            title="Cookie policy"
+            description="We use cookies and similar technologies where needed to run the site, remember preferences, and understand aggregate usage."
+          />
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {cookieTypes.map((cookie, index) => (
-              <div
-                key={index}
-                className="group bg-white dark:bg-dark-900/50 dark:border-purple-500/30 rounded-2xl p-8 shadow-lg border border-slate-200 transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-                  <div className="flex items-center space-x-4 mb-4 md:mb-0">
-                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
-                      <Cookie className="h-6 w-6 text-white" />
+              <div key={index} className={cardSurface}>
+                <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className={iconWrap}>
+                      <Cookie className="h-6 w-6" aria-hidden />
                     </div>
                     <div>
-                      <h3 className="font-display font-bold text-xl text-slate-900 dark:text-purple-200 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
+                      <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-100 md:text-xl">
                         {cookie.type}
                       </h3>
-                      <p className="text-slate-600 dark:text-purple-200">{cookie.purpose}</p>
+                      <p className="mt-1 text-zinc-600 dark:text-zinc-300">{cookie.purpose}</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    {cookie.required ? (
-                      <span className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1 rounded-full text-sm font-semibold">
-                        Required
-                      </span>
-                    ) : (
-                      <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full text-sm font-semibold">
-                        Optional
-                      </span>
-                    )}
-                  </div>
+                  {cookie.required ? (
+                    <span className="inline-flex w-fit shrink-0 items-center rounded-full bg-blue-700 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white dark:bg-emerald-600">
+                      Required
+                    </span>
+                  ) : (
+                    <span className="inline-flex w-fit shrink-0 items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                      Optional
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {cookie.examples.map((example, exampleIndex) => (
                     <span
                       key={exampleIndex}
-                      className="bg-slate-100 dark:bg-dark-850/50 text-slate-600 dark:text-purple-300 px-3 py-1 rounded-lg text-sm"
+                      className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-300"
                     >
                       {example}
                     </span>
@@ -356,79 +403,104 @@ export default function PrivacyPage() {
           </div>
         </section>
 
-        {/* Compliance Standards */}
-        <section className="mb-20">
-          <div className="text-center mb-16">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-slate-900 dark:text-purple-200 mb-6">
-              Compliance &amp; standards
-            </h2>
-            <p className="text-xl text-slate-600 dark:text-purple-200 leading-relaxed max-w-3xl mx-auto">
-              We describe our privacy practices honestly. This section is not a guarantee of certification or audit
-              outcome; it summarizes how we aim to align with common laws and expectations.
-            </p>
-          </div>
+        {/* Compliance */}
+        <section className="mb-20 rounded-2xl border border-zinc-200 bg-zinc-50/90 px-4 py-14 sm:px-8 lg:px-10 dark:border-zinc-800 dark:bg-zinc-900/25">
+          <SectionHeading
+            kicker="GOVERNANCE"
+            title="Compliance & standards"
+            description="We describe our privacy practices honestly. This section is not a guarantee of certification or audit outcome; it summarizes how we aim to align with common laws and expectations."
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {complianceStandards.map((standard, index) => (
               <div
                 key={index}
-                className="group text-center bg-white dark:bg-dark-900/50 dark:border-purple-500/30 rounded-2xl p-6 shadow-lg border border-slate-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-2"
+                className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <standard.icon className="h-8 w-8 text-white" />
+                <div className={`${iconWrap} mx-auto mb-5`}>
+                  <standard.icon className="h-6 w-6" aria-hidden />
                 </div>
-                <h3 className="font-display font-bold text-xl text-slate-900 dark:text-purple-200 mb-4 group-hover:text-purple-600 dark:group-hover:text-emerald-400 transition-colors">
-                  {standard.title}
-                </h3>
-                <p className="text-slate-600 dark:text-purple-200 leading-relaxed">{standard.description}</p>
+                <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-100">{standard.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">{standard.description}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Data Retention */}
+        {/* Retention */}
         <section className="mb-20">
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-dark-900 dark:to-purple-900/20 rounded-3xl p-8 md:p-12 border border-blue-200 dark:border-purple-500/30">
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Database className="h-10 w-10 text-white" />
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-8 md:p-12 dark:border-zinc-800 dark:bg-zinc-900/35">
+            <div className="mx-auto mb-10 max-w-2xl text-center">
+              <div className={`${iconWrap} mx-auto mb-6`}>
+                <Database className="h-7 w-7" aria-hidden />
               </div>
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-blue-700 dark:text-blue-400 mb-6">Data Retention Policy</h2>
+              <p className="text-xs font-semibold tracking-widest text-orange-800/80 dark:text-cyan-400/90">RETENTION</p>
+              <h2 className="mt-2 font-display text-3xl font-bold text-zinc-900 md:text-4xl dark:text-zinc-100">
+                Data retention
+              </h2>
+              <p className="mt-3 text-zinc-600 dark:text-zinc-300">
+                We keep data only as long as needed for legitimate business purposes, legal obligations, and security.
+              </p>
             </div>
 
-            <div className="max-w-4xl mx-auto space-y-6 text-blue-700 dark:text-blue-300">
-              <p className="text-lg leading-relaxed">
-                <strong>We only keep your data as long as necessary.</strong> Different types of information are retained for different periods based on legal requirements and business needs.
+            <div className="mx-auto max-w-5xl space-y-6 text-zinc-700 dark:text-zinc-200">
+              <p className="text-center text-lg leading-relaxed md:text-left">
+                <strong className="text-zinc-900 dark:text-zinc-100">Retention varies by category.</strong> Periods below
+                are illustrative targets and may be extended when law or security requires.
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white/50 dark:bg-dark-850/50 p-6 rounded-2xl">
-                  <h3 className="font-bold text-xl text-slate-900 dark:text-purple-200 mb-4">Account Data</h3>
-                  <ul className="space-y-2 text-sm text-slate-600 dark:text-purple-200">
-                    <li>• Active accounts: Retained while active</li>
-                    <li>• Inactive accounts: 3 years</li>
-                    <li>• Deleted accounts: 30 days</li>
-                    <li>• Legal holds: As required</li>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                  <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-100">Account data</h3>
+                  <ul className="mt-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
+                    <li>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">Active:</span> while active
+                    </li>
+                    <li>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">Inactive:</span> up to 3 years
+                    </li>
+                    <li>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">Deleted:</span> up to 30 days
+                    </li>
+                    <li>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">Legal holds:</span> as required
+                    </li>
                   </ul>
                 </div>
 
-                <div className="bg-white/50 dark:bg-dark-850/50 p-6 rounded-2xl">
-                  <h3 className="font-bold text-xl text-slate-900 dark:text-purple-200 mb-4">Usage Data</h3>
-                  <ul className="space-y-2 text-sm text-slate-600 dark:text-purple-200">
-                    <li>• Analytics data: 26 months</li>
-                    <li>• Log files: 12 months</li>
-                    <li>• Error reports: 6 months</li>
-                    <li>• Performance data: 3 months</li>
+                <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                  <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-100">Usage data</h3>
+                  <ul className="mt-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
+                    <li>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">Analytics:</span> up to 26 months
+                    </li>
+                    <li>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">Logs:</span> up to 12 months
+                    </li>
+                    <li>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">Errors:</span> up to 6 months
+                    </li>
+                    <li>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">Performance:</span> up to 3 months
+                    </li>
                   </ul>
                 </div>
 
-                <div className="bg-white/50 dark:bg-dark-850/50 p-6 rounded-2xl">
-                  <h3 className="font-bold text-xl text-slate-900 dark:text-purple-200 mb-4">Communication</h3>
-                  <ul className="space-y-2 text-sm text-slate-600 dark:text-purple-200">
-                    <li>• Support tickets: 3 years</li>
-                    <li>• Email communications: 2 years</li>
-                    <li>• Marketing data: Until unsubscribed</li>
-                    <li>• Legal notices: 7 years</li>
+                <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                  <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-100">Communication</h3>
+                  <ul className="mt-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
+                    <li>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">Support:</span> up to 3 years
+                    </li>
+                    <li>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">Email:</span> up to 2 years
+                    </li>
+                    <li>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">Marketing:</span> until opt-out
+                    </li>
+                    <li>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">Legal notices:</span> up to 7 years
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -436,42 +508,42 @@ export default function PrivacyPage() {
           </div>
         </section>
 
-        {/* Contact Information */}
-        <section className="bg-gradient-to-br from-purple-50 to-white dark:from-dark-900 dark:to-dark-850/50 rounded-3xl p-8 md:p-12 text-center border border-purple-100 dark:border-purple-500/30">
-          <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-8">
-            <Info className="h-10 w-10 text-white" />
+        {/* Contact */}
+        <section className="rounded-2xl border border-zinc-200 bg-white p-8 text-center shadow-sm md:p-12 dark:border-zinc-800 dark:bg-zinc-950">
+          <div className={`${iconWrap} mx-auto mb-6`}>
+            <Info className="h-7 w-7" aria-hidden />
           </div>
-          <h2 className="font-display text-3xl font-bold text-slate-900 dark:text-purple-200 mb-6">Questions About Your Privacy?</h2>
-          <p className="text-xl text-slate-600 dark:text-purple-200 mb-8 max-w-2xl mx-auto">
-            Our Data Protection Officer is here to help with any privacy-related questions or concerns.
+          <h2 className="font-display text-3xl font-bold text-zinc-900 dark:text-zinc-100">Questions about privacy?</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-lg text-zinc-600 dark:text-zinc-300">
+            Reach the team responsible for privacy inquiries. We respond as promptly as we can, subject to verification.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Mail className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-bold text-slate-900 dark:text-purple-200 mb-1">Email</h3>
-              <p className="text-purple-600 dark:text-purple-400 font-semibold">privacy@factsdeck.com</p>
+          <div className="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+              <Mail className="mx-auto mb-3 h-6 w-6 text-blue-600 dark:text-emerald-400" aria-hidden />
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Email</h3>
+              <p className="mt-1 font-medium text-zinc-800 dark:text-zinc-200">privacy@factsdeck.com</p>
             </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Phone className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-bold text-slate-900 dark:text-purple-200 mb-1">Phone</h3>
-              <p className="text-purple-600 dark:text-purple-400 font-semibold">+1 (555) 123-PRIV</p>
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+              <Phone className="mx-auto mb-3 h-6 w-6 text-orange-600 dark:text-cyan-400" aria-hidden />
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Phone</h3>
+              <p className="mt-1 font-medium text-zinc-800 dark:text-zinc-200">+1 (555) 123-PRIV</p>
             </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Building className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-bold text-slate-900 dark:text-purple-200 mb-1">Address</h3>
-              <p className="text-purple-600 dark:text-purple-400 font-semibold">Privacy Office, NY</p>
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+              <Building className="mx-auto mb-3 h-6 w-6 text-blue-600 dark:text-emerald-400" aria-hidden />
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Office</h3>
+              <p className="mt-1 font-medium text-zinc-800 dark:text-zinc-200">Privacy Office, NY</p>
             </div>
           </div>
-          <div className="text-sm text-slate-500 dark:text-purple-300 space-y-2">
-            <p><strong>Last Updated:</strong> March 9, 2026</p>
-            <p><strong>Effective Date:</strong> March 9, 2026</p>
-            <p><strong>Version:</strong> 3.0</p>
+          <div className="mt-10 space-y-1 text-sm text-zinc-500 dark:text-zinc-400">
+            <p>
+              <span className="font-semibold text-zinc-700 dark:text-zinc-300">Last updated:</span> {LAST_UPDATED}
+            </p>
+            <p>
+              <span className="font-semibold text-zinc-700 dark:text-zinc-300">Effective:</span> {LAST_UPDATED}
+            </p>
+            <p>
+              <span className="font-semibold text-zinc-700 dark:text-zinc-300">Version:</span> 3.0
+            </p>
           </div>
         </section>
       </div>
