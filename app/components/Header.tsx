@@ -236,20 +236,20 @@ export default function Header() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Articles, topics & tools..."
-                    className="w-full rounded-lg border border-zinc-300 px-4 py-3 text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-emerald-500 dark:focus:ring-emerald-500/25"
+                    className="w-full rounded-lg border border-zinc-300 px-4 py-3 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-600/25 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-zinc-500 dark:focus:ring-zinc-500/25"
                     autoFocus
                   />
                   {matchingTools.length > 0 && (
                     <div className="mt-3 rounded-lg border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800 overflow-hidden">
-                      <p className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-orange-700 dark:text-cyan-400">
-                        <Wrench className="h-3.5 w-3.5 text-blue-600 dark:text-emerald-400" aria-hidden />
+                      <p className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-400">
+                        <Wrench className="h-3.5 w-3.5 text-zinc-600 dark:text-zinc-400" aria-hidden />
                         Tools
                       </p>
                       {matchingTools.map((t) => (
                         <Link
                           key={t.slug}
                           href={`/tools/${t.slug}`}
-                          className="block px-3 py-2.5 text-sm text-zinc-800 transition-colors hover:bg-orange-50 hover:text-blue-900 dark:text-zinc-100 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-200"
+                          className="block px-3 py-2.5 text-sm text-zinc-800 transition-colors hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-200"
                           onClick={() => {
                             setIsSearchOpen(false);
                             setSearchQuery("");
@@ -263,10 +263,11 @@ export default function Header() {
                   )}
                   <button
                     type="submit"
-                    className="mt-3 w-full rounded-lg bg-blue-700 py-2.5 font-semibold text-white transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                    className="mt-3 w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-semibold text-white shadow-lg shadow-zinc-900/10 transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:shadow-white/5 dark:hover:bg-zinc-100"
                   >
                     Search articles
                   </button>
+            
                 </form>
               )}
             </div>

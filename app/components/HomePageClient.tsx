@@ -38,6 +38,7 @@ import {
   Droplet,
   ChevronDown,
   ChevronUp,
+  CalendarDays,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Post } from "../lib/types";
@@ -545,6 +546,39 @@ export default function HomePageClient({
     { title: "DTI explained: how lenders evaluate you", tag: "Loans" },
   ];
 
+  const STATIC_LATEST_CAROUSEL = Array.from({ length: 20 }).map((_, i) => {
+    const bank = [
+      { category: "Investing", title: "ETFs vs index funds: the difference that matters", date: "Apr 9, 2026" },
+      { category: "Credit", title: "Utilization: the simplest way to lift your score", date: "Apr 8, 2026" },
+      { category: "Budgeting", title: "A two-account system that makes budgeting stick", date: "Apr 7, 2026" },
+      { category: "Retirement", title: "401(k) match math: what to contribute first", date: "Apr 6, 2026" },
+      { category: "Housing", title: "Mortgage points: when they pay off (and when they don’t)", date: "Apr 5, 2026" },
+    ] as const;
+    const row = bank[i % bank.length];
+    const imageSrc = i % 2 === 0 ? "/first.jpeg" : "/budget.png";
+    return { id: `latest-${i}`, ...row, imageSrc };
+  });
+
+  const STATIC_LATEST_ANALYSIS = {
+    featured: {
+      imageSrc: "/first.jpeg",
+      category: "Markets",
+      title: "The week’s big shift: why risk is back on the table",
+      description:
+        "A quick, plain-English breakdown of what changed in markets, what it means for your portfolio, and how to think about the next 30 days.",
+      readTime: "7 min read",
+      date: "Apr 9, 2026",
+    },
+    items: [
+      { category: "Stocks", title: "Earnings season: what matters more than guidance", readTime: "4 min", date: "Apr 9, 2026" },
+      { category: "Crypto", title: "Bitcoin’s move explained (without the hype)", readTime: "3 min", date: "Apr 8, 2026" },
+      { category: "Rates", title: "Bond yields: the signal hidden in the curve", readTime: "5 min", date: "Apr 8, 2026" },
+      { category: "Personal finance", title: "Budget reset: the fastest way to find $200/month", readTime: "4 min", date: "Apr 7, 2026" },
+      { category: "Strategy", title: "A 3-step checklist for buying dips responsibly", readTime: "6 min", date: "Apr 6, 2026" },
+      { category: "Retirement", title: "Contribution order: match, Roth, HSA, taxable?", readTime: "5 min", date: "Apr 6, 2026" },
+    ],
+  } as const;
+
   const monthPicksUpper = useMemo(
     () => new Intl.DateTimeFormat("en-US", { month: "long" }).format(new Date()).toUpperCase(),
     []
@@ -601,14 +635,14 @@ export default function HomePageClient({
                 </Link>
                 <Link
                   href="/tools"
-                  className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 text-sm font-semibold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+                  className="inline-flex h-12 gap-2 items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 text-sm font-semibold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
                 >
                   <Calculator className="h-5 w-5 sm:hidden" aria-hidden />
                   Use calculators
                 </Link>
                 <Link
                   href="#newsletter"
-                  className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 text-sm font-semibold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+                  className="inline-flex h-12 gap-2 items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 text-sm font-semibold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
                 >
                   <Users className="h-5 w-5 sm:hidden" aria-hidden />
                   Weekly brief
@@ -870,7 +904,7 @@ export default function HomePageClient({
                 </div>
                 <div className="space-y-7">
                   {STATIC_CENTER_SECTIONS.slice(0, 3).map((section) => (
-                    <div key={section.major.title} className="space-y-4">
+                    <div key={section.major.title} className="space-y-2">
                       <Link
                         href="/post"
                         className="group relative block overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80"
@@ -902,7 +936,7 @@ export default function HomePageClient({
 
                       <ul className="divide-y divide-zinc-100 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:divide-zinc-800/90 dark:border-zinc-800 dark:bg-zinc-950">
                         {section.minors.slice(0, 4).map((minor) => (
-                          <li key={minor.title} className="px-5 py-4 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900">
+                          <li key={minor.title} className="px-5 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900">
                             <Link href="/post" className="group block">
                               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
                                 {minor.tag}
@@ -1048,7 +1082,7 @@ export default function HomePageClient({
                     { title: "401(k) match math: what to contribute first", tag: "Retirement", readTime: "5 min" },
                     { title: "A simple rule for credit card payoff order", tag: "Credit", readTime: "4 min" },
                   ].slice(0, 8).map((item) => (
-                    <li key={item.title} className="py-3.5 first:pt-0 last:pb-0">
+                    <li key={item.title} className="py-3 first:pt-0 last:pb-0">
                       <Link href="/post" className="group block">
                         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
                           {item.tag}
@@ -1076,6 +1110,323 @@ export default function HomePageClient({
         </div>
       </div>
       {/* Articles Section End */}
+
+      {/* Ads section (ALUX) */}
+      <section className="border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+          <div className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-orange-50 p-6 shadow-sm dark:border-zinc-800 dark:from-zinc-950 dark:via-zinc-950 dark:to-emerald-950 sm:p-8 lg:p-10">
+            <div
+              className="pointer-events-none absolute -top-28 left-1/2 h-80 w-[min(62rem,160%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-orange-200/55 via-blue-200/25 to-transparent blur-3xl dark:from-cyan-950/40 dark:via-emerald-950/35 dark:to-transparent"
+              aria-hidden
+            />
+            <div className="relative grid grid-cols-1 gap-7 lg:grid-cols-12 lg:items-center">
+              <div className="order-2 lg:order-1 lg:col-span-7">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+                  Sponsored
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-bold tracking-wide text-zinc-800 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
+                    ALUX
+                  </span>
+                  <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                    Motivation, money & personal growth
+                  </span>
+                </div>
+
+                <h2 className="mt-4 font-display text-2xl font-bold leading-tight tracking-tight bg-gradient-to-r from-sky-700 via-indigo-700 to-violet-700 bg-clip-text text-transparent dark:from-emerald-300 dark:via-cyan-300 dark:to-sky-300 sm:text-3xl">
+                  Upgrade your mindset with premium learning experiences.
+                </h2>
+           
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-300 sm:text-base">
+                  Discover motivational videos, courses, and bite-sized knowledge designed to help you build better habits,
+                  stronger mental models, and long-term wealth thinking.
+                </p>
+
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <a
+                    href="https://www.alux.com/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-11 items-center justify-center rounded-xl bg-zinc-900 px-5 text-sm font-semibold text-white shadow-lg shadow-zinc-900/10 transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:shadow-white/5 dark:hover:bg-zinc-100"
+                  >
+                    Visit ALUX
+                    <ChevronRight className="ml-1 h-4 w-4" aria-hidden />
+                  </a>
+                  <a
+                    href="https://www.alux.com/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+                  >
+                    Explore courses & videos
+                  </a>
+                </div>
+              </div>
+
+              <div className="order-1 lg:order-2 lg:col-span-5">
+                <div className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                  <div className="relative aspect-[3/2] w-full bg-zinc-100 dark:bg-zinc-900">
+                    <Image
+                      src="/alux.png"
+                      alt="ALUX promotional creative"
+                      fill
+                      className="object-cover"
+                      sizes="(min-width: 1024px) 20rem, 100vw"
+                    />
+                    <div className="absolute left-4 top-4">
+                      <div className="mt-2 text-3xl font-black tracking-tight text-white drop-shadow sm:text-4xl">
+                        ALUX
+                      </div>
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-center items-center">
+                      <p className="mt-2 text-sm font-semibold text-white text-center">
+                        Where future billionaires come to get inspired
+                      </p>
+                    </div>
+               
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Latest Articles (horizontal) */}
+      <section className="border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+          <div className="mb-5 flex items-end justify-between gap-4 border-b border-zinc-200 pb-4 dark:border-zinc-800">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+                Latest
+              </p>
+              <h2 className="mt-1.5 font-display text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                Latest Articles
+              </h2>
+            </div>
+            <Link href="/post" className={`shrink-0 text-sm font-semibold ${linkAccent}`}>
+              View all <ChevronRight className="inline h-4 w-4" aria-hidden />
+            </Link>
+          </div>
+
+          <div className="relative">
+            <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0">
+              {STATIC_LATEST_CAROUSEL.map((a) => (
+                <Link
+                  key={a.id}
+                  href="/post"
+                  className="group w-[min(18rem,calc(100vw-4rem))] shrink-0 snap-start overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80 sm:w-72"
+                >
+                  <div className="relative h-40 w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
+                    <Image
+                      src={a.imageSrc}
+                      alt=""
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      sizes="288px"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
+                      {a.category}
+                    </p>
+                    <h3 className="mt-2 line-clamp-2 font-display text-base font-bold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
+                      {a.title}
+                    </h3>
+                    <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                      <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+                      <span>{a.date}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA + Video */}
+      <section className="border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8 lg:p-10">
+            <div
+              className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[min(56rem,140%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/45 via-orange-100/20 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/20 dark:to-transparent"
+              aria-hidden
+            />
+            <div className="relative grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
+              <div className="order-2 lg:order-1 lg:col-span-6">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+                  Start here
+                </p>
+                <h2 className="mt-2 font-display text-3xl font-bold leading-tight tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl">
+                  <span className="text-blue-700 dark:text-emerald-400">Facts</span>{" "}
+                  <span className="text-orange-600 dark:text-cyan-400">Deck </span>
+                   makes money feel simple.
+                </h2>
+                <p className="mt-4 max-w-xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-300 sm:text-base">
+                  If you’re building financial literacy, you don’t need more noise—you need clear explanations,
+                  practical frameworks, and tools you can trust. Watch the quick overview, then explore the library.
+                </p>
+
+                <ul className="mt-6 space-y-3 text-sm text-zinc-700 dark:text-zinc-200">
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-700 dark:bg-cyan-300" aria-hidden />
+                    <span>
+                      <span className="font-semibold">Plain-English breakdowns</span> with real-world examples.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-orange-600 dark:bg-emerald-300" aria-hidden />
+                    <span>
+                      <span className="font-semibold">Practical tools</span> to budget, plan, and compare options.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-700 dark:bg-cyan-300" aria-hidden />
+                    <span>
+                      <span className="font-semibold">Editorial-first</span> so the “why” is never hidden.
+                    </span>
+                  </li>
+                </ul>
+
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <Link
+                    href="/post"
+                    className="inline-flex h-11 items-center justify-center rounded-xl bg-zinc-900 px-5 text-sm font-semibold text-white shadow-lg shadow-zinc-900/10 transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:shadow-white/5 dark:hover:bg-zinc-100"
+                  >
+                    Explore articles
+                    <ChevronRight className="ml-1 h-4 w-4" aria-hidden />
+                  </Link>
+                  <Link
+                    href="/tools"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+                  >
+                    Try the tools
+                  </Link>
+                </div>
+              </div>
+
+              <div className="order-1 lg:order-2 lg:col-span-6">
+                <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-zinc-100 shadow-sm dark:bg-zinc-900">
+                  <iframe
+                    className="absolute inset-0 h-full w-full"
+                    src="https://www.youtube.com/embed/Lys4EVugJmk?si=KRDBEyxIXdiNW_IX"
+                    title="Facts Deck — Financial literacy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Latest Analysis */}
+      <section className="border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+          <div className="mb-5 flex items-end justify-between gap-4 border-b border-zinc-200 pb-4 dark:border-zinc-800">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
+                Latest analysis
+              </p>
+              <h2 className="mt-1.5 font-display text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                LATEST ANALYSIS
+              </h2>
+            </div>
+            <Link href="/post?type=analysis" className={`shrink-0 text-sm font-semibold ${linkAccent}`}>
+              View all <ChevronRight className="inline h-4 w-4" aria-hidden />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
+            {/* Left (1/3): featured */}
+            <div className="lg:col-span-4">
+              <Link
+                href="/post"
+                className="group block overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80"
+              >
+                <div className="relative aspect-[3/2] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
+                  <Image
+                    src={STATIC_LATEST_ANALYSIS.featured.imageSrc}
+                    alt=""
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    sizes="(min-width: 1024px) 28rem, 100vw"
+                  />
+                </div>
+                <div className="p-5">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
+                    {STATIC_LATEST_ANALYSIS.featured.category}
+                  </p>
+                  <h3 className="mt-2 font-display text-xl font-bold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
+                    {STATIC_LATEST_ANALYSIS.featured.title}
+                  </h3>
+                  <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                    {STATIC_LATEST_ANALYSIS.featured.description}
+                  </p>
+                  <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5" aria-hidden />
+                      {STATIC_LATEST_ANALYSIS.featured.readTime}
+                    </span>
+                    <span className="h-3 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
+                    <span>{STATIC_LATEST_ANALYSIS.featured.date}</span>
+                  </div>
+                </div>
+              </Link>
+            </div>
+
+            {/* Right (2/3): list */}
+            <div className="lg:col-span-8">
+              <div className="overflow-hidden bg-white dark:bg-zinc-950">
+                <ul className="grid grid-cols-1 gap-3 p-4 sm:p-5 lg:grid-cols-2">
+                  {STATIC_LATEST_ANALYSIS.items.map((item) => (
+                    <li key={item.title}>
+                      <Link
+                        href="/post"
+                        className="group block h-full rounded-xl border border-zinc-200 bg-zinc-50 p-3.5 transition-colors hover:border-blue-200 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-emerald-800/80 dark:hover:bg-zinc-800 sm:p-4"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <CategoryPills categories={[item.category]} variant="muted" max={2} />
+                            <div className="mt-2 font-display text-base font-bold leading-snug text-zinc-900 line-clamp-2 dark:text-zinc-100 sm:text-lg">
+                              {item.title}
+                            </div>
+                            <div className="mt-2 flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3.5 w-3.5" aria-hidden />
+                                {item.readTime}
+                              </span>
+                              <span className="h-3 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
+                              <span>{item.date}</span>
+                            </div>
+                          </div>
+                          <span
+                            className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 transition-colors group-hover:border-blue-200 group-hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:group-hover:text-cyan-300"
+                            aria-hidden
+                          >
+                            <ArrowUpRight className="h-4 w-4" />
+                          </span>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/post?type=analysis"
+                  className={`flex items-center justify-between gap-2 border-t border-zinc-100 px-5 py-4 text-sm font-semibold dark:border-zinc-800 ${linkAccent}`}
+                >
+                  Browse more analysis
+                  <ChevronRight className="h-4 w-4" aria-hidden />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
