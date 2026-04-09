@@ -100,17 +100,32 @@ export default async function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="min-w-0 w-full">
-        <HomePageClient
-          featuredPosts={partitioned.featured}
-          latestPosts={partitioned.latest}
-          expertPickPosts={partitioned.expertPicks}
-          trendingPosts={partitioned.trending}
-          guidePosts={partitioned.guides}
-          categoriesWithCounts={categoriesWithCounts}
-          marketData={marketData}
-          sidebarTools={sidebarTools}
+      <div className="relative min-h-screen overflow-x-hidden bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+        {/* Ambient layers — matches tools / legal marketing pages */}
+        <div
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
+          aria-hidden
         />
+        <div
+          className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute top-[28rem] right-[-10%] h-96 w-96 rounded-full bg-orange-100/30 blur-3xl dark:bg-cyan-950/25"
+          aria-hidden
+        />
+        <div className="relative min-w-0 w-full">
+          <HomePageClient
+            featuredPosts={partitioned.featured}
+            latestPosts={partitioned.latest}
+            expertPickPosts={partitioned.expertPicks}
+            trendingPosts={partitioned.trending}
+            guidePosts={partitioned.guides}
+            categoriesWithCounts={categoriesWithCounts}
+            marketData={marketData}
+            sidebarTools={sidebarTools}
+          />
+        </div>
       </div>
     </>
   );

@@ -22,10 +22,14 @@ import {
   Shield,
   Sparkles,
 } from "lucide-react";
+
 import type { SiteTool } from "../lib/site-config";
 import { siteTools, siteToolsByDisplayOrder } from "../lib/site-config";
 import { SITE_URL, absoluteUrl } from "../lib/seo";
 import { proxiedImageSrc } from "../lib/image-proxy";
+
+
+// Metadata
 
 const toolsPageDescription =
   "Free financial calculators and simulators: mortgage, investing, budgeting, retirement, loans, and credit. Interactive tools for planning—education only, not professional advice.";
@@ -103,11 +107,20 @@ export const metadata: Metadata = {
     siteName: "Facts Deck",
     type: "website",
     locale: "en_US",
+    images: [
+      {
+        url: absoluteUrl("/icon.png"),
+        width: 512,
+        height: 512,
+        alt: "Facts Deck",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Financial Tools & Calculators | Facts Deck",
     description: toolsPageDescription,
+    images: [absoluteUrl("/icon.png")],
   },
   robots: { index: true, follow: true },
 };
@@ -167,14 +180,14 @@ export default function ToolsIndexPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <div className="relative min-h-screen overflow-hidden bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      <div className="relative min-h-screen overflow-x-hidden bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
         {/* Ambient layers */}
         <div
           className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-sky-200/40 via-indigo-100/20 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
+          className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
           aria-hidden
         />
         <div
@@ -185,14 +198,14 @@ export default function ToolsIndexPage() {
         {/* Hero */}
         <header className="relative border-b border-zinc-200/80 dark:border-zinc-800/80">
           <div className="mx-auto max-w-7xl px-4 pt-8 pb-14 sm:px-6 sm:pt-10 sm:pb-16 lg:px-8">
-            <nav className="flex flex-wrap items-center justify-between gap-4" aria-label="Breadcrumb">
-              <Link
-                href="/"
-                className="group inline-flex items-center gap-2 rounded-full border border-zinc-200/90 bg-white/80 px-4 py-2 text-sm font-medium text-zinc-800 shadow-sm backdrop-blur-sm transition-all hover:border-zinc-300 hover:bg-white hover:shadow-md dark:border-zinc-700/80 dark:bg-zinc-900/60 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-900"
-              >
-                <ArrowLeft className="h-4 w-4 shrink-0 text-zinc-500 transition-transform group-hover:-translate-x-0.5 dark:text-zinc-400" />
-                Home
-              </Link>
+            <nav
+              className="flex flex-row items-center justify-between gap-2 sm:gap-6"
+              aria-label="Breadcrumb"
+            >
+              <div className="inline-flex items-center gap-2 rounded-full border border-orange-200/90 bg-orange-50 px-3 py-1 text-xs font-semibold text-blue-800 shadow-sm dark:border-emerald-800/50 dark:bg-emerald-950/40 dark:text-emerald-200">
+                <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                Product suite
+              </div>
               <div className="flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                 <span className="text-zinc-400 dark:text-zinc-500">/</span>
                 <span className="text-zinc-700 dark:text-zinc-300">Tools</span>
@@ -200,14 +213,9 @@ export default function ToolsIndexPage() {
             </nav>
 
             <div className="mt-12 max-w-4xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-sky-200/80 bg-sky-50/90 px-3 py-1 text-xs font-semibold text-sky-900 shadow-sm dark:border-emerald-800/50 dark:bg-emerald-950/40 dark:text-emerald-200">
-                <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                Product suite
-              </div>
               <h1 className="mt-6 font-display text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:text-6xl">
-                Precision tools for{" "}
                 <span className="bg-gradient-to-r from-sky-700 via-indigo-700 to-violet-700 bg-clip-text text-transparent dark:from-emerald-300 dark:via-cyan-300 dark:to-sky-300">
-                  every money decision
+                  Precision tools for every money decision
                 </span>
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
@@ -285,7 +293,7 @@ export default function ToolsIndexPage() {
                   <div className="absolute right-6 top-6 hidden font-mono text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-400 lg:block dark:text-zinc-600">
                     Featured
                   </div>
-                  <p id="spotlight-heading" className="text-xs font-semibold uppercase tracking-widest text-sky-700 dark:text-emerald-400">
+                  <p id="spotlight-heading" className="text-xs font-semibold uppercase tracking-widest text-blue-800 dark:text-emerald-400">
                     Start here
                   </p>
                   <h2 className="mt-3 font-display text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">
@@ -325,7 +333,7 @@ export default function ToolsIndexPage() {
                     <a
                       key={g.id}
                       href={`#${g.id}`}
-                      className="block border-l-2 border-transparent py-1.5 pl-4 text-sm font-medium text-zinc-600 transition hover:border-sky-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-emerald-500 dark:hover:text-zinc-100"
+                      className="block border-l-2 border-transparent py-1.5 pl-4 text-sm font-medium text-zinc-600 transition hover:border-blue-700 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-emerald-500 dark:hover:text-zinc-100"
                     >
                       {g.label}
                     </a>
@@ -371,14 +379,14 @@ export default function ToolsIndexPage() {
                           <li key={tool.slug}>
                             <Link
                               href={`/tools/${tool.slug}`}
-                              className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sky-200/90 hover:shadow-lg hover:shadow-sky-900/[0.06] sm:flex-row sm:items-center sm:gap-6 sm:p-6 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/60 dark:hover:shadow-black/30"
+                              className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200/90 hover:shadow-lg hover:shadow-blue-900/[0.06] sm:flex-row sm:items-center sm:gap-6 sm:p-6 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/60 dark:hover:shadow-black/30"
                             >
                               <div
-                                className="absolute left-0 top-0 h-full w-1 opacity-90 dark:from-emerald-500 dark:to-cyan-600"
+                                className="absolute left-0 top-0 h-full w-1 opacity-90"
                                 aria-hidden
                               />
                               <div className="flex shrink-0 items-start gap-4 sm:items-center sm:pl-2">
-                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-100 bg-zinc-50 text-sky-800 shadow-inner dark:border-zinc-800 dark:bg-zinc-900 dark:text-emerald-400">
+                                <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-orange-200/90 bg-orange-50 text-blue-700 shadow-sm dark:border-emerald-800/70 dark:bg-emerald-950/50 dark:text-cyan-300">
                                   <Icon className="h-7 w-7" aria-hidden />
                                 </div>
                                 <div className="min-w-0 flex-1 sm:hidden">
@@ -399,7 +407,7 @@ export default function ToolsIndexPage() {
                                 <p className="mt-2 text-sm leading-relaxed text-zinc-600 line-clamp-2 dark:text-zinc-400 sm:line-clamp-none">
                                   {tool.description}
                                 </p>
-                                <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-sky-700 transition group-hover:gap-2 dark:text-emerald-400">
+                                <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-blue-800 transition group-hover:gap-2 dark:text-cyan-300">
                                   Open
                                   <ArrowRight className="h-4 w-4" />
                                 </span>
@@ -408,7 +416,7 @@ export default function ToolsIndexPage() {
                                 <span className="rounded-md bg-zinc-100 px-2 py-0.5 font-mono text-[11px] font-medium text-zinc-600 sm:hidden dark:bg-zinc-800 dark:text-zinc-400">
                                   {tool.users}
                                 </span>
-                                <ArrowUpRight className="h-5 w-5 text-zinc-400 transition group-hover:text-sky-700 dark:group-hover:text-emerald-400" aria-hidden />
+                                <ArrowUpRight className="h-5 w-5 text-zinc-400 transition group-hover:text-blue-800 dark:group-hover:text-emerald-400" aria-hidden />
                               </div>
                             </Link>
                           </li>
@@ -426,8 +434,8 @@ export default function ToolsIndexPage() {
         <footer className="border-t border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950">
           <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-6 rounded-2xl border border-zinc-200 bg-zinc-50/80 p-8 sm:flex-row sm:items-start sm:gap-8 dark:border-zinc-800 dark:bg-zinc-900/40">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800">
-                <Shield className="h-6 w-6 text-zinc-600 dark:text-zinc-400" aria-hidden />
+              <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-orange-200/90 bg-orange-50 text-blue-700 shadow-sm dark:border-emerald-800/70 dark:bg-emerald-950/50 dark:text-cyan-300">
+                <Shield className="h-6 w-6" aria-hidden />
               </div>
               <div className="min-w-0">
                 <p className="font-display text-base font-bold text-zinc-900 dark:text-zinc-100">Education, not advice</p>
@@ -436,10 +444,10 @@ export default function ToolsIndexPage() {
                   Outcomes depend on your inputs; confirm anything material with official sources or a qualified professional.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-4 text-sm font-medium">
-                  <Link href="/about" className="text-sky-800 underline-offset-4 hover:underline dark:text-emerald-400">
+                  <Link href="/about" className="text-blue-800 underline-offset-4 hover:underline dark:text-cyan-300">
                     About Facts Deck
                   </Link>
-                  <Link href="/disclaimer" className="text-sky-800 underline-offset-4 hover:underline dark:text-emerald-400">
+                  <Link href="/disclaimer" className="text-blue-800 underline-offset-4 hover:underline dark:text-cyan-300">
                     Full disclaimer
                   </Link>
                 </div>

@@ -80,8 +80,7 @@ export default function Footer() {
                       WEEKLY NEWSLETTER
                     </p>
                     <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-                      <span className="text-orange-600 dark:text-cyan-400">Weekly finance notes,</span>{" "}
-                      <span className="text-blue-800 dark:text-emerald-300">without the Hype</span>
+                      <span className="bg-gradient-to-r from-sky-700 via-indigo-700 to-violet-700 bg-clip-text text-transparent dark:from-emerald-300 dark:via-cyan-300 dark:to-sky-300">Weekly finance notes, without the Hype</span>
                     </h2>
                   </div>
                 </div>
@@ -127,7 +126,7 @@ export default function Footer() {
                     <button
                       type="submit"
                       disabled={status === "loading"}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 disabled:opacity-70 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                      className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-zinc-900 px-6 text-sm font-semibold text-white shadow-lg shadow-zinc-900/10 transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:shadow-white/5 dark:hover:bg-zinc-100"
                     >
                       {status === "loading" ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -241,67 +240,17 @@ export default function Footer() {
             </div>
           </div>
 
-          <div>
-            <h3 className="font-display font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-6">
-              Tools
-            </h3>
-            <ul className="space-y-3">
-              {/* For the pointer/indicator effect, we wrap each <li> with a group, and prepend an animated/appearing icon on hover */}
-              <li className="group flex items-center">
-                <span className="mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  {/* Simple creative pointer icon (arrow/caret) */}
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="text-orange-600 dark:text-cyan-400"
-                  >
-                    <path d="M4 8l6 0M10 8l-2.5 -2.5M10 8l-2.5 2.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </span>
-                <Link
-                  href="/tools"
-                  className="inline-block text-sm text-zinc-600 transition-colors hover:translate-x-1 hover:text-blue-800 dark:text-zinc-300 dark:hover:text-cyan-300"
-                >
-                  All Tools & Calculators
-                </Link>
-              </li>
-              {footerTools.map((tool) => (
-                <li key={tool.slug} className="group flex items-center">
-                  <span className="mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="text-orange-600 dark:text-cyan-400"
-                    >
-                      <path d="M4 8l6 0M10 8l-2.5 -2.5M10 8l-2.5 2.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </span>
-                  <Link
-                    href={`/tools/${tool.slug}`}
-                    className="inline-block text-sm text-zinc-600 transition-colors hover:translate-x-1 hover:text-blue-800 dark:text-zinc-300 dark:hover:text-cyan-300"
-                  >
-                    {tool.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-display font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-6">
-              Company
-            </h3>
-            <ul className="space-y-3">
-              {companyLinks.map((link) => (
-                <li key={link.name} className="group flex items-center">
-                  {/* Creative animated indicator – a little gem/star shines on hover */}
-                  <span className="mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform group-hover:scale-110">
+          {/* Mobile: Tools | Company in one row; sm+: unwrap into parent grid */}
+          <div className="grid grid-cols-2 items-start gap-x-6 gap-y-0 sm:contents">
+            <div className="min-w-0">
+              <h3 className="font-display font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-3 pl-5">
+                Tools
+              </h3>
+              <ul className="space-y-3">
+                {/* For the pointer/indicator effect, we wrap each <li> with a group, and prepend an animated/appearing icon on hover */}
+                <li className="group flex items-center">
+                  <span className="mr-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    {/* Simple creative pointer icon (arrow/caret) */}
                     <svg
                       width="18"
                       height="18"
@@ -314,14 +263,67 @@ export default function Footer() {
                     </svg>
                   </span>
                   <Link
-                    href={link.href}
+                    href="/tools"
                     className="inline-block text-sm text-zinc-600 transition-colors hover:translate-x-1 hover:text-blue-800 dark:text-zinc-300 dark:hover:text-cyan-300"
                   >
-                    {link.name}
+                    All Tools & Calculators
                   </Link>
                 </li>
-              ))}
-            </ul>
+                {footerTools.map((tool) => (
+                  <li key={tool.slug} className="group flex items-center">
+                    <span className="mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="text-orange-600 dark:text-cyan-400"
+                      >
+                        <path d="M4 8l6 0M10 8l-2.5 -2.5M10 8l-2.5 2.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </span>
+                    <Link
+                      href={`/tools/${tool.slug}`}
+                      className="inline-block text-sm text-zinc-600 transition-colors hover:translate-x-1 hover:text-blue-800 dark:text-zinc-300 dark:hover:text-cyan-300"
+                    >
+                      {tool.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="min-w-0">
+              <h3 className="font-display font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-6 pl-6">
+                Company
+              </h3>
+              <ul className="space-y-3">
+                {companyLinks.map((link) => (
+                  <li key={link.name} className="group flex items-center">
+                    {/* Creative animated indicator – a little gem/star shines on hover */}
+                    <span className="mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform group-hover:scale-110">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="text-orange-600 dark:text-cyan-400"
+                      >
+                        <path d="M4 8l6 0M10 8l-2.5 -2.5M10 8l-2.5 2.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </span>
+                    <Link
+                      href={link.href}
+                      className="inline-block text-sm text-zinc-600 transition-colors hover:translate-x-1 hover:text-blue-800 dark:text-zinc-300 dark:hover:text-cyan-300"
+                    >
+                      {link.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           <div>

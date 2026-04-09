@@ -11,8 +11,12 @@ const ICONS = {
   Star,
 } satisfies Record<string, LucideIcon>;
 
+/** Matches HomePage / PostList / marketing pages — icon sits in a tinted “card” */
 const iconWrap =
-  "inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-orange-200/90 bg-orange-50 text-blue-700 shadow-sm dark:border-emerald-800/70 dark:bg-emerald-950/50 dark:text-cyan-300";
+  "inline-flex shrink-0 items-center justify-center rounded-2xl border border-orange-200/90 bg-orange-50 text-blue-700 shadow-sm dark:border-emerald-800/70 dark:bg-emerald-950 dark:text-cyan-300 h-12 w-12";
+
+const iconWrapCompact =
+  "inline-flex shrink-0 items-center justify-center rounded-xl border border-orange-200/90 bg-orange-50 text-blue-700 shadow-sm dark:border-emerald-800/70 dark:bg-emerald-950 dark:text-cyan-300 h-10 w-10";
 
 type EmptyStateProps = {
   icon?: LucideIcon;
@@ -35,21 +39,17 @@ export default function EmptyState({
   compact = false,
 }: EmptyStateProps) {
   const Icon = iconProp ?? (iconKey ? ICONS[iconKey] : BookOpen);
+
+  const outer =
+    compact
+      ? "rounded-xl border border-zinc-200 bg-white px-4 py-6 dark:border-zinc-800 dark:bg-zinc-950"
+      : "rounded-2xl border border-zinc-200 bg-white px-6 py-12 sm:py-16 dark:border-zinc-800 dark:bg-zinc-950";
+
   return (
-    <div
-      className={
-        compact
-          ? "py-6 px-4"
-          : "rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/80 px-6 py-12 sm:py-16 dark:border-zinc-700 dark:bg-zinc-900/30"
-      }
-    >
+    <div className={outer}>
       <div className="mx-auto flex max-w-md flex-col items-center text-center">
-        <div className={compact ? "mb-3" : `mb-6 ${iconWrap}`}>
-          <Icon
-            className={
-              compact ? "h-6 w-6 text-zinc-400 dark:text-zinc-400" : "h-7 w-7"
-            }
-          />
+        <div className={compact ? `mb-4 ${iconWrapCompact}` : `mb-6 ${iconWrap}`} aria-hidden>
+          <Icon className={compact ? "h-5 w-5" : "h-6 w-6"} />
         </div>
         <h3
           className={
@@ -66,7 +66,7 @@ export default function EmptyState({
         {ctaLabel && ctaHref && (
           <Link
             href={ctaHref}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+            className="inline-flex h-12 items-center gap-2 justify-center rounded-xl bg-zinc-900 px-6 text-sm font-semibold text-white shadow-lg shadow-zinc-900/10 transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:shadow-white/5 dark:hover:bg-zinc-100"
           >
             {ctaLabel}
             <ChevronRight className="h-4 w-4" />

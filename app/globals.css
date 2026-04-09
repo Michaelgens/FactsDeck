@@ -55,24 +55,6 @@ body {
   color-scheme: dark;
 }
 
-/* Custom scrollbar for dark mode */
-.dark::-webkit-scrollbar {
-  width: 8px;
-}
-
-.dark::-webkit-scrollbar-track {
-  background: var(--color-dark-900);
-}
-
-.dark::-webkit-scrollbar-thumb {
-  background: var(--color-dark-700);
-  border-radius: 4px;
-}
-
-.dark::-webkit-scrollbar-thumb:hover {
-  background: var(--color-dark-500);
-}
-
 /* Purple & blue theme utilities */
 .font-display {
   font-weight: 700;

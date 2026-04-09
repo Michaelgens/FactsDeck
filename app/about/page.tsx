@@ -78,22 +78,16 @@ const teamMembers = [
     name: "Michael Genesis II",
     role: "CEO & Founder",
     image: "/first.jpeg",
-    expertise: ["Investment Strategy", "Market Analysis", "Financial Planning"],
-    social: { linkedin: "#", twitter: "#" },
   },
   {
     name: "Emma Rodriguez",
     role: "Head of Content",
     image: "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=300",
-    expertise: ["Financial Writing", "Research", "Education"],
-    social: { linkedin: "#", twitter: "#" },
   },
   {
     name: "David Kim",
     role: "Head of Research",
     image: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=300",
-    expertise: ["Economic Research", "Cryptocurrency", "Market Trends"],
-    social: { linkedin: "#", twitter: "#" },
   },
 ];
 
@@ -457,20 +451,33 @@ export default function AboutPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }} />
-      <div className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      <div className="relative min-h-screen overflow-x-hidden bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+        {/* Ambient layers */}
+        <div
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute top-[28rem] right-[-10%] h-96 w-96 rounded-full bg-orange-100/30 blur-3xl dark:bg-cyan-950/25"
+          aria-hidden
+        />
         <section className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <Link
                 href="/"
-                className="inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+                className="hidden sm:inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
               >
                 <ArrowLeft className="h-4 w-4 shrink-0" />
                 Back to home
               </Link>
 
               <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
-                <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200">
+                <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
                   <BookOpen className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-emerald-400" />
                   Editorial standards
                 </span>
@@ -485,8 +492,7 @@ export default function AboutPage() {
               <div className="lg:col-span-7">
                 <p className="text-xs font-semibold tracking-widest text-orange-800/80 dark:text-cyan-400/90">ABOUT</p>
                 <h1 className="mt-3 font-display text-4xl font-bold leading-[1.08] text-balance sm:text-5xl md:text-6xl">
-                  <span className="text-blue-800 dark:text-emerald-300">About</span>{" "}
-                  <span className="text-orange-600 dark:text-cyan-400">Facts Deck</span>
+                  <span className="bg-gradient-to-r from-sky-700 via-indigo-700 to-violet-700 bg-clip-text text-transparent dark:from-emerald-300 dark:via-cyan-300 dark:to-sky-300">About Facts Deck</span>
                 </h1>
                 <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-600 sm:text-lg dark:text-zinc-300">
                   Clear articles, tools, and published standards—built on accuracy, sourcing, and independence so you can
@@ -496,19 +502,19 @@ export default function AboutPage() {
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   <Link
                     href="#get-in-touch"
-                    className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                    className="inline-flex h-12 items-center justify-center rounded-xl bg-zinc-900 px-6 text-sm font-semibold text-white shadow-lg shadow-zinc-900/10 transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:shadow-white/5 dark:hover:bg-zinc-100"
                   >
                     Get in touch
                   </Link>
                   <Link
                     href="#editorial-guidelines"
-                    className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/40 dark:hover:text-cyan-300"
+                    className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 text-sm font-semibold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
                   >
                     Editorial guidelines
                   </Link>
                   <Link
                     href="/tools"
-                    className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 shadow-sm transition-colors hover:border-zinc-300 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-cyan-300"
+                    className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 text-sm font-semibold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
                   >
                     Explore tools
                   </Link>
@@ -530,7 +536,7 @@ export default function AboutPage() {
               </div>
 
               <div className="lg:col-span-5">
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/35">
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                   <p className="text-xs font-semibold tracking-widest text-orange-800/90 dark:text-cyan-400/90">
                     AT A GLANCE
                   </p>
@@ -558,9 +564,9 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl bg-white px-4 py-16 dark:bg-zinc-950 sm:px-6 lg:px-8">
           <div className="flex flex-col-reverse items-start gap-10 lg:flex-row lg:gap-12">
-            <aside className="w-full shrink-0 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:w-60 lg:overflow-y-auto xl:w-64">
+            <aside className="hidden md:block w-full shrink-0 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:w-60 lg:overflow-y-auto xl:w-64">
               <nav
                 className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
                 aria-label="On this page"
@@ -700,7 +706,7 @@ export default function AboutPage() {
                   align="center"
                   description="Editorial, technology, and research leaders guiding Facts Deck’s mission—accessible, trustworthy financial education."
                 />
-                <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-3 md:grid-cols-3">
                   {teamMembers.map((member, index) => (
                     <div key={index} className={`${cardSurface} p-6 text-center`}>
                       <Image
@@ -712,32 +718,6 @@ export default function AboutPage() {
                       />
                       <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-100">{member.name}</h3>
                       <p className="mb-4 font-semibold text-zinc-700 transition-colors dark:text-zinc-300">{member.role}</p>
-                      <div className="mb-4 flex flex-wrap justify-center gap-2">
-                        {member.expertise.map((skill, skillIndex) => (
-                          <span
-                            key={skillIndex}
-                            className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-200"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex justify-center space-x-2">
-                        <a
-                          href={member.social.linkedin}
-                          className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
-                          aria-label={`${member.name} on LinkedIn`}
-                        >
-                          <Linkedin className="h-5 w-5" />
-                        </a>
-                        <a
-                          href={member.social.twitter}
-                          className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
-                          aria-label={`${member.name} on X`}
-                        >
-                          <Twitter className="h-5 w-5" />
-                        </a>
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -745,7 +725,7 @@ export default function AboutPage() {
 
               <section
                 id="get-in-touch"
-                className="scroll-mt-24 rounded-2xl border border-zinc-200 bg-zinc-50 p-8 md:p-12 dark:border-zinc-800 dark:bg-zinc-900/35"
+                className="scroll-mt-24 rounded-2xl border border-zinc-200 bg-zinc-50 p-8 md:p-12 dark:border-zinc-800 dark:bg-zinc-900"
                 aria-labelledby="heading-contact"
               >
                 <div className={`${iconWrap} mx-auto mb-6`}>
@@ -761,20 +741,20 @@ export default function AboutPage() {
                   Questions, ideas, or partnerships—we read what you send and route it to the right team.
                 </p>
 
-                <div className="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-3">
-                  <div className="rounded-xl border border-zinc-200 bg-white/80 p-5 text-center dark:border-zinc-800 dark:bg-zinc-950/80">
+                <div className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-3 md:grid-cols-3">
+                  <div className="rounded-xl border border-zinc-200 bg-white p-5 text-center dark:border-zinc-800 dark:bg-zinc-950">
                     <Mail className="mx-auto mb-3 h-6 w-6 text-blue-600 dark:text-emerald-400" aria-hidden />
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Email</h3>
                     <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">General inquiries</p>
                     <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">hello@factsdeck.com</p>
                   </div>
-                  <div className="rounded-xl border border-zinc-200 bg-white/80 p-5 text-center dark:border-zinc-800 dark:bg-zinc-950/80">
+                  <div className="rounded-xl border border-zinc-200 bg-white p-5 text-center dark:border-zinc-800 dark:bg-zinc-950">
                     <Phone className="mx-auto mb-3 h-6 w-6 text-orange-600 dark:text-cyan-400" aria-hidden />
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Phone</h3>
                     <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">9AM – 6PM EST</p>
                     <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">+44 *** *** ****</p>
                   </div>
-                  <div className="rounded-xl border border-zinc-200 bg-white/80 p-5 text-center dark:border-zinc-800 dark:bg-zinc-950/80">
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900 col-span-2 mx-auto md:col-span-1 md:mx-0 text-center">
                     <MapPin className="mx-auto mb-3 h-6 w-6 text-blue-600 dark:text-emerald-400" aria-hidden />
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Office</h3>
                     <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">By appointment</p>
@@ -816,7 +796,7 @@ export default function AboutPage() {
                 <div className="mt-10 text-center">
                   <Link
                     href="/contact"
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-8 py-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-zinc-900 px-6 text-sm font-semibold text-white shadow-lg shadow-zinc-900/10 transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:shadow-white/5 dark:hover:bg-zinc-100"
                   >
                     <Zap className="h-5 w-5" aria-hidden />
                     Open contact page

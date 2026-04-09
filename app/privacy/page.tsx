@@ -175,21 +175,34 @@ function SectionHeading({
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+    <div className="relative min-h-screen overflow-x-hidden bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      {/* Ambient layers */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute top-[28rem] right-[-10%] h-96 w-96 rounded-full bg-orange-100/30 blur-3xl dark:bg-cyan-950/25"
+        aria-hidden
+      />
       {/* Hero — flat, no gradients; brand accents match Header/Footer */}
       <section className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <Link
               href="/"
-              className="inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+              className="hidden sm:inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
             >
               <ArrowLeft className="h-4 w-4 shrink-0" />
               Back to home
             </Link>
 
             <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
-              <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200">
+              <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
                 <CheckCircle className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-emerald-400" />
                 Updated {LAST_UPDATED}
               </span>
@@ -206,8 +219,7 @@ export default function PrivacyPage() {
                 TRUST &amp; PRIVACY
               </p>
               <h1 className="mt-3 font-display text-4xl font-bold leading-[1.08] text-balance sm:text-5xl md:text-6xl">
-                <span className="text-blue-800 dark:text-emerald-300">Privacy</span>{" "}
-                <span className="text-orange-600 dark:text-cyan-400">Policy</span>
+                <span className="bg-gradient-to-r from-sky-700 via-indigo-700 to-violet-700 bg-clip-text text-transparent dark:from-emerald-300 dark:via-cyan-300 dark:to-sky-300">Privacy Policy</span>
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-600 sm:text-lg dark:text-zinc-300">
                 Plain-language summary of what we collect, why we use it, and the choices you have across{" "}
@@ -217,19 +229,19 @@ export default function PrivacyPage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link
                   href="#what-we-collect"
-                  className="inline-flex items-center justify-center rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                  className="inline-flex h-12 items-center justify-center rounded-xl bg-zinc-900 px-6 text-sm font-semibold text-white shadow-lg shadow-zinc-900/10 transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:shadow-white/5 dark:hover:bg-zinc-100"
                 >
                   What we collect
                 </Link>
                 <Link
                   href="#your-rights"
-                  className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/40 dark:hover:text-cyan-300"
+                  className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 text-sm font-semibold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
                 >
                   Your rights
                 </Link>
                 <Link
                   href="/contact"
-                  className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/40 dark:hover:text-cyan-300"
+                  className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 text-sm font-semibold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
                 >
                   Contact privacy
                 </Link>
@@ -245,7 +257,7 @@ export default function PrivacyPage() {
             </div>
 
             <aside className="lg:col-span-5">
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/35">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <p className="text-xs font-semibold tracking-widest text-orange-800/90 dark:text-cyan-400/90">
                   AT A GLANCE
                 </p>
@@ -269,7 +281,7 @@ export default function PrivacyPage() {
         </div>
       </section>
 
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl bg-white px-4 py-16 dark:bg-zinc-950 sm:px-6 lg:px-8">
         {/* Principles */}
         <section className="mb-20">
           <SectionHeading
@@ -294,7 +306,7 @@ export default function PrivacyPage() {
         </section>
 
         {/* Data */}
-        <section id="what-we-collect" className="mb-20 scroll-mt-24 rounded-2xl border border-zinc-200 bg-zinc-50/90 px-4 py-14 sm:px-8 lg:px-10 dark:border-zinc-800 dark:bg-zinc-900/25">
+        <section id="what-we-collect" className="mb-20 scroll-mt-24 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-14 sm:px-8 lg:px-10 dark:border-zinc-800 dark:bg-zinc-900">
           <SectionHeading
             kicker="DATA INVENTORY"
             title="Types of data we collect"
@@ -378,21 +390,23 @@ export default function PrivacyPage() {
                       <p className="mt-1 text-zinc-600 dark:text-zinc-300">{cookie.purpose}</p>
                     </div>
                   </div>
-                  {cookie.required ? (
-                    <span className="inline-flex w-fit shrink-0 items-center rounded-full bg-blue-700 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white dark:bg-emerald-600">
-                      Required
-                    </span>
-                  ) : (
-                    <span className="inline-flex w-fit shrink-0 items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
-                      Optional
-                    </span>
-                  )}
+                  <div className="ml-auto flex items-center">
+                    {cookie.required ? (
+                      <span className="inline-flex w-fit shrink-0 items-center rounded-full bg-blue-700 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white dark:bg-emerald-600">
+                        Required
+                      </span>
+                    ) : (
+                      <span className="inline-flex w-fit shrink-0 items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                        Optional
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {cookie.examples.map((example, exampleIndex) => (
                     <span
                       key={exampleIndex}
-                      className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-300"
+                      className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
                     >
                       {example}
                     </span>
@@ -404,7 +418,7 @@ export default function PrivacyPage() {
         </section>
 
         {/* Compliance */}
-        <section className="mb-20 rounded-2xl border border-zinc-200 bg-zinc-50/90 px-4 py-14 sm:px-8 lg:px-10 dark:border-zinc-800 dark:bg-zinc-900/25">
+        <section className="mb-20 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-14 sm:px-8 lg:px-10 dark:border-zinc-800 dark:bg-zinc-900">
           <SectionHeading
             kicker="GOVERNANCE"
             title="Compliance & standards"
@@ -429,7 +443,7 @@ export default function PrivacyPage() {
 
         {/* Retention */}
         <section className="mb-20">
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-8 md:p-12 dark:border-zinc-800 dark:bg-zinc-900/35">
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-8 md:p-12 dark:border-zinc-800 dark:bg-zinc-900">
             <div className="mx-auto mb-10 max-w-2xl text-center">
               <div className={`${iconWrap} mx-auto mb-6`}>
                 <Database className="h-7 w-7" aria-hidden />
@@ -517,21 +531,21 @@ export default function PrivacyPage() {
           <p className="mx-auto mt-3 max-w-2xl text-lg text-zinc-600 dark:text-zinc-300">
             Reach the team responsible for privacy inquiries. We respond as promptly as we can, subject to verification.
           </p>
-          <div className="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-3">
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
-              <Mail className="mx-auto mb-3 h-6 w-6 text-blue-600 dark:text-emerald-400" aria-hidden />
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Email</h3>
-              <p className="mt-1 font-medium text-zinc-800 dark:text-zinc-200">privacy@factsdeck.com</p>
-            </div>
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+          <div className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900">
               <Phone className="mx-auto mb-3 h-6 w-6 text-orange-600 dark:text-cyan-400" aria-hidden />
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Phone</h3>
               <p className="mt-1 font-medium text-zinc-800 dark:text-zinc-200">+1 (555) 123-PRIV</p>
             </div>
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900">
               <Building className="mx-auto mb-3 h-6 w-6 text-blue-600 dark:text-emerald-400" aria-hidden />
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Office</h3>
               <p className="mt-1 font-medium text-zinc-800 dark:text-zinc-200">Privacy Office, NY</p>
+            </div>
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900 col-span-2 mx-auto md:col-span-1 md:mx-0">
+              <Mail className="mx-auto mb-3 h-6 w-6 text-blue-600 dark:text-emerald-400" aria-hidden />
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Email</h3>
+              <p className="mt-1 font-medium text-zinc-800 dark:text-zinc-200">privacy@factsdeck.com</p>
             </div>
           </div>
           <div className="mt-10 space-y-1 text-sm text-zinc-500 dark:text-zinc-400">
