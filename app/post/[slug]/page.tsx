@@ -1,12 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import {
-  getPostBySlugOrId,
-  getPostContent,
-  getPartitionedPosts,
-  getCategoriesWithCounts,
-  getRelatedPosts,
-} from "../../lib/posts";
+import { getPostBySlugOrId, getPostContent } from "../../lib/posts";
 import PostPageView from "../../components/PostPageView";
 import { SITE_URL, absoluteUrl } from "../../lib/seo";
 import { postPublicPath } from "../../lib/post-url";
@@ -94,12 +88,7 @@ export default async function PostPage({
     redirect(postPublicPath(post));
   }
 
-  const [content, partitioned, categoriesWithCounts, relatedPosts] = await Promise.all([
-    getPostContent(post.content, post.contentUrl),
-    getPartitionedPosts(post.id),
-    getCategoriesWithCounts(),
-    getRelatedPosts(post.id, post.categories, post.tags, 12),
-  ]);
+  const content = await getPostContent(post.content, post.contentUrl);
 
   const sidebarTools = pickDailyTools(siteTools, 5, `post-article-${post.id}`);
 
@@ -182,16 +171,7 @@ export default async function PostPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <PostPageView
-        article={post}
-        content={content}
-        from={from}
-        trendingPosts={partitioned.trending}
-        guidePosts={partitioned.guides}
-        relatedPosts={relatedPosts}
-        categoriesWithCounts={categoriesWithCounts}
-        sidebarTools={sidebarTools}
-      />
+      <PostPageView article={post} content={content} from={from} sidebarTools={sidebarTools} />
     </>
   );
 }

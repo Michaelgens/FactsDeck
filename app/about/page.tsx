@@ -468,13 +468,13 @@ export default function AboutPage() {
         <section className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <Link
-                href="/"
+            <Link
+              href="/"
                 className="hidden sm:inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
-              >
+            >
                 <ArrowLeft className="h-4 w-4 shrink-0" />
                 Back to home
-              </Link>
+            </Link>
 
               <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
                 <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
@@ -493,7 +493,7 @@ export default function AboutPage() {
                 <p className="text-xs font-semibold tracking-widest text-orange-800/80 dark:text-cyan-400/90">ABOUT</p>
                 <h1 className="mt-3 font-display text-4xl font-bold leading-[1.08] text-balance sm:text-5xl md:text-6xl">
                   <span className="bg-gradient-to-r from-sky-700 via-indigo-700 to-violet-700 bg-clip-text text-transparent dark:from-emerald-300 dark:via-cyan-300 dark:to-sky-300">About Facts Deck</span>
-                </h1>
+            </h1>
                 <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-600 sm:text-lg dark:text-zinc-300">
                   Clear articles, tools, and published standards—built on accuracy, sourcing, and independence so you can
                   learn with confidence.
@@ -506,19 +506,19 @@ export default function AboutPage() {
                   >
                     Get in touch
                   </Link>
-                  <Link
+              <Link
                     href="#editorial-guidelines"
                     className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 text-sm font-semibold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
-                  >
+              >
                     Editorial guidelines
-                  </Link>
-                  <Link
+              </Link>
+              <Link
                     href="/tools"
                     className="inline-flex h-12 items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 text-sm font-semibold text-zinc-800 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
-                  >
+              >
                     Explore tools
-                  </Link>
-                </div>
+              </Link>
+            </div>
 
                 <p className="mt-6 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
                   Legal:{" "}
@@ -544,20 +544,20 @@ export default function AboutPage() {
                     <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
                       <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Founded</p>
                       <p className="mt-1 text-lg font-semibold text-blue-800 dark:text-emerald-300">2025</p>
-                    </div>
+              </div>
                     <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
                       <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Readers</p>
                       <p className="mt-1 text-lg font-semibold text-orange-600 dark:text-cyan-400">2.5M+</p>
-                    </div>
+              </div>
                     <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
                       <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Countries</p>
                       <p className="mt-1 text-lg font-semibold text-blue-800 dark:text-emerald-300">150+</p>
-                    </div>
+              </div>
                     <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
                       <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Rating</p>
                       <p className="mt-1 text-lg font-semibold text-orange-600 dark:text-cyan-400">4.9★</p>
-                    </div>
-                  </div>
+          </div>
+        </div>
                 </div>
               </div>
             </header>
@@ -608,10 +608,10 @@ export default function AboutPage() {
                       </div>
                       <h3 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-100">{feature.title}</h3>
                       <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">{feature.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
+              </div>
+            ))}
+          </div>
+        </section>
 
               <section id="our-values" className="scroll-mt-24" aria-labelledby="heading-our-values">
                 <SectionHeading
@@ -629,7 +629,7 @@ export default function AboutPage() {
                       </div>
                       <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-100">{value.title}</h3>
                       <p className="mt-3 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">{value.description}</p>
-                    </div>
+          </div>
                   ))}
                 </div>
               </section>
@@ -647,13 +647,13 @@ export default function AboutPage() {
                     <div key={index} className={`${cardSurface} p-6 text-center`}>
                       <div className={`${iconWrap} mx-auto mb-4`}>
                         <achievement.icon className="h-6 w-6" aria-hidden />
-                      </div>
+                </div>
                       <div className="text-2xl font-bold text-blue-800 dark:text-emerald-300">{achievement.number}</div>
                       <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{achievement.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </section>
+              </div>
+            ))}
+          </div>
+        </section>
 
               <section id="our-journey" className="scroll-mt-24" aria-labelledby="heading-our-journey">
                 <SectionHeading
@@ -664,8 +664,8 @@ export default function AboutPage() {
                   description="Milestones from launch to today—how we’ve grown the platform and the product."
                 />
                 <div className="mx-auto max-w-3xl space-y-4">
-                  {timeline.map((item, index) => (
-                    <div
+              {timeline.map((item, index) => (
+                <div
                       key={item.year}
                       className={`${cardSurface} p-6`}
                     >
@@ -675,7 +675,7 @@ export default function AboutPage() {
                         </div>
                         <div>
                           <p className="text-xs font-semibold tracking-widest text-orange-800/90 dark:text-cyan-400/90">
-                            {item.year}
+                        {item.year}
                           </p>
                           <h3 className="font-display mt-1 text-xl font-bold text-zinc-900 dark:text-zinc-100">
                             {item.title}
@@ -685,14 +685,14 @@ export default function AboutPage() {
                       </div>
                     </div>
                   ))}
-                </div>
-              </section>
+          </div>
+        </section>
 
               <div className="space-y-16">
                 {editorialPolicySections.map((section) => (
                   <PolicyBlock key={section.id} section={section} />
                 ))}
-              </div>
+          </div>
 
               <section
                 id="meet-our-senior-management-team"
@@ -709,11 +709,11 @@ export default function AboutPage() {
                 <div className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-3 md:grid-cols-3">
                   {teamMembers.map((member, index) => (
                     <div key={index} className={`${cardSurface} p-6 text-center`}>
-                      <Image
+                <Image
                         src={proxiedImageSrc(member.image)}
-                        alt={member.name}
-                        width={96}
-                        height={96}
+                  alt={member.name}
+                  width={96}
+                  height={96}
                         className="mx-auto mb-6 h-24 w-24 rounded-full border-4 border-white object-cover shadow-sm dark:border-zinc-800"
                       />
                       <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-100">{member.name}</h3>
@@ -736,7 +736,7 @@ export default function AboutPage() {
                   className="text-center font-display text-3xl font-bold text-zinc-900 md:text-4xl dark:text-zinc-100"
                 >
                   Get in touch
-                </h2>
+            </h2>
                 <p className="mx-auto mt-3 max-w-2xl text-center text-lg text-zinc-600 dark:text-zinc-300">
                   Questions, ideas, or partnerships—we read what you send and route it to the right team.
                 </p>
@@ -747,64 +747,64 @@ export default function AboutPage() {
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Email</h3>
                     <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">General inquiries</p>
                     <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">hello@factsdeck.com</p>
-                  </div>
+              </div>
                   <div className="rounded-xl border border-zinc-200 bg-white p-5 text-center dark:border-zinc-800 dark:bg-zinc-950">
                     <Phone className="mx-auto mb-3 h-6 w-6 text-orange-600 dark:text-cyan-400" aria-hidden />
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Phone</h3>
                     <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">9AM – 6PM EST</p>
                     <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">+44 *** *** ****</p>
-                  </div>
+            </div>
                   <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900 col-span-2 mx-auto md:col-span-1 md:mx-0 text-center">
                     <MapPin className="mx-auto mb-3 h-6 w-6 text-blue-600 dark:text-emerald-400" aria-hidden />
                     <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Office</h3>
                     <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">By appointment</p>
                     <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">Belfast, NI, UK</p>
-                  </div>
-                </div>
-
-                <div className="mt-10 flex justify-center space-x-3">
-                  <a
-                    href="#"
-                    className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
-                    aria-label="Facebook"
-                  >
-                    <Facebook className="h-7 w-7" />
-                  </a>
-                  <a
-                    href="#"
-                    className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
-                    aria-label="X"
-                  >
-                    <Twitter className="h-7 w-7" />
-                  </a>
-                  <a
-                    href="#"
-                    className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
-                    aria-label="LinkedIn"
-                  >
-                    <Linkedin className="h-7 w-7" />
-                  </a>
-                  <a
-                    href="#"
-                    className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
-                    aria-label="Instagram"
-                  >
-                    <Instagram className="h-7 w-7" />
-                  </a>
-                </div>
-
-                <div className="mt-10 text-center">
-                  <Link
-                    href="/contact"
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-zinc-900 px-6 text-sm font-semibold text-white shadow-lg shadow-zinc-900/10 transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:shadow-white/5 dark:hover:bg-zinc-100"
-                  >
-                    <Zap className="h-5 w-5" aria-hidden />
-                    Open contact page
-                  </Link>
-                </div>
-              </section>
             </div>
           </div>
+
+                <div className="mt-10 flex justify-center space-x-3">
+              <a
+                href="#"
+                    className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+                    aria-label="Facebook"
+              >
+                    <Facebook className="h-7 w-7" />
+              </a>
+              <a
+                href="#"
+                    className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+                    aria-label="X"
+              >
+                    <Twitter className="h-7 w-7" />
+              </a>
+              <a
+                href="#"
+                    className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+                    aria-label="LinkedIn"
+              >
+                    <Linkedin className="h-7 w-7" />
+              </a>
+              <a
+                href="#"
+                    className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-400 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+                    aria-label="Instagram"
+              >
+                    <Instagram className="h-7 w-7" />
+              </a>
+            </div>
+
+                <div className="mt-10 text-center">
+            <Link
+              href="/contact"
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-zinc-900 px-6 text-sm font-semibold text-white shadow-lg shadow-zinc-900/10 transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:shadow-white/5 dark:hover:bg-zinc-100"
+            >
+                    <Zap className="h-5 w-5" aria-hidden />
+                    Open contact page
+            </Link>
+          </div>
+        </section>
+      </div>
+    </div>
         </div>
       </div>
     </>

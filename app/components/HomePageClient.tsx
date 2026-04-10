@@ -47,7 +47,7 @@ import { CategoryPills, categoryLabelList, postHasCategory } from "../lib/post-d
 import type { CategoryWithCount } from "../lib/posts";
 import type { MarketDataItem } from "../lib/market-data";
 import { formatPublishDate } from "../lib/format-date";
-import type { SiteTool } from "../lib/site-config";
+import { siteTools, type SiteTool } from "../lib/site-config";
 import { proxiedImageSrc } from "../lib/image-proxy";
 import { usePostEngagement } from "../hooks/usePostEngagement";
 import EmptyState from "./EmptyState";
@@ -1004,7 +1004,7 @@ export default function HomePageClient({
                 {/* Mobile: swipeable tool cards */}
                 <div className="mt-4 md:hidden ml-3">
                   <div className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    {sidebarTools.slice(0, 5).map((tool, idx) => {
+                    {siteTools.map((tool, idx) => {
                       const ToolIcon = iconMap[tool.iconKey || "Calculator"] ?? Calculator;
                       return (
                         <Link
@@ -1012,24 +1012,19 @@ export default function HomePageClient({
                           href={`/tools/${tool.slug}`}
                           className={`group snap-start rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:border-orange-200 hover:bg-orange-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-cyan-800 dark:hover:bg-zinc-900${idx === 0 ? " ml-2" : ""}`}
                         >
-             
-                          <div className="flex w-[15rem] items-start justify-between gap-3">
-                            <span className="flex min-w-0 items-start gap-3">
-                              <span className={`${iconWrapSm} mt-0.5 shrink-0`}>
+                          <div className="flex w-[15rem] items-center justify-between gap-3">
+                            <span className="flex min-w-0 items-center gap-3">
+                              <span className={`${iconWrapSm} shrink-0 flex items-center`}>
                                 <ToolIcon className="h-4 w-4" aria-hidden />
                               </span>
-                              <span className="min-w-0">
-                                <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                                  Tool
-                                </span>
-                                <span className="mt-1 block line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                                  {tool.name}
-                                </span>
+                              <span className="min-w-0 block line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
+                                {tool.name}
                               </span>
                             </span>
-                            <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-zinc-400 group-hover:text-blue-700 dark:group-hover:text-cyan-400" aria-hidden />
+                            <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400 group-hover:text-blue-700 dark:group-hover:text-cyan-400 flex items-center" aria-hidden />
                           </div>
                         </Link>
+                   
                       );
                     })}
                   </div>
@@ -1212,7 +1207,7 @@ export default function HomePageClient({
           </div>
 
           <div className="relative">
-            <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0">
+            <div className="-mx-4 flex ml-1 snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0">
               {STATIC_LATEST_CAROUSEL.map((a) => (
                 <Link
                   key={a.id}

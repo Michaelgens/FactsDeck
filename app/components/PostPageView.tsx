@@ -28,24 +28,25 @@ import {
   Bitcoin,
   Search,
   Star,
+  CalendarDays,
 } from "lucide-react";
-import type { Post, PostSummary } from "../lib/types";
+import type { Post } from "../lib/types";
 import { postPublicPath } from "../lib/post-url";
 import { proxiedImageSrc } from "../lib/image-proxy";
-import { CategoryPills, categoriesLabelList, categoryLabelList } from "../lib/post-display";
-import type { CategoryWithCount } from "../lib/posts";
+import { CategoryPills, categoryLabelList } from "../lib/post-display";
 import { formatPublishDate } from "../lib/format-date";
-import type { SiteTool } from "../lib/site-config";
+import { siteTools, type SiteTool } from "../lib/site-config";
+import {
+  STATIC_POPULAR,
+  STATIC_TOP_PICKS_FOR_MONTH,
+  STATIC_RELATED_ARTICLES_CAROUSEL,
+  STATIC_READ_MORE_GRID,
+} from "../lib/post-page-static";
 import EmptyState from "./EmptyState";
 import PostEngagementBarClient from "./PostEngagementBarClient";
-import PostArticleBrowseCategories from "./PostArticleBrowseCategories";
 
 const linkAccent =
   "font-semibold text-blue-800 transition-colors hover:text-blue-900 dark:text-cyan-300 dark:hover:text-cyan-200";
-
-/** Matches PostListContent `cardSurface` */
-const cardSurface =
-  "rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80";
 
 const railCard =
   "rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6";
@@ -54,6 +55,71 @@ const iconWrapSm =
   "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-orange-200/90 bg-orange-50 text-blue-700 shadow-sm dark:border-emerald-800/70 dark:bg-emerald-950/50 dark:text-cyan-300";
 
 const POST_BASE = "/post";
+
+const ALUX_URL = "https://www.alux.com/";
+
+/** Sponsored block for article sidebar — clean image + partner row (matches post list ALUX pattern). */
+function AluxPostDetailSidebarAd() {
+  return (
+    <div className="space-y-2">
+      <a
+        href={ALUX_URL}
+        target="_blank"
+        rel="noopener noreferrer sponsored"
+        className="group relative block overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm outline-offset-2 transition-colors hover:border-orange-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-amber-600/55 dark:focus-visible:outline-cyan-400"
+        aria-label="Sponsored: ALUX — opens in a new tab"
+      >
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
+          <Image
+            src="/alux.png"
+            alt="ALUX promotional creative"
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+            sizes="(min-width: 1024px) 280px, 100vw"
+          />
+          <div className="absolute left-4 top-4">
+            <div className="text-lg font-bold tracking-tight text-white drop-shadow-sm sm:text-xl">
+              ALUX
+            </div>
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-2 flex justify-center items-center">
+            <p className="mt-2 text-sm font-semibold text-white text-center">
+              Where future billionaires come to get inspired
+            </p>
+          </div>
+        </div>
+      </a>
+
+      <ul className="divide-y divide-zinc-100 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:divide-zinc-800/90 dark:border-zinc-800 dark:bg-zinc-950">
+        <li className="bg-gradient-to-r from-orange-50/40 via-white to-sky-50/30 px-4 py-3.5 transition-colors hover:from-orange-50/70 dark:from-emerald-950/25 dark:via-zinc-950 dark:to-cyan-950/20 dark:hover:from-emerald-950/40 sm:px-5">
+          <a
+            href={ALUX_URL}
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="group flex flex-col gap-2"
+          >
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-orange-700/90 dark:text-amber-400/90">
+                Partner spotlight
+              </p>
+              <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                Explore videos & courses on ALUX.com
+              </p>
+              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                Opens in a new window · curated for readers who want sharper habits
+              </p>
+            </div>
+            <span className={`inline-flex shrink-0 items-center gap-1 text-sm ${linkAccent}`}>
+              Go to site
+              <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" aria-hidden />
+            </span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  );
+}
 
 const ARTICLE_SECTION_NAV = [
   { key: "featured", label: "Featured", icon: Star },
@@ -92,11 +158,6 @@ type Props = {
   article: Post;
   content: string;
   from?: string;
-  trendingPosts: Post[];
-  guidePosts: Post[];
-  /** Same-origin related articles (tags/categories/recent); up to 12 for bottom grid, sidebar uses first 3. */
-  relatedPosts: PostSummary[];
-  categoriesWithCounts: CategoryWithCount[];
   sidebarTools: SiteTool[];
   /** Admin-only preview: banner + links back to CMS (not indexed). */
   adminPreview?: { editHref: string };
@@ -106,14 +167,9 @@ export default function PostPageView({
   article,
   content,
   from,
-  trendingPosts,
-  guidePosts,
-  relatedPosts,
-  categoriesWithCounts,
   sidebarTools,
   adminPreview,
 }: Props) {
-  const sidebarRelated = relatedPosts.slice(0, 3);
   const fromLabel = from && FROM_LABELS[from] ? FROM_LABELS[from] : null;
   const monthPicksUpper = new Intl.DateTimeFormat("en-US", { month: "long" })
     .format(new Date())
@@ -126,7 +182,20 @@ export default function PostPageView({
   const tags = article.tags ?? [];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950">
+    <div className="relative min-h-screen overflow-x-hidden bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      {/* Ambient layers */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute top-[28rem] right-[-10%] h-96 w-96 rounded-full bg-orange-100/30 blur-3xl dark:bg-cyan-950/25"
+        aria-hidden
+      />
       {adminPreview && (
         <div
           className="sticky top-0 z-40 border-b border-amber-500/40 bg-amber-50 text-amber-950 dark:bg-amber-950/90 dark:text-amber-50 dark:border-amber-600/50 px-4 py-3"
@@ -320,8 +389,8 @@ export default function PostPageView({
       </section>
 
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
-          <div className="min-w-0 lg:col-span-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-10 xl:gap-12">
+          <div className="min-w-0 lg:col-span-9">
             <PostEngagementBarClient
               articleId={article.id}
               initialLikes={article.likes}
@@ -419,115 +488,83 @@ export default function PostPageView({
                 </div>
               </div>
             </div>
+          </div>
 
-            {relatedPosts.length > 0 && (
-              <section className="mt-10 border-t border-zinc-200 pt-10 dark:border-zinc-800" aria-labelledby="related-articles-inline-heading">
-                <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-                      Read next
-                    </p>
-                    <h2
-                      id="related-articles-inline-heading"
-                      className="mt-1 font-display text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl dark:text-zinc-100"
-                    >
-                      Related articles
-                    </h2>
-                  </div>
-                </div>
-
-                <div
-                  className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5"
-                  role="list"
-                >
-                  {relatedPosts.map((item) => (
-                    <Link
-                      key={item.id}
-                      href={postPublicPath(item)}
-                      role="listitem"
-                      className={`group flex flex-col overflow-hidden ${cardSurface}`}
-                    >
-                      <div className="relative h-36 w-full shrink-0 sm:h-40">
-                        <Image
-                          src={proxiedImageSrc(item.image)}
-                          alt={item.title}
-                          fill
-                          sizes="(min-width: 1024px) 240px, (min-width: 640px) 50vw, 100vw"
-                          className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                        />
-                      </div>
-                      <div className="flex min-h-0 flex-1 flex-col p-4">
-                        <CategoryPills
-                          categories={categoriesLabelList(item.categories)}
-                          variant="muted"
-                          max={2}
-                          className="mb-2 [&>span]:text-[10px] [&>span]:uppercase [&>span]:tracking-wide"
-                        />
-                        <h3 className="font-display text-sm font-bold leading-snug text-zinc-900 line-clamp-2 group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300 sm:text-base">
-                          {item.title}
-                        </h3>
-                        <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                          {item.excerpt}
-                        </p>
-                        <div className="mt-auto flex items-center justify-between border-t border-zinc-100 pt-3 text-[11px] text-zinc-500 dark:border-zinc-800/90 dark:text-zinc-400">
-                          <span>{formatPublishDate(item.publishDate)}</span>
-                          <span className="tabular-nums">{item.readTime}</span>
+          {/* Column 2 — matches PostListContent right rail */}
+          <aside className="order-2 space-y-8 lg:order-2 lg:col-span-3">
+            <section className="hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6 lg:block">
+              <div className="flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
+                <h3 className="font-display text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                  Popular
+                </h3>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                  Today
+                </span>
+              </div>
+              <ol className="mt-4 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
+                {STATIC_POPULAR.slice(0, 5).map((p, idx) => (
+                  <li key={p.title} className="py-3.5 first:pt-0 last:pb-0">
+                    <Link href={POST_BASE} className="group block">
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-xs font-bold tabular-nums text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                          {String(idx + 1).padStart(2, "0")}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
+                            {p.tag}
+                          </p>
+                          <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
+                            {p.title}
+                          </p>
                         </div>
                       </div>
                     </Link>
-                  ))}
-                </div>
-                <div className="mt-6 text-center sm:text-left">
-                  <Link href={POST_BASE} className={`inline-flex items-center gap-1 text-sm ${linkAccent}`}>
-                    View all articles
-                    <ChevronRight className="h-4 w-4" aria-hidden />
-                  </Link>
-                </div>
-              </section>
-            )}
-          </div>
-
-          <aside className="space-y-8 lg:col-span-4">
-            <div className={railCard}>
-              <div className="flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
-                <h3 className="font-display text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                  Other Top Stories
-                </h3>
-                <Link href={`${POST_BASE}?type=trending`} className={`text-sm ${linkAccent}`}>
-                  View all
-                </Link>
-              </div>
-              <ul className="mt-4 space-y-4 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                {trendingPosts.slice(0, 6).map((p) => (
-                  <li key={p.id}>
-                    <Link
-                      href={postPublicPath(p)}
-                      className="group block py-3.5 text-sm leading-snug first:pt-0 last:pb-0"
-                    >
-                      <span className="line-clamp-3 font-medium text-zinc-800 transition-colors group-hover:text-blue-800 dark:text-zinc-200 dark:group-hover:text-cyan-300">
-                        {p.title}
-                      </span>
-                      <span className="mt-1 block text-xs tabular-nums text-zinc-500 dark:text-zinc-500">
-                        {p.views} views
-                      </span>
-                    </Link>
                   </li>
                 ))}
-              </ul>
-              {trendingPosts.length === 0 && (
-                <EmptyState iconKey="Flame" title="No stories yet" description="Check back soon." compact />
-              )}
+              </ol>
+            </section>
+
+            <div className="hidden lg:block">
+              <AluxPostDetailSidebarAd />
             </div>
 
-            <div className={railCard}>
+            <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
               <h3 className="border-b border-zinc-200 pb-3 font-display text-lg font-bold leading-tight tracking-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
                 Find the Best Financial Tools
               </h3>
-              <ul className="mt-4 space-y-2 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                {sidebarTools.map((tool) => {
+              <div className="mt-4 md:hidden ml-3">
+                <div className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {siteTools.map((tool) => {
+                    const ToolIcon = iconMap[tool.iconKey || "Calculator"] ?? Calculator;
+                    return (
+                      <Link
+                        key={tool.slug}
+                        href={`/tools/${tool.slug}`}
+                        className="group snap-start rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:border-orange-200 hover:bg-orange-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-cyan-800 dark:hover:bg-zinc-900"
+                      >
+                        <div className="flex w-[15rem] items-center justify-between gap-3">
+                          <span className="flex min-w-0 items-center gap-3">
+                            <span className={`${iconWrapSm} shrink-0`}>
+                              <ToolIcon className="h-4 w-4" aria-hidden />
+                            </span>
+                            <span className="min-w-0 block line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
+                              {tool.name}
+                            </span>
+                          </span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400 group-hover:text-blue-700 dark:group-hover:text-cyan-400 flex items-center" aria-hidden />
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Swipe to explore tools</p>
+              </div>
+
+              <ul className="mt-4 hidden space-y-2 divide-y divide-zinc-100 dark:divide-zinc-800/90 md:block">
+                {sidebarTools.slice(0, 5).map((tool) => {
                   const ToolIcon = iconMap[tool.iconKey || "Calculator"] ?? Calculator;
                   return (
-                    <li key={tool.slug}>
+                    <li key={tool.slug} className="pt-2 first:pt-0">
                       <Link
                         href={`/tools/${tool.slug}`}
                         className="group flex items-center justify-between gap-3 py-3.5 text-sm first:pt-0 last:pb-0"
@@ -540,10 +577,7 @@ export default function PostPageView({
                             {tool.name}
                           </span>
                         </span>
-                        <ChevronRight
-                          className="h-4 w-4 shrink-0 text-zinc-400 group-hover:text-blue-700 dark:group-hover:text-cyan-400"
-                          aria-hidden
-                        />
+                        <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400 group-hover:text-blue-700 dark:group-hover:text-cyan-400" aria-hidden />
                       </Link>
                     </li>
                   );
@@ -553,82 +587,144 @@ export default function PostPageView({
                 href="/tools"
                 className={`mt-4 flex items-center gap-1 border-t border-zinc-100 pt-4 text-sm font-semibold dark:border-zinc-800 ${linkAccent}`}
               >
-                Browse all tools
-                <ChevronRight className="h-4 w-4" aria-hidden />
+                Browse all tools <ChevronRight className="h-4 w-4" aria-hidden />
               </Link>
-            </div>
+            </section>
 
-            <div className={railCard}>
-              <div className="flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
-                <h3 className="max-w-[85%] font-display text-base font-bold leading-snug tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-lg">
-                  OUR TOP PICKS FOR {monthPicksUpper}
-                </h3>
-                <Link href={`${POST_BASE}?type=guides`} className={`shrink-0 text-sm ${linkAccent}`}>
-                  See all
-                </Link>
-              </div>
-              <ul className="mt-4 space-y-4 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                {guidePosts.slice(0, 6).map((p) => (
-                  <li key={p.id}>
-                    <Link href={postPublicPath(p)} className="group block py-3.5 text-sm leading-snug first:pt-0 last:pb-0">
-                      <span className="line-clamp-3 font-medium text-zinc-800 transition-colors group-hover:text-blue-800 dark:text-zinc-200 dark:group-hover:text-cyan-300">
-                        {p.title}
-                      </span>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-500">
-                        <CategoryPills categories={categoryLabelList(p)} variant="muted" max={2} className="min-w-0" />
-                        <span className="tabular-nums">{p.readTime}</span>
+            <section className="hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6 lg:block">
+              <h3 className="border-b border-zinc-200 pb-3 font-display text-base font-bold leading-snug tracking-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100 sm:text-lg">
+                OUR TOP PICKS FOR {monthPicksUpper}
+              </h3>
+              <ul className="mt-4 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
+                {STATIC_TOP_PICKS_FOR_MONTH.slice(0, 8).map((item) => (
+                  <li key={item.title} className="py-3 first:pt-0 last:pb-0">
+                    <Link href={`${POST_BASE}?type=guides`} className="group block">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
+                        {item.tag}
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
+                        {item.title}
+                      </p>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                        <Clock className="h-3.5 w-3.5" aria-hidden />
+                        {item.readTime}
                       </div>
                     </Link>
                   </li>
                 ))}
               </ul>
-              {guidePosts.length === 0 && (
-                <EmptyState iconKey="BookOpen" title="No guides yet" description="Step-by-step guides coming soon." compact />
-              )}
-            </div>
-
-            {sidebarRelated.length > 0 && (
-              <div className={railCard}>
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 pb-3 dark:border-zinc-800">
-                  <h3 className="font-display text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                    Related articles
-                  </h3>
-                </div>
-                <ul className="mt-4 space-y-4 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                  {sidebarRelated.map((item) => (
-                    <li key={item.id}>
-                      <Link href={postPublicPath(item)} className="group flex gap-3 py-3.5 first:pt-0 last:pb-0">
-                        <Image
-                          src={proxiedImageSrc(item.image)}
-                          alt={item.title}
-                          width={56}
-                          height={56}
-                          className="h-14 w-14 shrink-0 rounded-lg object-cover transition-transform group-hover:scale-[1.02]"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold leading-snug text-zinc-900 line-clamp-2 group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                            {item.title}
-                          </p>
-                          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-                            <span className="truncate">{categoriesLabelList(item.categories).join(" · ")}</span>
-                            <span className="shrink-0 tabular-nums">{item.readTime}</span>
-                          </div>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className={railCard}>
-              <h3 className="border-b border-zinc-200 pb-3 font-display text-lg font-bold tracking-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
-                Browse by category
-              </h3>
-              <PostArticleBrowseCategories categories={categoriesWithCounts} />
-            </div>
+              <Link
+                href={`${POST_BASE}?type=guides`}
+                className={`mt-4 flex items-center gap-1 border-t border-zinc-100 pt-4 text-sm font-semibold dark:border-zinc-800 ${linkAccent}`}
+              >
+                See all guides <ChevronRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </section>
           </aside>
         </div>
+
+        {/* Full-width within max-w-7xl — static carousels */}
+        <section
+          className="mt-12 border-t border-zinc-200 bg-white pt-10 dark:border-zinc-800 dark:bg-zinc-950 sm:pt-12"
+          aria-labelledby="post-related-articles-heading"
+        >
+          <div className="mb-5 flex items-end justify-between gap-4 border-b border-zinc-200 pb-4 dark:border-zinc-800">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+                Related
+              </p>
+              <h2
+                id="post-related-articles-heading"
+                className="mt-1.5 font-display text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100"
+              >
+                Related articles
+              </h2>
+            </div>
+            <Link href={POST_BASE} className={`shrink-0 text-sm font-semibold ${linkAccent}`}>
+              View all <ChevronRight className="inline h-4 w-4" aria-hidden />
+            </Link>
+          </div>
+          <div className="relative">
+            <div className="-mx-4 flex ml-1 snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0">
+              {STATIC_RELATED_ARTICLES_CAROUSEL.map((a) => (
+                <Link
+                  key={a.id}
+                  href={POST_BASE}
+                  className="group w-[min(18rem,calc(100vw-4rem))] shrink-0 snap-start overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80 sm:w-72"
+                >
+                  <div className="relative h-40 w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
+                    <Image
+                      src={a.imageSrc}
+                      alt=""
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      sizes="288px"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
+                      {a.category}
+                    </p>
+                    <h3 className="mt-2 line-clamp-2 font-display text-base font-bold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
+                      {a.title}
+                    </h3>
+                    <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                      <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+                      <span>{a.date}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t border-zinc-200 bg-white py-10 dark:border-zinc-800 dark:bg-zinc-950 sm:py-12" aria-labelledby="post-read-more-heading">
+          <div className="mb-5 flex items-end justify-between gap-4 border-b border-zinc-200 pb-4 dark:border-zinc-800">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+                Keep reading
+              </p>
+              <h2 id="post-read-more-heading" className="mt-1.5 font-display text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                Read More
+              </h2>
+            </div>
+            <Link href={POST_BASE} className={`shrink-0 text-sm font-semibold ${linkAccent}`}>
+              View all <ChevronRight className="inline h-4 w-4" aria-hidden />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-5">
+            {STATIC_READ_MORE_GRID.map((a) => (
+              <Link
+                key={a.id}
+                href={POST_BASE}
+                className="group flex h-full flex-col overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80"
+              >
+                <div className="relative h-40 w-full shrink-0 overflow-hidden bg-zinc-100 dark:bg-zinc-900">
+                  <Image
+                    src={a.imageSrc}
+                    alt=""
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                  />
+                </div>
+                <div className="flex flex-1 flex-col p-4">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
+                    {a.category}
+                  </p>
+                  <h3 className="mt-2 line-clamp-2 flex-1 font-display text-base font-bold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
+                    {a.title}
+                  </h3>
+                  <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                    <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    <span>{a.date}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );
