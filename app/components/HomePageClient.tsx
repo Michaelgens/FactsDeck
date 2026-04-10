@@ -735,7 +735,7 @@ export default function HomePageClient({
                       className="rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-blue-200 hover:bg-orange-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80 dark:hover:bg-emerald-950"
                     >
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Tools</p>
+                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Find the Best Financial Tools</p>
                         <Calculator className="h-4 w-4 text-blue-700 dark:text-cyan-400" aria-hidden />
                       </div>
                       <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-300">
@@ -841,7 +841,7 @@ export default function HomePageClient({
                 <CategoryBrowseStrip categoriesWithCounts={categoriesWithCounts} />
               </section>
 
-              <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
+              <section className="rounded-sm border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
                 <div className="flex items-end justify-between gap-4 border-b border-zinc-200 pb-3 dark:border-zinc-800">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
@@ -907,7 +907,7 @@ export default function HomePageClient({
                     <div key={section.major.title} className="space-y-2">
                       <Link
                         href="/post"
-                        className="group relative block overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80"
+                        className="group relative block overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80"
                       >
                         <div className="relative aspect-[16/9] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
                           <Image
@@ -965,7 +965,7 @@ export default function HomePageClient({
 
             {/* Column 3 — popular / tools / picks */}
             <aside className="order-3 space-y-8 lg:order-3 lg:col-span-3">
-              <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
+              <section className="rounded-sm border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
                 <div className="flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
                   <h3 className="font-display text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
                     Popular
@@ -997,21 +997,22 @@ export default function HomePageClient({
                 </ol>
               </section>
 
-              <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
+              <section className="rounded-sm border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
                 <h3 className="border-b border-zinc-200 pb-3 font-display text-lg font-bold leading-tight tracking-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
-                  Tools
+                Find the Best Financial Tools
                 </h3>
                 {/* Mobile: swipeable tool cards */}
-                <div className="mt-4 md:hidden">
+                <div className="mt-4 md:hidden ml-3">
                   <div className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    {sidebarTools.slice(0, 5).map((tool) => {
+                    {sidebarTools.slice(0, 5).map((tool, idx) => {
                       const ToolIcon = iconMap[tool.iconKey || "Calculator"] ?? Calculator;
                       return (
                         <Link
                           key={tool.slug}
                           href={`/tools/${tool.slug}`}
-                          className="group snap-start rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:border-orange-200 hover:bg-orange-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-cyan-800 dark:hover:bg-zinc-900"
+                          className={`group snap-start rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:border-orange-200 hover:bg-orange-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-cyan-800 dark:hover:bg-zinc-900${idx === 0 ? " ml-2" : ""}`}
                         >
+             
                           <div className="flex w-[15rem] items-start justify-between gap-3">
                             <span className="flex min-w-0 items-start gap-3">
                               <span className={`${iconWrapSm} mt-0.5 shrink-0`}>
@@ -1067,7 +1068,7 @@ export default function HomePageClient({
                 </Link>
               </section>
 
-              <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
+              <section className="rounded-sm border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
                 <h3 className="border-b border-zinc-200 pb-3 font-display text-base font-bold leading-snug tracking-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100 sm:text-lg">
                   OUR TOP PICKS FOR {monthPicksUpper}
                 </h3>
@@ -1216,7 +1217,7 @@ export default function HomePageClient({
                 <Link
                   key={a.id}
                   href="/post"
-                  className="group w-[min(18rem,calc(100vw-4rem))] shrink-0 snap-start overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80 sm:w-72"
+                  className="group w-[min(18rem,calc(100vw-4rem))] shrink-0 snap-start overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80 sm:w-72"
                 >
                   <div className="relative h-40 w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
                     <Image
@@ -1346,7 +1347,7 @@ export default function HomePageClient({
             <div className="lg:col-span-4">
               <Link
                 href="/post"
-                className="group block overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80"
+                className="group block overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80"
               >
                 <div className="relative aspect-[3/2] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
                   <Image
@@ -1387,7 +1388,7 @@ export default function HomePageClient({
                     <li key={item.title}>
                       <Link
                         href="/post"
-                        className="group block h-full rounded-xl border border-zinc-200 bg-zinc-50 p-3.5 transition-colors hover:border-blue-200 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-emerald-800/80 dark:hover:bg-zinc-800 sm:p-4"
+                        className="group block h-full rounded-sm border border-zinc-200 bg-zinc-50 p-3.5 transition-colors hover:border-blue-200 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-emerald-800/80 dark:hover:bg-zinc-800 sm:p-4"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
@@ -1404,12 +1405,6 @@ export default function HomePageClient({
                               <span>{item.date}</span>
                             </div>
                           </div>
-                          <span
-                            className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 transition-colors group-hover:border-blue-200 group-hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:group-hover:text-cyan-300"
-                            aria-hidden
-                          >
-                            <ArrowUpRight className="h-4 w-4" />
-                          </span>
                         </div>
                       </Link>
                     </li>

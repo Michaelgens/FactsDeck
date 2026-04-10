@@ -63,7 +63,10 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   // const [isLanguageOpen, setIsLanguageOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  /** Desktop (lg+) dropdown only — must stay separate from mobile so document click-outside does not break mobile links */
+  const [desktopActiveDropdown, setDesktopActiveDropdown] = useState<string | null>(null);
+  /** Mobile hamburger menu: which nav item accordion is expanded */
+  const [mobileExpandedItem, setMobileExpandedItem] = useState<string | null>(null);
   // const [currentLanguage, setCurrentLanguage] = useState(languages[0]);
   const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
@@ -78,21 +81,26 @@ export default function Header() {
       if (isSearchOpen && searchBarRef.current && !searchBarRef.current.contains(event.target as Node)) {
         setIsSearchOpen(false);
       }
-      if (activeDropdown) {
-        const ref = dropdownRefs.current[activeDropdown];
+      // Only close desktop dropdowns via outside click — mobile uses its own accordion state
+      if (desktopActiveDropdown) {
+        const ref = dropdownRefs.current[desktopActiveDropdown];
         if (ref && !ref.contains(event.target as Node)) {
-          setActiveDropdown(null);
+          setDesktopActiveDropdown(null);
         }
       }
     }
-    if (activeDropdown || isSearchOpen) {
+    if (desktopActiveDropdown || isSearchOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [activeDropdown, isSearchOpen]);
+  }, [desktopActiveDropdown, isSearchOpen]);
 
-  const handleDropdownToggle = (itemName: string) => {
-    setActiveDropdown(activeDropdown === itemName ? null : itemName);
+  const handleDesktopDropdownToggle = (itemName: string) => {
+    setDesktopActiveDropdown((prev) => (prev === itemName ? null : itemName));
+  };
+
+  const handleMobileAccordionToggle = (itemName: string) => {
+    setMobileExpandedItem((prev) => (prev === itemName ? null : itemName));
   };
 
   const matchingTools = useMemo(() => {
@@ -127,6 +135,7 @@ export default function Header() {
       setSearchQuery("");
       setIsSearchOpen(false);
       setIsMenuOpen(false);
+      setMobileExpandedItem(null);
     }
   };
 
@@ -153,16 +162,16 @@ export default function Header() {
               <div
                 key={item.name}
                 className="relative"
-                onMouseEnter={() => item.hasDropdown && setActiveDropdown(item.name)}
-                onMouseLeave={() => setActiveDropdown(null)}
+                onMouseEnter={() => item.hasDropdown && setDesktopActiveDropdown(item.name)}
+                onMouseLeave={() => setDesktopActiveDropdown(null)}
               >
                 {item.hasDropdown ? (
                   <>
                     <button
                       type="button"
-                      onClick={() => handleDropdownToggle(item.name)}
+                      onClick={() => handleDesktopDropdownToggle(item.name)}
                       className={`flex items-center rounded-lg p-2 font-medium text-zinc-700 transition-colors hover:bg-blue-50 hover:text-blue-800 dark:text-zinc-200 dark:hover:bg-emerald-950/55 dark:hover:text-cyan-300 ${
-                        activeDropdown === item.name
+                        desktopActiveDropdown === item.name
                           ? "text-blue-800 dark:text-cyan-300"
                           : ""
                       }`}
@@ -170,13 +179,13 @@ export default function Header() {
                       {item.name}
                       <ChevronDown
                         className={`ml-1 h-4 w-4 shrink-0 transition-transform text-zinc-500 dark:text-zinc-400 ${
-                          activeDropdown === item.name
+                          desktopActiveDropdown === item.name
                             ? "rotate-180 text-orange-600 dark:text-emerald-400"
                             : ""
                         }`}
                       />
                     </button>
-                    {activeDropdown === item.name && item.dropdownItems && (
+                    {desktopActiveDropdown === item.name && item.dropdownItems && (
                       <div
                         ref={(el) => {
                           dropdownRefs.current[item.name] = el;
@@ -189,7 +198,7 @@ export default function Header() {
                             key={dropdownItem.name}
                             href={dropdownItem.href}
                             className="group/item block px-4 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-blue-50 hover:text-blue-800 dark:text-zinc-200 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-200"
-                            onClick={() => setActiveDropdown(null)}
+                            onClick={() => setDesktopActiveDropdown(null)}
                           >
                             <span className="block font-medium group-hover/item:text-blue-900 dark:group-hover/item:text-cyan-100">{dropdownItem.name}</span>
                             {"subtitle" in dropdownItem && dropdownItem.subtitle && (
@@ -319,8 +328,17 @@ export default function Header() {
               {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </button>
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              type="button"
+              onClick={() => {
+                setIsMenuOpen((open) => {
+                  const next = !open;
+                  if (!next) setMobileExpandedItem(null);
+                  return next;
+                });
+              }}
               className="rounded-lg p-2 text-zinc-500 transition-colors hover:bg-orange-50 hover:text-blue-700 dark:text-zinc-300 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+              aria-expanded={isMenuOpen}
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             >
             {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -333,19 +351,24 @@ export default function Header() {
           <form onSubmit={handleSearch} className="px-4 py-6 space-y-4">
             <div className="flex gap-2">
               <input
+                id="mobile-search"
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Articles, topics & tools..."
-                className="flex-1 rounded-lg border border-zinc-300 px-4 py-3 text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-600/25 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-emerald-500 dark:focus:ring-emerald-500/25"
+                required
+                className="flex-1 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-600/25 disabled:opacity-70 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-emerald-500 dark:focus:ring-emerald-500/25"
+                autoComplete="off"
+                inputMode="search"
               />
               <button
                 type="submit"
-                className="rounded-lg bg-blue-700 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-zinc-900 px-6 text-sm font-semibold text-white shadow-lg shadow-zinc-900/10 transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:shadow-white/5 dark:hover:bg-zinc-100"
               >
                 Search
               </button>
             </div>
+      
             {matchingTools.length > 0 && (
               <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800 overflow-hidden">
                 <p className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-orange-700 dark:text-cyan-400">
@@ -357,7 +380,10 @@ export default function Header() {
                     key={t.slug}
                     href={`/tools/${t.slug}`}
                     className="block px-3 py-2.5 text-sm text-zinc-800 transition-colors hover:bg-orange-50 hover:text-blue-900 dark:text-zinc-100 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-200"
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={() => {
+                      setMobileExpandedItem(null);
+                      setIsMenuOpen(false);
+                    }}
                   >
                     <span className="font-medium">{t.name}</span>
                     <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t.tagline}</span>
@@ -371,24 +397,26 @@ export default function Header() {
                 {item.hasDropdown ? (
                   <>
                     <button
-                      onClick={() => handleDropdownToggle(item.name)}
+                      type="button"
+                      onClick={() => handleMobileAccordionToggle(item.name)}
                       className="flex w-full items-center justify-between rounded-lg px-2 py-2 font-medium text-zinc-700 transition-colors hover:bg-orange-50 hover:text-blue-800 dark:text-zinc-200 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
+                      aria-expanded={mobileExpandedItem === item.name}
                     >
                       {item.name}
                       <ChevronDown
                         className={`h-4 w-4 transition-transform ${
-                          activeDropdown === item.name ? "rotate-180" : ""
+                          mobileExpandedItem === item.name ? "rotate-180" : ""
                         }`}
                       />
                     </button>
-                    {activeDropdown === item.name &&
+                    {mobileExpandedItem === item.name &&
                       item.dropdownItems?.map((dropdownItem) => (
                         <Link
                           key={dropdownItem.name}
                           href={dropdownItem.href}
                           className="ml-4 block py-2.5 text-zinc-600 transition-colors hover:text-blue-800 dark:text-zinc-300 dark:hover:text-cyan-200"
                           onClick={() => {
-                            setActiveDropdown(null);
+                            setMobileExpandedItem(null);
                             setIsMenuOpen(false);
                           }}
                         >
@@ -403,7 +431,10 @@ export default function Header() {
                   <Link
                     href={item.href}
                     className="block rounded-lg px-2 py-2 font-medium text-zinc-700 transition-colors hover:bg-orange-50 hover:text-blue-800 dark:text-zinc-200 dark:hover:bg-emerald-950/50 dark:hover:text-cyan-300"
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={() => {
+                      setMobileExpandedItem(null);
+                      setIsMenuOpen(false);
+                    }}
                   >
                     {item.name}
                   </Link>

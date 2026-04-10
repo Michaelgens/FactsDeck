@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -28,8 +27,6 @@ import {
   Building2,
   PieChart,
   Bitcoin,
-  Heart,
-  Bookmark,
   Wrench,
   LayoutGrid,
 } from "lucide-react";
@@ -40,9 +37,8 @@ import type { CategoryWithCount, PartitionedPosts } from "../lib/posts";
 import type { SiteTool } from "../lib/site-config";
 import { siteTools } from "../lib/site-config";
 import { toolMatchesSearch } from "../lib/tools-utils";
-import { usePostEngagement } from "../hooks/usePostEngagement";
 import EmptyState from "./EmptyState";
-import { proxiedImageSrc } from "../lib/image-proxy";
+import { LatestArticleCard } from "./LatestArticleCard";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Scale,
@@ -83,6 +79,27 @@ type ContentType = (typeof CONTENT_TYPES)[number]["key"];
 const ITEMS_PER_PAGE = 12;
 const POST_BASE = "/post";
 
+/** Mirrors `HomePageClient` — static right-rail “Popular” */
+const STATIC_POPULAR = [
+  { title: "How compound interest actually compounds (with examples)", tag: "Education" },
+  { title: "Debt snowball vs avalanche: which wins (and when)?", tag: "Debt" },
+  { title: "What is a good savings rate in 2026?", tag: "Saving" },
+  { title: "Roth vs Traditional: a decision checklist", tag: "Retirement" },
+  { title: "DTI explained: how lenders evaluate you", tag: "Loans" },
+] as const;
+
+/** Mirrors `HomePageClient` — static “Our top picks for {month}” */
+const STATIC_TOP_PICKS_FOR_MONTH = [
+  { title: "The 1% rule for big purchases", tag: "Spending", readTime: "4 min" },
+  { title: "A simple IRA contribution ladder", tag: "Retirement", readTime: "5 min" },
+  { title: "Debt payoff order that minimizes interest", tag: "Debt", readTime: "6 min" },
+  { title: "Mortgage points: when they pay off", tag: "Housing", readTime: "5 min" },
+  { title: "A two-account system that simplifies budgeting", tag: "Budgeting", readTime: "4 min" },
+  { title: "The easiest way to start an emergency fund", tag: "Saving", readTime: "4 min" },
+  { title: "401(k) match math: what to contribute first", tag: "Retirement", readTime: "5 min" },
+  { title: "A simple rule for credit card payoff order", tag: "Credit", readTime: "4 min" },
+] as const;
+
 type PostListContentProps = {
   partitioned: PartitionedPosts;
   categoriesWithCounts: CategoryWithCount[];
@@ -106,11 +123,6 @@ export default function PostListContent({
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
   const [showAllCategories, setShowAllCategories] = useState(false);
-
-  const monthPicksUpper = useMemo(
-    () => new Intl.DateTimeFormat("en-US", { month: "long" }).format(new Date()).toUpperCase(),
-    []
-  );
 
   useEffect(() => {
     setSearchTerm(queryParam);
@@ -204,13 +216,14 @@ export default function PostListContent({
   const categoriesTop = categoriesSorted.slice(0, 5);
   const categoriesRest = categoriesSorted.slice(5);
 
+  const monthPicksUpper = useMemo(
+    () => new Intl.DateTimeFormat("en-US", { month: "long" }).format(new Date()).toUpperCase(),
+    []
+  );
+
   const sidebarTrendingPosts = useMemo(
     () => partitioned.trending.slice(0, 8),
     [partitioned.trending]
-  );
-  const sidebarGuidePosts = useMemo(
-    () => partitioned.guides.slice(0, 8),
-    [partitioned.guides]
   );
 
   const pageTitle = queryParam
@@ -228,125 +241,6 @@ export default function PostListContent({
               : "Latest Articles";
 
   const isArticleType = queryParam ? true : type === "featured" || type === "latest" || type === "expert-picks";
-
-  function ArticleItem({ article, from }: { article: Post; from: string }) {
-    const { likes, isLiked, isBookmarked, handleLike, handleBookmark } = usePostEngagement(
-      article.id,
-      article.likes,
-      article.bookmarks
-    );
-    return (
-      <Link
-        href={`${postPublicPath(article)}?from=${from}`}
-        className="group block"
-      >
-        {viewMode === "grid" ? (
-          <div className={`relative overflow-hidden ${cardSurface} hover:bg-zinc-50/50 dark:hover:bg-zinc-900/40`}>
-            <div className="relative h-36 sm:h-40">
-              <Image
-                src={proxiedImageSrc(article.image)}
-                alt={article.title}
-                fill
-                sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-              />
-              <span className="absolute top-2 left-2 max-w-[calc(100%-4rem)] sm:top-2.5 sm:left-2.5">
-                <CategoryPills categories={categoryLabelList(article)} variant="overlay" max={2} />
-              </span>
-              <div className="absolute top-2 right-2 sm:top-2.5 sm:right-2">
-                <button
-                  type="button"
-                  onClick={handleBookmark}
-                  className={`p-2 rounded-full transition-colors ${
-                    isBookmarked
-                      ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800/60 dark:text-zinc-100"
-                      : "bg-white/90 dark:bg-white/80 text-slate-700 hover:bg-white"
-                  }`}
-                  aria-label="Bookmark"
-                >
-                  <Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current" : ""}`} />
-                </button>
-              </div>
-            </div>
-            <div className="p-3.5 sm:p-4">
-              <h3 className="font-display text-base font-bold leading-snug text-zinc-900 line-clamp-2 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300 sm:line-clamp-3">
-                {article.title}
-              </h3>
-              <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                {article.excerpt}
-              </p>
-              <div className="mt-3 flex items-center justify-between border-t border-zinc-100 pt-2.5 text-[11px] text-zinc-500 dark:border-zinc-800/80 dark:text-zinc-400 sm:text-xs">
-                <span className="flex items-center gap-2">
-                  <span className="flex items-center">
-                    <Clock className="h-4 w-4 mr-1" />
-                    {article.readTime}
-                  </span>
-                  <span>{article.views} views</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={handleLike}
-                  className={`flex items-center gap-1 transition-colors ${
-                    isLiked ? "text-red-600 dark:text-red-400" : "hover:text-red-600 dark:hover:text-red-400"
-                  }`}
-                >
-                  <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
-                  {likes}
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className={`relative flex flex-col md:flex-row ${cardSurface} hover:bg-zinc-50/50 dark:hover:bg-zinc-900/40`}>
-            <div className="relative h-44 md:w-2/5 md:max-w-sm md:shrink-0 md:h-auto md:min-h-[180px]">
-              <Image
-                src={proxiedImageSrc(article.image)}
-                alt={article.title}
-                fill
-                className="rounded-t-xl object-cover transition-transform duration-300 group-hover:scale-[1.02] md:rounded-l-xl md:rounded-t-none"
-              />
-              <div className="absolute top-3 right-3">
-                <button
-                  type="button"
-                  onClick={handleBookmark}
-                  className={`p-2 rounded-full transition-colors ${
-                    isBookmarked
-                      ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800/60 dark:text-zinc-100"
-                      : "bg-white/90 dark:bg-white/80 text-slate-700 hover:bg-white"
-                  }`}
-                  aria-label="Bookmark"
-                >
-                  <Bookmark className={`h-4 w-4 ${isBookmarked ? "fill-current" : ""}`} />
-                </button>
-              </div>
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col p-4 md:p-5">
-              <CategoryPills categories={categoryLabelList(article)} max={3} />
-              <h3 className="mt-2 font-display text-lg font-bold leading-snug text-zinc-900 line-clamp-2 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300 md:line-clamp-3">
-                {article.title}
-              </h3>
-              <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                {article.excerpt}
-              </p>
-              <div className="mt-auto flex items-center justify-between border-t border-zinc-100 pt-3 text-xs text-zinc-500 dark:border-zinc-800/80 dark:text-zinc-400">
-                <span>{article.author.name} • {article.readTime} • {article.views} views</span>
-                <button
-                  type="button"
-                  onClick={handleLike}
-                  className={`flex items-center gap-1 transition-colors ${
-                    isLiked ? "text-red-600 dark:text-red-400" : "hover:text-red-600 dark:hover:text-red-400"
-                  }`}
-                >
-                  <Heart className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`} />
-                  {likes} likes
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </Link>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950">
@@ -444,7 +338,8 @@ export default function PostListContent({
           </div>
         </div>
       </section>
-
+      
+      {/* Article Section Start */}
       {isArticleType && (
         <section className="sticky top-16 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95">
           <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
@@ -490,8 +385,9 @@ export default function PostListContent({
       )}
 
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
-          <div className="lg:col-span-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-10 xl:gap-12">
+          {/* Column 1 — merged (Home columns 1 + 2) */}
+          <div className="min-w-0 lg:col-span-9">
             {matchingTools.length > 0 && (
               <section
                 className="mb-8 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
@@ -534,6 +430,88 @@ export default function PostListContent({
               </section>
             )}
 
+            <div className="mb-10 grid grid-cols-1 gap-8 xl:grid-cols-12">
+              <section className="xl:col-span-5">
+                <div className="border-b border-zinc-200 pb-3 dark:border-zinc-800">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                    Categories
+                  </p>
+                  <h3 className="mt-1 font-display text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                    Browse by category
+                  </h3>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-1">
+                  {[...categoriesTop, ...categoriesRest].slice(0, 10).map((cat, i) => {
+                    const IconComponent = iconMap[cat.iconKey ?? "BookOpen"] ?? BookOpen;
+                    return (
+                      <Link
+                        key={`${cat.name}-${i}`}
+                        href={`${POST_BASE}?category=${encodeURIComponent(cat.name)}`}
+                        className="group flex items-center justify-between gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 shadow-sm transition-colors hover:border-orange-200 hover:bg-orange-50 hover:text-blue-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:border-cyan-800 dark:hover:bg-zinc-900 dark:hover:text-cyan-300 md:rounded-lg md:border-0 md:bg-transparent md:px-2 md:py-2.5 md:shadow-none md:hover:bg-zinc-50 md:dark:hover:bg-zinc-900"
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className={`${iconWrapSm} shrink-0 md:border md:border-zinc-200 md:bg-white md:text-blue-700 md:shadow-sm md:dark:border-zinc-800 md:dark:bg-zinc-950 md:dark:text-cyan-300`}>
+                            <IconComponent className="h-4 w-4" aria-hidden />
+                          </span>
+                          <span className="truncate">{cat.name}</span>
+                        </span>
+                        <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold tabular-nums text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                          {cat.count}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+                <Link href={POST_BASE} className={`mt-4 inline-flex items-center gap-1 text-sm ${linkAccent}`}>
+                  View all topics <ChevronRight className="h-4 w-4" aria-hidden />
+                </Link>
+              </section>
+
+              <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6 xl:col-span-7">
+                <div className="flex items-end justify-between gap-4 border-b border-zinc-200 pb-3 dark:border-zinc-800">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                      News
+                    </p>
+                    <h3 className="mt-1 font-display text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                      More stories
+                    </h3>
+                  </div>
+                  <Link href={`${POST_BASE}?type=trending`} className={`shrink-0 text-sm ${linkAccent}`}>
+                    View all
+                  </Link>
+                </div>
+
+                <ul className="mt-4 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
+                  {sidebarTrendingPosts.slice(0, 10).map((p) => {
+                    const tag = categoryLabelList(p)[0] ?? "Trending";
+                    return (
+                      <li key={p.id} className="py-3.5 first:pt-0 last:pb-0">
+                        <Link href={`${postPublicPath(p)}?from=trending`} className="group block">
+                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
+                            {tag}
+                          </p>
+                          <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
+                            {p.title}
+                          </p>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                            <Clock className="h-3.5 w-3.5" aria-hidden />
+                            {p.readTime}
+                            <span aria-hidden className="text-zinc-300 dark:text-zinc-700">
+                              ·
+                            </span>
+                            <span className="tabular-nums">{p.views.toLocaleString()} views</span>
+                          </div>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                {sidebarTrendingPosts.length === 0 && <EmptyState icon={Flame} title="No stories yet" compact />}
+              </section>
+            </div>
+
             {paginatedItems.length === 0 ? (
               matchingTools.length > 0 ? (
                 <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-6 py-10 text-center">
@@ -572,12 +550,17 @@ export default function PostListContent({
                   <div
                     className={
                       viewMode === "grid"
-                        ? "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4"
-                        : "space-y-3"
+                        ? "grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-6"
+                        : "overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
                     }
                   >
                     {paginatedItems.map((article) => (
-                      <ArticleItem key={article.id} article={article} from={type} />
+                      <LatestArticleCard
+                        key={article.id}
+                        article={article}
+                        from={type}
+                        variant={viewMode === "grid" ? "grid" : "list"}
+                      />
                     ))}
                   </div>
                 )}
@@ -686,47 +669,84 @@ export default function PostListContent({
             )}
           </div>
 
-          <aside className="space-y-8 lg:col-span-4">
-            <div className={`border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6`}>
+          {/* Column 2 — right rail (same as Home column 3) */}
+          <aside className="order-2 space-y-8 lg:order-2 lg:col-span-3">
+            <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
               <div className="flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
                 <h3 className="font-display text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                  Other Top Stories
+                  Popular
                 </h3>
-                <Link href={`${POST_BASE}?type=trending`} className={`text-sm ${linkAccent}`}>
-                  View all
-                </Link>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                  Today
+                </span>
               </div>
-              <ul className="mt-4 space-y-4 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                {sidebarTrendingPosts.slice(0, 7).map((p) => (
-                  <li key={p.id}>
-                    <Link
-                      href={`${postPublicPath(p)}?from=trending`}
-                      className="group block py-3.5 text-sm leading-snug first:pt-0 last:pb-0"
-                    >
-                      <span className="line-clamp-3 font-medium text-zinc-800 transition-colors group-hover:text-blue-800 dark:text-zinc-200 dark:group-hover:text-cyan-300">
-                        {p.title}
-                      </span>
-                      <span className="mt-1 block text-xs tabular-nums text-zinc-500 dark:text-zinc-500">
-                        {p.views} views
-                      </span>
+              <ol className="mt-4 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
+                {STATIC_POPULAR.slice(0, 5).map((p, idx) => (
+                  <li key={p.title} className="py-3.5 first:pt-0 last:pb-0">
+                    <Link href={POST_BASE} className="group block">
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-xs font-bold tabular-nums text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+                          {String(idx + 1).padStart(2, "0")}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
+                            {p.tag}
+                          </p>
+                          <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
+                            {p.title}
+                          </p>
+                        </div>
+                      </div>
                     </Link>
                   </li>
                 ))}
-              </ul>
-              {sidebarTrendingPosts.length === 0 && (
-                <EmptyState icon={Flame} title="No stories yet" compact />
-              )}
-            </div>
+              </ol>
+            </section>
 
-            <div className={`border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6`}>
-              <h3 className="border-b border-zinc-200 pb-3 font-display text-lg font-bold leading-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
+            <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
+              <h3 className="border-b border-zinc-200 pb-3 font-display text-lg font-bold leading-tight tracking-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
                 Find the Best Financial Tools
               </h3>
-              <ul className="mt-4 space-y-2 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                {sidebarTools.map((tool) => {
+              {/* Mobile: swipeable tool cards */}
+              <div className="mt-4 md:hidden">
+                <div className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {sidebarTools.slice(0, 5).map((tool) => {
+                    const ToolIcon = iconMap[tool.iconKey || "Calculator"] ?? Calculator;
+                    return (
+                      <Link
+                        key={tool.slug}
+                        href={`/tools/${tool.slug}`}
+                        className="group snap-start rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:border-orange-200 hover:bg-orange-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-cyan-800 dark:hover:bg-zinc-900"
+                      >
+                        <div className="flex w-[15rem] items-start justify-between gap-3">
+                          <span className="flex min-w-0 items-start gap-3">
+                            <span className={`${iconWrapSm} mt-0.5 shrink-0`}>
+                              <ToolIcon className="h-4 w-4" aria-hidden />
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
+                                Tool
+                              </span>
+                              <span className="mt-1 block line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
+                                {tool.name}
+                              </span>
+                            </span>
+                          </span>
+                          <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-zinc-400 group-hover:text-blue-700 dark:group-hover:text-cyan-400" aria-hidden />
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Swipe to explore tools</p>
+              </div>
+
+              {/* Desktop: vertical list */}
+              <ul className="mt-4 hidden space-y-2 divide-y divide-zinc-100 dark:divide-zinc-800/90 md:block">
+                {sidebarTools.slice(0, 5).map((tool) => {
                   const ToolIcon = iconMap[tool.iconKey || "Calculator"] ?? Calculator;
                   return (
-                    <li key={tool.slug}>
+                    <li key={tool.slug} className="pt-2 first:pt-0">
                       <Link
                         href={`/tools/${tool.slug}`}
                         className="group flex items-center justify-between gap-3 py-3.5 text-sm first:pt-0 last:pb-0"
@@ -739,124 +759,53 @@ export default function PostListContent({
                             {tool.name}
                           </span>
                         </span>
-                        <ChevronRight
-                          className="h-4 w-4 shrink-0 text-zinc-400 group-hover:text-blue-700 dark:group-hover:text-cyan-400"
-                          aria-hidden
-                        />
+                        <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400 group-hover:text-blue-700 dark:group-hover:text-cyan-400" aria-hidden />
                       </Link>
                     </li>
                   );
                 })}
               </ul>
-              <Link href="/tools" className={`mt-4 flex items-center gap-1 border-t border-zinc-100 pt-4 text-sm font-semibold dark:border-zinc-800 ${linkAccent}`}>
+              <Link
+                href="/tools"
+                className={`mt-4 flex items-center gap-1 border-t border-zinc-100 pt-4 text-sm font-semibold dark:border-zinc-800 ${linkAccent}`}
+              >
                 Browse all tools <ChevronRight className="h-4 w-4" aria-hidden />
               </Link>
-            </div>
+            </section>
 
-            <div className={`border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6`}>
-              <div className="flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
-                <h3 className="max-w-[85%] font-display text-base font-bold leading-snug tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-lg">
-                  OUR TOP PICKS FOR {monthPicksUpper}
-                </h3>
-                <Link href={`${POST_BASE}?type=guides`} className={`shrink-0 text-sm ${linkAccent}`}>
-                  See all
-                </Link>
-              </div>
-              <ul className="mt-4 space-y-4 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                {sidebarGuidePosts.slice(0, 6).map((guide) => (
-                  <li key={guide.id}>
-                    <Link
-                      href={`${postPublicPath(guide)}?from=guides`}
-                      className="group block py-3.5 text-sm leading-snug first:pt-0 last:pb-0"
-                    >
-                      <span className="line-clamp-3 font-medium text-zinc-800 transition-colors group-hover:text-blue-800 dark:text-zinc-200 dark:group-hover:text-cyan-300">
-                        {guide.title}
-                      </span>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-500">
-                        <CategoryPills categories={categoryLabelList(guide)} variant="muted" max={2} className="min-w-0" />
-                        <span className="tabular-nums">{guide.readTime}</span>
+            <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
+              <h3 className="border-b border-zinc-200 pb-3 font-display text-base font-bold leading-snug tracking-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100 sm:text-lg">
+                OUR TOP PICKS FOR {monthPicksUpper}
+              </h3>
+              <ul className="mt-4 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
+                {STATIC_TOP_PICKS_FOR_MONTH.slice(0, 8).map((item) => (
+                  <li key={item.title} className="py-3 first:pt-0 last:pb-0">
+                    <Link href={`${POST_BASE}?type=guides`} className="group block">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
+                        {item.tag}
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
+                        {item.title}
+                      </p>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                        <Clock className="h-3.5 w-3.5" aria-hidden />
+                        {item.readTime}
                       </div>
                     </Link>
                   </li>
                 ))}
               </ul>
-              {sidebarGuidePosts.length === 0 && (
-                <EmptyState icon={BookOpen} title="No guides yet" compact />
-              )}
-            </div>
-
-            <div className={`border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6`}>
-              <h3 className="border-b border-zinc-200 pb-3 font-display text-lg font-bold tracking-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
-                Browse by category
-              </h3>
-              <div className="mt-4 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                {categoriesTop.map((cat, i) => {
-                  const IconComponent = iconMap[cat.iconKey ?? "BookOpen"] ?? BookOpen;
-                  return (
-                    <Link
-                      key={i}
-                      href={`${POST_BASE}?category=${encodeURIComponent(cat.name)}`}
-                      className="flex items-center gap-3 py-3.5 transition-colors first:pt-0 hover:bg-zinc-50/80 dark:hover:bg-zinc-900/50"
-                    >
-                      <div className={`${iconWrapSm} flex-shrink-0`}>
-                        <IconComponent className="h-4 w-4" aria-hidden />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 group-hover:text-zinc-900 dark:group-hover:text-zinc-50 block truncate">
-                          {cat.name}
-                        </span>
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400">{cat.count}</span>
-                      </div>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400" aria-hidden />
-                    </Link>
-                  );
-                })}
-                {categoriesRest.length > 0 && (
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowAllCategories((v) => !v)}
-                      className="flex w-full items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50/80 px-3 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200 dark:hover:bg-zinc-900/70"
-                      aria-expanded={showAllCategories}
-                    >
-                      <span>{showAllCategories ? "Hide more categories" : `Show ${categoriesRest.length} more`}</span>
-                      <ChevronRight
-                        className={`h-4 w-4 text-zinc-400 transition-transform ${showAllCategories ? "rotate-90" : ""}`}
-                        aria-hidden
-                      />
-                    </button>
-                    {showAllCategories && (
-                      <div className="mt-2 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                        {categoriesRest.map((cat, idx) => {
-                          const IconComponent = iconMap[cat.iconKey ?? "BookOpen"] ?? BookOpen;
-                          return (
-                            <Link
-                              key={`${cat.name}-${idx}`}
-                              href={`${POST_BASE}?category=${encodeURIComponent(cat.name)}`}
-                              className="flex items-center gap-3 py-3.5 transition-colors hover:bg-zinc-50/80 dark:hover:bg-zinc-900/50"
-                            >
-                              <div className={`${iconWrapSm} flex-shrink-0`}>
-                                <IconComponent className="h-4 w-4" aria-hidden />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 group-hover:text-zinc-900 dark:group-hover:text-zinc-50 block truncate">
-                                  {cat.name}
-                                </span>
-                                <span className="text-xs text-zinc-500 dark:text-zinc-400">{cat.count}</span>
-                              </div>
-                              <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400" aria-hidden />
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+              <Link
+                href={`${POST_BASE}?type=guides`}
+                className={`mt-4 flex items-center gap-1 border-t border-zinc-100 pt-4 text-sm font-semibold dark:border-zinc-800 ${linkAccent}`}
+              >
+                See all guides <ChevronRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </section>
           </aside>
         </div>
       </div>
+      {/* Article Section End */}
     </div>
   );
 }
