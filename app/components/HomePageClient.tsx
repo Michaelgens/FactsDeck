@@ -929,7 +929,6 @@ export default function HomePageClient({
                             <h3 className="mt-3 font-display text-xl font-bold leading-snug text-white sm:text-2xl">
                               {section.major.title}
                             </h3>
-                            <p className="mt-2 line-clamp-2 text-sm text-white/80">{section.major.deck}</p>
                           </div>
                         </div>
                       </Link>
