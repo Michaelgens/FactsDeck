@@ -295,7 +295,7 @@ export default function Footer() {
             </div>
 
             <div className="min-w-0">
-              <h3 className="font-display font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-6 pl-6">
+              <h3 className="font-display font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-3 pl-6">
                 Company
               </h3>
               <ul className="space-y-3">
