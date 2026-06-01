@@ -55,19 +55,19 @@ export default function AdminArticleRow({ article }: { article: Post }) {
   };
 
   const colorClasses: Record<string, string> = {
-    purple: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400",
+    purple: "bg-purple-100 text-purple-700 dark:bg-violet-500/15 dark:text-violet-300",
     amber: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
     orange: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400",
     emerald: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
   };
 
   return (
-    <li className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-purple-900/10 transition-colors">
-      <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-        <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+    <li className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors">
+      <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
+        <FileText className="h-5 w-5 text-purple-600 dark:text-violet-400" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-slate-900 dark:text-dark-100 truncate">
+        <p className="font-medium text-slate-900 dark:text-zinc-100 truncate">
           {article.title}
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -82,7 +82,7 @@ export default function AdminArticleRow({ article }: { article: Post }) {
             {article.published ? "Live" : "Hidden"}
           </span>
         </div>
-        <p className="text-sm text-slate-500 dark:text-purple-400 mt-1">
+        <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">
           {formatDate(article.publishDate)} · {article.views} views · {article.likes} likes · {article.bookmarks} bookmarks
         </p>
       </div>
@@ -98,7 +98,7 @@ export default function AdminArticleRow({ article }: { article: Post }) {
               className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
                 isOn
                   ? colorClasses[color]
-                  : "bg-slate-100 text-slate-500 dark:bg-dark-800 dark:text-purple-500 hover:bg-slate-200 dark:hover:bg-dark-700"
+                  : "bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 hover:bg-slate-200 dark:hover:bg-zinc-700"
               }`}
             >
               {label}
@@ -114,7 +114,7 @@ export default function AdminArticleRow({ article }: { article: Post }) {
           title={article.published ? "Hide from public site" : "Publish to public site"}
           className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
             article.published
-              ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+              ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-zinc-800"
               : "text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20"
           }`}
         >
@@ -122,7 +122,7 @@ export default function AdminArticleRow({ article }: { article: Post }) {
         </button>
         <Link
           href={`/admin/articles/${article.id}/edit`}
-          className="p-2 rounded-lg text-slate-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+          className="p-2 rounded-lg text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
           title="Edit"
         >
           <Pencil className="h-4 w-4" />
@@ -146,7 +146,7 @@ export default function AdminArticleRow({ article }: { article: Post }) {
         <div className="flex flex-col items-end gap-1">
           <Link
             href={`/admin/articles/${article.id}/preview`}
-            className="inline-flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400 font-semibold hover:text-purple-700 dark:hover:text-emerald-400"
+            className="inline-flex items-center gap-1 text-sm text-purple-600 dark:text-violet-400 font-semibold hover:text-purple-700 dark:hover:text-violet-300"
             title="Preview as it will appear on the site (works for hidden drafts)"
           >
             <Eye className="h-3.5 w-3.5" />
@@ -155,7 +155,7 @@ export default function AdminArticleRow({ article }: { article: Post }) {
           {article.published ? (
             <Link
               href={postPublicPath(article)}
-              className="text-xs text-slate-500 dark:text-purple-500 hover:text-purple-600 dark:hover:text-emerald-400"
+              className="text-xs text-slate-500 dark:text-zinc-500 hover:text-purple-600 dark:hover:text-violet-300"
               title="Open public article URL"
             >
               View live →

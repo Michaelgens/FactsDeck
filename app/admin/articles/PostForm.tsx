@@ -1,36 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink, Loader2, Plus, X, Globe, EyeOff } from "lucide-react";
+import {
+  ArrowLeft,
+  ExternalLink,
+  Loader2,
+  Plus,
+  X,
+  Globe,
+  EyeOff,
+  FileText,
+  User,
+  Search,
+  LayoutGrid,
+  CheckCircle2,
+  Circle,
+  MessageCircleQuestion,
+} from "lucide-react";
+import { createEmptyPoll } from "../../lib/poll-types";
+import PostPollEditor from "./PostPollEditor";
 import { createPost, updatePost, type PostFormData } from "../../lib/admin-actions";
 import { categories } from "../../lib/site-config";
 import type { Post } from "../../lib/types";
+import {
+  type ArticleFormTab,
+  getTabValidation,
+  isCreateFormComplete,
+  pollBlocksSave,
+  validatePollTab,
+} from "./post-form-validation";
+import { admin } from "../components/admin-theme";
 
 const CATEGORY_OPTIONS = [...new Set(categories.map((c) => c.name))];
 
-const defaultForm: PostFormData = {
+const emptyCreateForm: PostFormData = {
   title: "",
   excerpt: "",
-  categories: ["Investing"],
+  categories: [],
   published: true,
-  imageUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=900&h=500&fit=crop",
+  imageUrl: "",
   contentUrl: "",
   bodyMarkdown: "",
   slug: "",
   authorName: "",
-  authorTitle: "Writer",
-  authorImage: "https://api.dicebear.com/9.x/avataaars/svg?seed=alex",
+  authorTitle: "",
+  authorImage: "",
   authorBio: "",
   authorFollowers: "",
   authorArticles: undefined,
-  readTime: "5 min read",
+  readTime: "",
   tags: [],
   featured: false,
   expertPicks: false,
   trending: false,
   guides: false,
+  poll: createEmptyPoll(),
 };
 
 type PostFormProps = {
@@ -43,6 +69,26 @@ export default function PostForm({ mode, post }: PostFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState("");
+  const [activeTab, setActiveTab] = useState<ArticleFormTab>("content");
+  const [visitedTabs, setVisitedTabs] = useState<Set<ArticleFormTab>>(() =>
+    mode === "edit"
+      ? new Set(["content", "author", "seo", "placement", "poll"])
+      : new Set(["content"])
+  );
+
+  const tabs: { id: ArticleFormTab; label: string; icon: typeof FileText }[] = [
+    { id: "content", label: "Content", icon: FileText },
+    { id: "author", label: "Author", icon: User },
+    { id: "seo", label: "SEO & metadata", icon: Search },
+    { id: "poll", label: "Reader poll", icon: MessageCircleQuestion },
+    { id: "placement", label: "Placement", icon: LayoutGrid },
+  ];
+
+  const selectTab = (id: ArticleFormTab) => {
+    setActiveTab(id);
+    setVisitedTabs((prev) => new Set(prev).add(id));
+  };
+
   const [form, setForm] = useState<PostFormData>(
     post
       ? {
@@ -66,9 +112,19 @@ export default function PostForm({ mode, post }: PostFormProps) {
           expertPicks: post.expertPicks,
           trending: post.trending,
           guides: post.guides,
+          poll: post.poll ?? createEmptyPoll(),
         }
-      : defaultForm
+      : emptyCreateForm
   );
+
+  const tabValidation = useMemo(
+    () => (mode === "create" ? getTabValidation(form, visitedTabs) : null),
+    [mode, form, visitedTabs]
+  );
+
+  const createFormComplete = mode === "create" && tabValidation
+    ? isCreateFormComplete(form, visitedTabs)
+    : true;
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -116,6 +172,25 @@ export default function PostForm({ mode, post }: PostFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (mode === "create" && tabValidation) {
+      const order: ArticleFormTab[] = ["content", "author", "seo", "placement"];
+      const firstIncomplete = order.find((t) => tabValidation[t].length > 0);
+      if (firstIncomplete) {
+        selectTab(firstIncomplete);
+        setError(
+          `Complete all sections before publishing: ${tabValidation[firstIncomplete].join(" · ")}`
+        );
+        return;
+      }
+    }
+
+    if (pollBlocksSave(form)) {
+      selectTab("poll");
+      setError(`Fix the reader poll: ${validatePollTab(form).join(" · ")}`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     const payload: PostFormData = {
@@ -151,16 +226,15 @@ export default function PostForm({ mode, post }: PostFormProps) {
     setForm((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const inputClass =
-    "w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-purple-500/50 bg-white dark:bg-dark-900 text-slate-900 dark:text-dark-100 placeholder:text-slate-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent";
-  const labelClass = "block text-sm font-medium text-slate-700 dark:text-purple-200 mb-1";
+  const inputClass = `w-full px-4 py-2 rounded-xl ${admin.input} ${admin.focus}`;
+  const labelClass = `block text-sm font-medium ${admin.label} mb-1`;
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <Link
           href="/admin/articles"
-          className="inline-flex items-center gap-2 text-slate-600 dark:text-purple-300 hover:text-purple-600 dark:hover:text-purple-400"
+          className="inline-flex items-center gap-2 text-slate-600 dark:text-zinc-400 hover:text-purple-600 dark:hover:text-violet-300"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Articles
@@ -178,15 +252,58 @@ export default function PostForm({ mode, post }: PostFormProps) {
         ) : null}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl">
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl">
         {error && (
           <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">
             {error}
           </div>
         )}
 
-        <section className="rounded-2xl bg-white dark:bg-dark-800/50 border border-slate-200 dark:border-purple-500/30 p-6 space-y-4">
-          <h2 className="font-display font-bold text-lg text-slate-900 dark:text-dark-100">
+        {mode === "create" && tabValidation ? (
+          <p className="text-sm text-slate-600 dark:text-zinc-400 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/80 px-4 py-3">
+            Complete all four tabs before you can save. Each tab shows a checkmark when its required fields are filled.
+          </p>
+        ) : null}
+
+        <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-800 sticky top-0 z-10 backdrop-blur-sm">
+          {tabs.map(({ id, label, icon: Icon }) => {
+            const complete = mode !== "create" || !tabValidation || tabValidation[id].length === 0;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => selectTab(id)}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === id
+                    ? "bg-white dark:bg-zinc-800 text-purple-700 dark:text-zinc-200 shadow-sm"
+                    : "text-slate-600 dark:text-zinc-400 hover:text-purple-600"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+                {mode === "create" ? (
+                  complete ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-label="Complete" />
+                  ) : (
+                    <Circle className="h-4 w-4 text-amber-500" aria-label="Incomplete" />
+                  )
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        {mode === "create" && tabValidation && tabValidation[activeTab].length > 0 ? (
+          <ul className="text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-xl px-4 py-3 list-disc pl-8 space-y-1">
+            {tabValidation[activeTab].map((msg) => (
+              <li key={msg}>{msg}</li>
+            ))}
+          </ul>
+        ) : null}
+
+        {activeTab === "content" && (
+        <section className={`rounded-2xl ${admin.card} p-6 space-y-4`}>
+          <h2 className="font-display font-bold text-lg text-slate-900 dark:text-zinc-100">
             Content
           </h2>
           <div>
@@ -228,7 +345,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
                     className={`px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
                       on
                         ? "bg-purple-600 text-white border-purple-600 shadow-md"
-                        : "bg-slate-50 dark:bg-dark-900 text-slate-600 dark:text-purple-300 border-slate-200 dark:border-purple-500/40 hover:border-purple-400"
+                        : "bg-slate-50 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-700 hover:border-purple-400"
                     }`}
                   >
                     {c}
@@ -236,7 +353,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
                 );
               })}
             </div>
-            <p className="mt-2 text-xs text-slate-500 dark:text-purple-400">
+            <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">
               Posts can appear under multiple topics; readers filter by any matching label.
             </p>
           </div>
@@ -247,7 +364,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
                 href="https://vercel.com/michaelgens-projects/~/stores/blob/store_kWyLl14fTfZ0EaHj/browser?directory=Images"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm text-purple-600 dark:text-violet-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors"
               >
                 <ExternalLink className="h-4 w-4" />
                 Upload to Vercel Blob
@@ -267,7 +384,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
               <img
                 src={form.imageUrl}
                 alt="Preview"
-                className="mt-2 h-32 w-auto object-cover rounded-xl border border-slate-200 dark:border-purple-500/30"
+                className="mt-2 h-32 w-auto object-cover rounded-xl border border-slate-200 dark:border-zinc-800"
                 onError={(e) => (e.currentTarget.style.display = "none")}
               />
             )}
@@ -281,7 +398,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
                 href="https://vercel.com/michaelgens-projects/~/stores/blob/store_kWyLl14fTfZ0EaHj/browser?directory=Content"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm text-purple-600 dark:text-violet-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors"
               >
                 <ExternalLink className="h-4 w-4" />
                 Upload MD to Vercel Blob
@@ -297,7 +414,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
               className={inputClass}
               placeholder="https://xxx.public.blob.vercel-storage.com/article.md"
             />
-            <p className="mt-2 text-sm text-slate-500 dark:text-purple-400">
+            <p className="mt-2 text-sm text-slate-500 dark:text-zinc-400">
               Paste the blob URL here. Public URLs (<code className="text-xs">*.public.blob.vercel-storage.com</code>)
               work with a normal fetch. Private store URLs need{" "}
               <code className="text-xs">BLOB_READ_WRITE_TOKEN</code> in the server environment. If the URL
@@ -317,7 +434,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
               className={inputClass}
               placeholder="auto from title, e.g. how-to-build-an-emergency-fund"
             />
-            <p className="mt-2 text-sm text-slate-500 dark:text-purple-400">
+            <p className="mt-2 text-sm text-slate-500 dark:text-zinc-400">
               Public URL: /post/your-slug — leave blank to generate from the title. Letters, numbers, and hyphens only.
             </p>
           </div>
@@ -334,14 +451,16 @@ export default function PostForm({ mode, post }: PostFormProps) {
               className={inputClass}
               placeholder="Paste Markdown here if you are not using a hosted .md URL above..."
             />
-            <p className="mt-2 text-sm text-slate-500 dark:text-purple-400">
+            <p className="mt-2 text-sm text-slate-500 dark:text-zinc-400">
               Used when &quot;Content (MD file URL)&quot; is empty. If both are set, the URL is fetched first.
             </p>
           </div>
         </section>
+        )}
 
-        <section className="rounded-2xl bg-white dark:bg-dark-800/50 border border-slate-200 dark:border-purple-500/30 p-6 space-y-4">
-          <h2 className="font-display font-bold text-lg text-slate-900 dark:text-dark-100">
+        {activeTab === "author" && (
+        <section className={`rounded-2xl ${admin.card} p-6 space-y-4`}>
+          <h2 className="font-display font-bold text-lg text-slate-900 dark:text-zinc-100">
             Author
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -381,7 +500,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
               className={inputClass}
               placeholder="https://... or /first.jpeg (public folder)"
             />
-            <p className="mt-2 text-sm text-slate-600 dark:text-purple-300 mb-2">
+            <p className="mt-2 text-sm text-slate-600 dark:text-zinc-400 mb-2">
               Select an avatar below to load its URL, or paste your own:
             </p>
             <div className="flex flex-wrap gap-4">
@@ -408,8 +527,8 @@ export default function PostForm({ mode, post }: PostFormProps) {
                   }
                   className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all ${
                     form.authorImage === avatar.url
-                      ? "border-purple-600 dark:border-purple-400 bg-purple-50 dark:bg-purple-900/20 ring-2 ring-purple-200 dark:ring-purple-900/50"
-                      : "border-slate-200 dark:border-purple-500/30 hover:border-purple-300 hover:bg-slate-50 dark:hover:bg-purple-900/10"
+                      ? "border-purple-600 dark:border-violet-500 bg-purple-50 dark:bg-violet-500/15 ring-2 ring-purple-200 dark:ring-violet-500/30"
+                      : "border-slate-200 dark:border-zinc-800 hover:border-purple-300 hover:bg-slate-50 dark:hover:bg-zinc-800"
                   }`}
                 >
                   <img
@@ -417,7 +536,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
                     alt={avatar.label}
                     className="w-14 h-14 rounded-full object-cover"
                   />
-                  <span className="text-xs font-medium text-slate-600 dark:text-purple-200">
+                  <span className="text-xs font-medium text-slate-600 dark:text-zinc-200">
                     {avatar.label}
                   </span>
                 </button>
@@ -467,12 +586,14 @@ export default function PostForm({ mode, post }: PostFormProps) {
             </div>
           </div>
         </section>
+        )}
 
-        <section className="rounded-2xl bg-white dark:bg-dark-800/50 border border-slate-200 dark:border-purple-500/30 p-6 space-y-4">
-          <h2 className="font-display font-bold text-lg text-slate-900 dark:text-dark-100">
-            Metadata
+        {activeTab === "seo" && (
+        <section className={`rounded-2xl ${admin.card} p-6 space-y-4`}>
+          <h2 className="font-display font-bold text-lg text-slate-900 dark:text-zinc-100">
+            SEO & metadata
           </h2>
-          <div className="rounded-xl border border-slate-200 dark:border-purple-500/30 p-4 bg-slate-50/80 dark:bg-dark-900/40">
+          <div className="rounded-xl border border-slate-200 dark:border-zinc-800 p-4 bg-slate-50/80 dark:bg-zinc-800/80">
             <span className={labelClass}>Visibility</span>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
@@ -481,7 +602,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left border-2 transition-all ${
                   form.published
                     ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-100"
-                    : "border-slate-200 dark:border-purple-500/30 text-slate-600 dark:text-purple-300 hover:border-purple-300"
+                    : "border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:border-purple-300"
                 }`}
               >
                 <Globe className="h-5 w-5 shrink-0" />
@@ -496,7 +617,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left border-2 transition-all ${
                   !form.published
                     ? "border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-100"
-                    : "border-slate-200 dark:border-purple-500/30 text-slate-600 dark:text-purple-300 hover:border-purple-300"
+                    : "border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:border-purple-300"
                 }`}
               >
                 <EyeOff className="h-5 w-5 shrink-0" />
@@ -521,17 +642,17 @@ export default function PostForm({ mode, post }: PostFormProps) {
           </div>
           <div>
             <span className={labelClass}>Tags — add as many as you need</span>
-            <div className="mt-2 flex flex-wrap gap-2 min-h-[2.5rem] p-2 rounded-xl border border-slate-200 dark:border-purple-500/40 bg-white dark:bg-dark-900/50">
+            <div className="mt-2 flex flex-wrap gap-2 min-h-[2.5rem] p-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/80">
               {form.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-lg bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200 text-sm font-medium"
+                  className="inline-flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-lg bg-purple-100 dark:bg-zinc-800 text-purple-800 dark:text-violet-200 text-sm font-medium border border-transparent dark:border-violet-500/25"
                 >
                   {tag}
                   <button
                     type="button"
                     onClick={() => removeTag(tag)}
-                    className="p-0.5 rounded-md hover:bg-purple-200/80 dark:hover:bg-purple-800"
+                    className="p-0.5 rounded-md hover:bg-purple-200/80 dark:hover:bg-zinc-700"
                     aria-label={`Remove ${tag}`}
                   >
                     <X className="h-3.5 w-3.5" />
@@ -539,7 +660,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
                 </span>
               ))}
               {form.tags.length === 0 && (
-                <span className="text-sm text-slate-400 dark:text-purple-500 self-center px-1">
+                <span className="text-sm text-slate-400 dark:text-zinc-500 self-center px-1">
                   No tags yet — add below
                 </span>
               )}
@@ -561,14 +682,14 @@ export default function PostForm({ mode, post }: PostFormProps) {
               <button
                 type="button"
                 onClick={addTagLine}
-                className="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-xl bg-slate-100 dark:bg-purple-900/30 text-slate-800 dark:text-purple-200 font-semibold hover:bg-purple-100 dark:hover:bg-purple-900/50"
+                className="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 font-semibold hover:bg-purple-100 dark:hover:bg-zinc-700"
               >
                 <Plus className="h-4 w-4" />
                 Add
               </button>
             </div>
             <div className="mt-3">
-              <label htmlFor="tagsBulk" className="text-xs font-medium text-slate-500 dark:text-purple-400">
+              <label htmlFor="tagsBulk" className="text-xs font-medium text-slate-500 dark:text-zinc-400">
                 Bulk add (comma, semicolon, or newline)
               </label>
               <textarea
@@ -585,8 +706,37 @@ export default function PostForm({ mode, post }: PostFormProps) {
               />
             </div>
           </div>
+        </section>
+        )}
+
+        {activeTab === "poll" && (
+        <section className={`rounded-2xl ${admin.card} p-6 space-y-4`}>
+          <h2 className="font-display font-bold text-lg text-slate-900 dark:text-zinc-100">
+            Reader poll
+          </h2>
+          <PostPollEditor
+            poll={form.poll}
+            articleTitle={form.title}
+            category={form.categories[0]}
+            onChange={(poll) => setForm((prev) => ({ ...prev, poll }))}
+          />
+        </section>
+        )}
+
+        {activeTab === "placement" && (
+        <section className={`rounded-2xl ${admin.card} p-6 space-y-4`}>
+          <h2 className="font-display font-bold text-lg text-slate-900 dark:text-zinc-100">
+            Feed placement
+          </h2>
+          <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
+            Controls where this article appears on <strong>Home</strong>, <strong>/post</strong>, and{" "}
+            <strong>article detail</strong> pages. Priority: Featured → Expert Pick → Trending → Guides → Latest.{" "}
+            <a href="/admin/articles/placements" className="text-purple-600 dark:text-violet-400 font-semibold hover:underline">
+              Full placement guide →
+            </a>
+          </p>
           <div>
-            <span className={labelClass}>Featured on homepage</span>
+            <span className={labelClass}>Editorial flags</span>
             <div className="flex flex-wrap gap-3 mt-2">
               {(["featured", "expertPicks", "trending", "guides"] as const).map((key) => {
                 const labels: Record<string, string> = {
@@ -602,7 +752,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
                   guides: "emerald",
                 };
                 const colorClass: Record<string, string> = {
-                  purple: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400",
+                  purple: "bg-purple-100 text-purple-700 dark:bg-violet-500/15 dark:text-violet-300",
                   amber: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
                   orange: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400",
                   emerald: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
@@ -614,7 +764,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
                     type="button"
                     onClick={() => toggleFlag(key)}
                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                      isOn ? colorClass[colors[key]] : "bg-slate-100 text-slate-500 dark:bg-dark-800 dark:text-purple-500"
+                      isOn ? colorClass[colors[key]] : "bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500"
                     }`}
                   >
                     {labels[key]}
@@ -624,19 +774,32 @@ export default function PostForm({ mode, post }: PostFormProps) {
             </div>
           </div>
         </section>
+        )}
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sticky bottom-0 py-4 bg-slate-50/90 dark:bg-zinc-950/95 backdrop-blur border-t border-slate-200 dark:border-zinc-800 -mx-2 px-2">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !createFormComplete || pollBlocksSave(form)}
+            title={
+              mode === "create" && !createFormComplete
+                ? "Complete all four tabs first"
+                : pollBlocksSave(form)
+                  ? "Fix reader poll settings"
+                  : undefined
+            }
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-accent-600 text-white font-bold hover:from-purple-700 hover:to-accent-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {mode === "create" ? (form.published ? "Create & publish" : "Create (hidden)") : "Save changes"}
           </button>
+          {mode === "create" && !createFormComplete ? (
+            <p className="text-sm text-slate-500 dark:text-zinc-400">
+              Finish Content, Author, SEO, and Placement tabs to enable save.
+            </p>
+          ) : null}
           <Link
             href="/admin/articles"
-            className="px-6 py-3 rounded-xl border border-slate-300 dark:border-purple-500/50 text-slate-700 dark:text-purple-200 font-medium hover:bg-slate-50 dark:hover:bg-purple-900/20 transition-colors"
+            className="px-6 py-3 rounded-xl border border-slate-300 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 font-medium hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
           >
             Cancel
           </Link>

@@ -3,7 +3,7 @@
  */
 
 export const tdPage =
-  "min-h-screen antialiased bg-[linear-gradient(180deg,#f4f4f6_0%,#ffffff_42%,#fafafa_100%)] text-zinc-900 dark:bg-[linear-gradient(180deg,#08080a_0%,#0c0c0f_40%,#09090b_100%)] dark:text-zinc-100";
+  "min-h-[100dvh] overflow-x-hidden antialiased bg-[linear-gradient(180deg,#f4f4f6_0%,#ffffff_42%,#fafafa_100%)] text-zinc-900 dark:bg-[linear-gradient(180deg,#08080a_0%,#0c0c0f_40%,#09090b_100%)] dark:text-zinc-100";
 
 export const tdHero =
   "relative overflow-hidden border-b border-zinc-200/80 bg-gradient-to-b from-white via-zinc-50/30 to-zinc-100/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9)] dark:border-zinc-800/90 dark:from-zinc-950 dark:via-zinc-950/98 dark:to-zinc-900/60 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]";

@@ -48,7 +48,7 @@ export default function WizardSlideShell({
   const isHero = layout === "hero";
 
   return (
-    <div className="relative min-h-[min(100vh,920px)] flex flex-col">
+    <div className="relative overflow-x-hidden flex flex-col">
       <div
         className="h-1.5 w-full bg-zinc-200/80 dark:bg-zinc-800 overflow-hidden"
         role="progressbar"
@@ -64,7 +64,7 @@ export default function WizardSlideShell({
       </div>
 
       <div
-        className={`flex-1 flex flex-col mx-auto w-full px-4 sm:px-6 py-10 sm:py-14 ${
+        className={`flex-1 flex flex-col mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 ${
           isHero ? "max-w-4xl" : "max-w-2xl"
         }`}
       >
@@ -86,20 +86,20 @@ export default function WizardSlideShell({
         <div
           className={
             isHero
-              ? "flex-1 flex flex-col justify-center min-h-[min(52vh,520px)]"
+              ? "flex-1 flex flex-col justify-center"
               : "mt-8 sm:mt-10 flex-1 flex flex-col"
           }
         >
           {children}
         </div>
 
-        <div className="mt-10 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4 pt-6 border-t border-zinc-200 dark:border-zinc-800">
-          <div>
+        <div className="sticky bottom-0 mt-8 flex flex-col-reverse gap-4 border-t border-zinc-200 bg-white/95 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-5 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95 sm:static sm:mt-10 sm:flex-row sm:items-center sm:justify-between sm:bg-transparent sm:pb-0 sm:pt-6 sm:backdrop-blur-0">
+          <div className="w-full flex justify-end sm:justify-start sm:block">
             {showBack && stepIndex > 0 && onBack ? (
               <button
                 type="button"
                 onClick={onBack}
-                className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
+                className="inline-flex min-h-[40px] min-w-[5.5rem] items-center justify-center gap-2 rounded-2xl border-2 border-zinc-300 bg-white px-6 py-2 text-sm font-semibold text-zinc-600 shadow-sm transition-all hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-white"
               >
                 <ChevronLeft className="h-4 w-4" />
                 {backLabel}
@@ -110,6 +110,8 @@ export default function WizardSlideShell({
               </span>
             )}
           </div>
+     
+     
           <div
             className={`flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end ${
               onSecondary && secondaryLabel ? "sm:gap-4" : ""

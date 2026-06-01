@@ -28,22 +28,25 @@ import {
   Bitcoin,
   Search,
   Star,
-  CalendarDays,
 } from "lucide-react";
-import type { Post } from "../lib/types";
+import type { Post, PostSummary } from "../lib/types";
 import { postPublicPath } from "../lib/post-url";
 import { proxiedImageSrc } from "../lib/image-proxy";
 import { CategoryPills, categoryLabelList } from "../lib/post-display";
 import { formatPublishDate } from "../lib/format-date";
 import { siteTools, type SiteTool } from "../lib/site-config";
+import { SIDEBAR_RAIL_MAX } from "../lib/post-feeds";
 import {
-  STATIC_POPULAR,
-  STATIC_TOP_PICKS_FOR_MONTH,
-  STATIC_RELATED_ARTICLES_CAROUSEL,
-  STATIC_READ_MORE_GRID,
-} from "../lib/post-page-static";
+  PopularRail,
+  TopPicksRail,
+  PostCarousel,
+  PostGrid,
+} from "./posts/ArticleFeedUi";
 import EmptyState from "./EmptyState";
 import PostEngagementBarClient from "./PostEngagementBarClient";
+import { isPollActive, POLL_QUESTION_COUNT } from "../lib/poll-types";
+import ArticlePollCta, { PollOpenLink } from "./posts/ArticlePollCta";
+import PostArticlePollMount from "./posts/PostArticlePollMount";
 
 const linkAccent =
   "font-semibold text-blue-800 transition-colors hover:text-blue-900 dark:text-cyan-300 dark:hover:text-cyan-200";
@@ -159,6 +162,10 @@ type Props = {
   content: string;
   from?: string;
   sidebarTools: SiteTool[];
+  popularPosts: Post[];
+  topPicksPosts: Post[];
+  relatedPosts: PostSummary[];
+  readMorePosts: Post[];
   /** Admin-only preview: banner + links back to CMS (not indexed). */
   adminPreview?: { editHref: string };
 };
@@ -168,6 +175,10 @@ export default function PostPageView({
   content,
   from,
   sidebarTools,
+  popularPosts,
+  topPicksPosts,
+  relatedPosts,
+  readMorePosts,
   adminPreview,
 }: Props) {
   const fromLabel = from && FROM_LABELS[from] ? FROM_LABELS[from] : null;
@@ -180,22 +191,17 @@ export default function PostPageView({
   const authorFollowers = article.author.followers ?? "125K";
   const authorArticles = article.author.articles ?? 89;
   const tags = article.tags ?? [];
+  const pollEnabled = isPollActive(article.poll);
+  const activePoll = pollEnabled && article.poll ? article.poll : null;
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-      {/* Ambient layers */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute top-[28rem] right-[-10%] h-96 w-96 rounded-full bg-orange-100/30 blur-3xl dark:bg-cyan-950/25"
-        aria-hidden
-      />
+    <div className="relative min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      {/* Ambient layers — clipped so wide blurs don’t break sticky or cause horizontal scroll */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]" />
+        <div className="absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,100vw)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent" />
+        <div className="absolute top-[28rem] right-0 h-96 w-96 max-w-[50vw] rounded-full bg-orange-100/30 blur-3xl dark:bg-cyan-950/25" />
+      </div>
       {adminPreview && (
         <div
           className="sticky top-0 z-40 border-b border-amber-500/40 bg-amber-50 text-amber-950 dark:bg-amber-950/90 dark:text-amber-50 dark:border-amber-600/50 px-4 py-3"
@@ -292,6 +298,9 @@ export default function PostPageView({
                 <p className="mt-4 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
                   {article.excerpt}
                 </p>
+                {activePoll ? (
+                  <ArticlePollCta poll={activePoll} postId={article.id} />
+                ) : null}
                 <div className="mt-5 flex flex-wrap items-center gap-2">
                   <CategoryPills
                     categories={categoryLabelList(article)}
@@ -367,7 +376,7 @@ export default function PostPageView({
         </div>
       </section>
 
-      <section className="sticky top-16 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95 hidden sm:block">
+      <section className="sticky top-16 z-40 hidden border-b border-zinc-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90 dark:border-zinc-800 dark:bg-zinc-950/95 dark:supports-[backdrop-filter]:bg-zinc-950/90 sm:block">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <Link
@@ -377,13 +386,21 @@ export default function PostPageView({
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" aria-hidden />
               Search articles and tools…
             </Link>
-            <Link
-              href="#article-body"
-              className={`text-sm font-semibold ${linkAccent}`}
-            >
-              Jump to article
-              <ChevronRight className="ml-0.5 inline h-4 w-4 align-text-bottom" aria-hidden />
-            </Link>
+            <div className="flex flex-wrap items-center gap-4">
+              {activePoll ? (
+                <PollOpenLink postId={article.id} className={`text-sm font-semibold ${linkAccent}`}>
+                  Take the poll
+                  <ChevronRight className="ml-0.5 inline h-4 w-4 align-text-bottom" aria-hidden />
+                </PollOpenLink>
+              ) : null}
+              <Link
+                href="#article-body"
+                className={`text-sm font-semibold ${linkAccent}`}
+              >
+                Jump to article
+                <ChevronRight className="ml-0.5 inline h-4 w-4 align-text-bottom" aria-hidden />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -397,6 +414,11 @@ export default function PostPageView({
               initialBookmarks={article.bookmarks}
               initialViews={article.views}
               title={article.title}
+              poll={
+                activePoll
+                  ? { questionCount: activePoll.questions.length || POLL_QUESTION_COUNT }
+                  : undefined
+              }
             />
 
             <article id="article-body" className={`${railCard} mb-8 p-6 md:p-8 lg:p-10`}>
@@ -437,6 +459,10 @@ export default function PostPageView({
                 )}
               </div>
             </article>
+
+            {activePoll ? (
+              <ArticlePollCta poll={activePoll} postId={article.id} variant="end" />
+            ) : null}
 
             {tags.length > 0 && (
               <div className={`${railCard} mb-8`}>
@@ -491,38 +517,10 @@ export default function PostPageView({
           </div>
 
           {/* Column 2 — matches PostListContent right rail */}
-          <aside className="order-2 space-y-8 lg:order-2 lg:col-span-3">
-            <section className="hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6 lg:block">
-              <div className="flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
-                <h3 className="font-display text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                  Popular
-                </h3>
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                  Today
-                </span>
-              </div>
-              <ol className="mt-4 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                {STATIC_POPULAR.slice(0, 5).map((p, idx) => (
-                  <li key={p.title} className="py-3.5 first:pt-0 last:pb-0">
-                    <Link href={POST_BASE} className="group block">
-                      <div className="flex items-start gap-3">
-                        <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-xs font-bold tabular-nums text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                          {String(idx + 1).padStart(2, "0")}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                            {p.tag}
-                          </p>
-                          <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                            {p.title}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ol>
-            </section>
+          <aside className="order-2 min-w-0 space-y-8 lg:order-2 lg:col-span-3">
+            <div className="hidden lg:block">
+              <PopularRail posts={popularPosts} limit={SIDEBAR_RAIL_MAX} viewAllHref={POST_BASE} />
+            </div>
 
             <div className="hidden lg:block">
               <AluxPostDetailSidebarAd />
@@ -532,8 +530,8 @@ export default function PostPageView({
               <h3 className="border-b border-zinc-200 pb-3 font-display text-lg font-bold leading-tight tracking-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
                 Find the Best Financial Tools
               </h3>
-              <div className="mt-4 md:hidden ml-3">
-                <div className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="mt-4 min-w-0 overflow-hidden md:hidden">
+                <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {siteTools.map((tool) => {
                     const ToolIcon = iconMap[tool.iconKey || "Calculator"] ?? Calculator;
                     return (
@@ -591,35 +589,14 @@ export default function PostPageView({
               </Link>
             </section>
 
-            <section className="hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6 lg:block">
-              <h3 className="border-b border-zinc-200 pb-3 font-display text-base font-bold leading-snug tracking-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100 sm:text-lg">
-                OUR TOP PICKS FOR {monthPicksUpper}
-              </h3>
-              <ul className="mt-4 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                {STATIC_TOP_PICKS_FOR_MONTH.slice(0, 8).map((item) => (
-                  <li key={item.title} className="py-3 first:pt-0 last:pb-0">
-                    <Link href={`${POST_BASE}?type=guides`} className="group block">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                        {item.tag}
-                      </p>
-                      <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                        {item.title}
-                      </p>
-                      <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                        <Clock className="h-3.5 w-3.5" aria-hidden />
-                        {item.readTime}
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href={`${POST_BASE}?type=guides`}
-                className={`mt-4 flex items-center gap-1 border-t border-zinc-100 pt-4 text-sm font-semibold dark:border-zinc-800 ${linkAccent}`}
-              >
-                See all guides <ChevronRight className="h-4 w-4" aria-hidden />
-              </Link>
-            </section>
+            <div className="hidden lg:block">
+              <TopPicksRail
+                posts={topPicksPosts}
+                monthLabel={monthPicksUpper}
+                limit={SIDEBAR_RAIL_MAX}
+                viewAllHref={`${POST_BASE}?type=guides`}
+              />
+            </div>
           </aside>
         </div>
 
@@ -644,39 +621,7 @@ export default function PostPageView({
               View all <ChevronRight className="inline h-4 w-4" aria-hidden />
             </Link>
           </div>
-          <div className="relative">
-            <div className="-mx-4 flex ml-1 snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0">
-              {STATIC_RELATED_ARTICLES_CAROUSEL.map((a) => (
-                <Link
-                  key={a.id}
-                  href={POST_BASE}
-                  className="group w-[min(18rem,calc(100vw-4rem))] shrink-0 snap-start overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80 sm:w-72"
-                >
-                  <div className="relative h-40 w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
-                    <Image
-                      src={a.imageSrc}
-                      alt=""
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                      sizes="288px"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                      {a.category}
-                    </p>
-                    <h3 className="mt-2 line-clamp-2 font-display text-base font-bold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                      {a.title}
-                    </h3>
-                    <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                      <CalendarDays className="h-3.5 w-3.5" aria-hidden />
-                      <span>{a.date}</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
+          <PostCarousel posts={relatedPosts} viewAllHref={POST_BASE} />
         </section>
 
         <section className="border-t border-zinc-200 bg-white py-10 dark:border-zinc-800 dark:bg-zinc-950 sm:py-12" aria-labelledby="post-read-more-heading">
@@ -693,39 +638,11 @@ export default function PostPageView({
               View all <ChevronRight className="inline h-4 w-4" aria-hidden />
             </Link>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-5">
-            {STATIC_READ_MORE_GRID.map((a) => (
-              <Link
-                key={a.id}
-                href={POST_BASE}
-                className="group flex h-full flex-col overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80"
-              >
-                <div className="relative h-40 w-full shrink-0 overflow-hidden bg-zinc-100 dark:bg-zinc-900">
-                  <Image
-                    src={a.imageSrc}
-                    alt=""
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col p-4">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                    {a.category}
-                  </p>
-                  <h3 className="mt-2 line-clamp-2 flex-1 font-display text-base font-bold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                    {a.title}
-                  </h3>
-                  <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                    <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                    <span>{a.date}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <PostGrid posts={readMorePosts} />
         </section>
       </div>
+
+      {activePoll ? <PostArticlePollMount poll={activePoll} postId={article.id} /> : null}
     </div>
   );
 }

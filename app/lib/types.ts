@@ -1,3 +1,5 @@
+import type { ArticlePoll } from "./poll-types";
+
 /** Standard post data structure - all posts use this shape */
 export interface Post {
   id: string;
@@ -31,6 +33,8 @@ export interface Post {
   trending: boolean;
   guides: boolean;
   createdAt: string;
+  /** Reader engagement poll (5 questions); null when disabled */
+  poll: ArticlePoll | null;
 }
 
 export type PostSummary = Pick<

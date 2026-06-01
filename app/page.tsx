@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import HomePageClient from "./components/HomePageClient";
-import { getPartitionedPosts, getCategoriesWithCounts } from "./lib/posts";
+import { getPublishedPosts, getCategoriesWithCounts, partitionPostsBySection } from "./lib/posts";
+import { SIDEBAR_RAIL_MAX, sortByViewsDesc } from "./lib/post-feeds";
 import { getMarketData } from "./lib/market-data";
 import { SITE_URL } from "./lib/seo";
 import { siteTools } from "./lib/site-config";
@@ -87,11 +88,13 @@ const jsonLd = {
 };
 
 export default async function HomePage() {
-  const [partitioned, categoriesWithCounts, marketData] = await Promise.all([
-    getPartitionedPosts(),
+  const [published, categoriesWithCounts, marketData] = await Promise.all([
+    getPublishedPosts(),
     getCategoriesWithCounts(),
     getMarketData(),
   ]);
+  const partitioned = partitionPostsBySection(published);
+  const popularPosts = sortByViewsDesc(published).slice(0, SIDEBAR_RAIL_MAX);
   const sidebarTools = pickDailyTools(siteTools, 5, "home-sidebar");
 
   return (
@@ -124,6 +127,7 @@ export default async function HomePage() {
             categoriesWithCounts={categoriesWithCounts}
             marketData={marketData}
             sidebarTools={sidebarTools}
+            popularPosts={popularPosts}
           />
         </div>
       </div>

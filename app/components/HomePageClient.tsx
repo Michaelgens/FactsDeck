@@ -50,6 +50,22 @@ import { formatPublishDate } from "../lib/format-date";
 import { siteTools, type SiteTool } from "../lib/site-config";
 import { proxiedImageSrc } from "../lib/image-proxy";
 import { usePostEngagement } from "../hooks/usePostEngagement";
+import {
+  buildMajorSections,
+  HOME_LATEST_CAROUSEL_MAX,
+  flattenPartitioned,
+  getAnalysisFeed,
+  getTopPicksPosts,
+  sortByPublishDateDesc,
+} from "../lib/post-feeds";
+import {
+  HeadlineList,
+  LatestAnalysisBlock,
+  MajorCoverageStack,
+  PopularRail,
+  PostCarousel,
+  TopPicksRail,
+} from "./posts/ArticleFeedUi";
 import EmptyState from "./EmptyState";
 
 /** Matches `label` from `getMarketData()` in `app/lib/market-data.ts` */
@@ -437,6 +453,7 @@ type HomePageClientProps = {
   marketData: MarketDataItem[] | null;
   /** Daily-rotating subset for sidebar */
   sidebarTools: SiteTool[];
+  popularPosts: Post[];
 };
 
 export default function HomePageClient({
@@ -448,136 +465,28 @@ export default function HomePageClient({
   categoriesWithCounts,
   marketData,
   sidebarTools,
+  popularPosts,
 }: HomePageClientProps) {
-  const STATIC_TOP_STORY = {
-    title: "Inflation is cooling, but your budget hasn’t noticed—here’s why",
-    deck: "A practical breakdown of sticky prices, timing mismatches, and the levers you can pull this week.",
-    label: "Today’s Brief",
-    readTime: "6 min read",
-    date: "Apr 9, 2026",
-  };
+  const partitioned = useMemo(
+    () => ({
+      featured: featuredPosts,
+      latest: latestPosts,
+      expertPicks: expertPickPosts,
+      trending: trendingPosts,
+      guides: guidePosts,
+    }),
+    [featuredPosts, latestPosts, expertPickPosts, trendingPosts, guidePosts]
+  );
 
-  const STATIC_LATEST = [
-    { title: "Mortgage rates: what a 0.25% move really changes", tag: "Housing", readTime: "5 min" },
-    { title: "ETF basics: expense ratios that quietly eat returns", tag: "Investing", readTime: "7 min" },
-    { title: "Credit utilization: the threshold most people miss", tag: "Credit", readTime: "4 min" },
-    { title: "Budgeting systems: zero‑based vs 50/30/20 in real life", tag: "Personal Finance", readTime: "8 min" },
-    { title: "Emergency fund targets: runway math for variable income", tag: "Planning", readTime: "6 min" },
-  ];
-
-  const STATIC_MARKET_MOVERS = [
-    { symbol: "S&P 500", value: "6,782.81", change: "+2.5%", positive: true },
-    { symbol: "NASDAQ", value: "22,635.00", change: "+2.8%", positive: true },
-    { symbol: "DOW", value: "47,909.92", change: "+2.8%", positive: true },
-    { symbol: "Bitcoin", value: "$71,020", change: "−0.9%", positive: false },
-  ];
-
-  const STATIC_LEFT_HEADLINES = [
-    { title: "Stock market today: what moved and what matters next", tag: "Markets", readTime: "4 min" },
-    { title: "The hidden cost of “buy now, pay later” on your cashflow", tag: "Personal finance", readTime: "6 min" },
-    { title: "Treasury yields explained: the signal most investors ignore", tag: "Bonds", readTime: "5 min" },
-    { title: "3 habits that quietly raise your credit score over time", tag: "Credit", readTime: "5 min" },
-    { title: "Your budget should be seasonal — here’s the template", tag: "Budgeting", readTime: "7 min" },
-    { title: "Index funds vs ETFs: the real differences that matter", tag: "Investing", readTime: "6 min" },
-    { title: "Emergency fund math: runway by household type", tag: "Planning", readTime: "5 min" },
-    { title: "Retirement contribution limits: what changed this year", tag: "Retirement", readTime: "3 min" },
-    { title: "Mortgage pre-approval: a checklist that saves time", tag: "Housing", readTime: "6 min" },
-    { title: "Debt payoff: a quick order-of-operations guide", tag: "Debt", readTime: "4 min" },
-  ];
-
-  const STATIC_MAJOR_STORIES = [
-    {
-      title: "The simple portfolio rule that makes rebalancing feel automatic",
-      deck: "A clean framework for allocation bands, contribution routing, and the “when to rebalance” decision.",
-      tag: "Investing",
-      readTime: "8 min read",
-      imageSrc: "/first.jpeg",
-    },
-    {
-      title: "A smarter budget: track fewer categories, get better results",
-      deck: "How to design a budget around decisions — not receipts — and still stay in control.",
-      tag: "Personal finance",
-      readTime: "7 min read",
-      imageSrc: "/budget.png",
-    },
-  ];
-
-  const STATIC_CENTER_SECTIONS = [
-    {
-      major: STATIC_MAJOR_STORIES[0],
-      minors: [
-        { title: "How to rebalance without overthinking it", tag: "Investing", readTime: "3 min", date: "Apr 9" },
-        { title: "The allocation bands rule: a practical example", tag: "Education", readTime: "4 min", date: "Apr 8" },
-        { title: "Contribution routing: the simplest automation", tag: "Planning", readTime: "3 min", date: "Apr 7" },
-        { title: "Taxable vs IRA rebalancing: what to do first", tag: "Taxes", readTime: "5 min", date: "Apr 6" },
-      ],
-    },
-    {
-      major: STATIC_MAJOR_STORIES[1],
-      minors: [
-        { title: "Budget categories you can delete today", tag: "Budgeting", readTime: "4 min", date: "Apr 9" },
-        { title: "The two-account method: checking + bills", tag: "Personal finance", readTime: "5 min", date: "Apr 8" },
-        { title: "How to set targets when income varies", tag: "Planning", readTime: "4 min", date: "Apr 7" },
-        { title: "Weekly budget review: a 10-minute routine", tag: "Habits", readTime: "3 min", date: "Apr 6" },
-      ],
-    },
-    {
-      major: {
-        title: "Credit score moves: the 3 levers that matter most",
-        deck: "A practical guide to utilization, age, and payment history—plus what to ignore.",
-        tag: "Credit",
-        readTime: "6 min read",
-        imageSrc: "/first.jpeg",
-      },
-      minors: [
-        { title: "Utilization targets: 10% vs 30% vs 0%", tag: "Credit", readTime: "4 min", date: "Apr 9" },
-        { title: "Late payments: what “30 days” really means", tag: "Credit", readTime: "3 min", date: "Apr 8" },
-        { title: "Average age of accounts: the slow advantage", tag: "Education", readTime: "4 min", date: "Apr 7" },
-        { title: "Hard vs soft inquiries: the simple rule", tag: "Basics", readTime: "2 min", date: "Apr 6" },
-      ],
-    },
-  ] as const;
-
-  const STATIC_POPULAR = [
-    { title: "How compound interest actually compounds (with examples)", tag: "Education" },
-    { title: "Debt snowball vs avalanche: which wins (and when)?", tag: "Debt" },
-    { title: "What is a good savings rate in 2026?", tag: "Saving" },
-    { title: "Roth vs Traditional: a decision checklist", tag: "Retirement" },
-    { title: "DTI explained: how lenders evaluate you", tag: "Loans" },
-  ];
-
-  const STATIC_LATEST_CAROUSEL = Array.from({ length: 20 }).map((_, i) => {
-    const bank = [
-      { category: "Investing", title: "ETFs vs index funds: the difference that matters", date: "Apr 9, 2026" },
-      { category: "Credit", title: "Utilization: the simplest way to lift your score", date: "Apr 8, 2026" },
-      { category: "Budgeting", title: "A two-account system that makes budgeting stick", date: "Apr 7, 2026" },
-      { category: "Retirement", title: "401(k) match math: what to contribute first", date: "Apr 6, 2026" },
-      { category: "Housing", title: "Mortgage points: when they pay off (and when they don’t)", date: "Apr 5, 2026" },
-    ] as const;
-    const row = bank[i % bank.length];
-    const imageSrc = i % 2 === 0 ? "/first.jpeg" : "/budget.png";
-    return { id: `latest-${i}`, ...row, imageSrc };
-  });
-
-  const STATIC_LATEST_ANALYSIS = {
-    featured: {
-      imageSrc: "/first.jpeg",
-      category: "Markets",
-      title: "The week’s big shift: why risk is back on the table",
-      description:
-        "A quick, plain-English breakdown of what changed in markets, what it means for your portfolio, and how to think about the next 30 days.",
-      readTime: "7 min read",
-      date: "Apr 9, 2026",
-    },
-    items: [
-      { category: "Stocks", title: "Earnings season: what matters more than guidance", readTime: "4 min", date: "Apr 9, 2026" },
-      { category: "Crypto", title: "Bitcoin’s move explained (without the hype)", readTime: "3 min", date: "Apr 8, 2026" },
-      { category: "Rates", title: "Bond yields: the signal hidden in the curve", readTime: "5 min", date: "Apr 8, 2026" },
-      { category: "Personal finance", title: "Budget reset: the fastest way to find $200/month", readTime: "4 min", date: "Apr 7, 2026" },
-      { category: "Strategy", title: "A 3-step checklist for buying dips responsibly", readTime: "6 min", date: "Apr 6, 2026" },
-      { category: "Retirement", title: "Contribution order: match, Roth, HSA, taxable?", readTime: "5 min", date: "Apr 6, 2026" },
-    ],
-  } as const;
+  const feedPool = useMemo(() => flattenPartitioned(partitioned), [partitioned]);
+  const centerSections = useMemo(() => buildMajorSections(feedPool, 3, 4), [feedPool]);
+  const leftHeadlines = useMemo(() => feedPool, [feedPool]);
+  const latestCarouselPosts = useMemo(
+    () => sortByPublishDateDesc(feedPool).slice(0, HOME_LATEST_CAROUSEL_MAX),
+    [feedPool]
+  );
+  const analysisFeed = useMemo(() => getAnalysisFeed(partitioned), [partitioned]);
+  const topPicksPosts = useMemo(() => getTopPicksPosts(partitioned, 8), [partitioned]);
 
   const monthPicksUpper = useMemo(
     () => new Intl.DateTimeFormat("en-US", { month: "long" }).format(new Date()).toUpperCase(),
@@ -841,46 +750,7 @@ export default function HomePageClient({
                 <CategoryBrowseStrip categoriesWithCounts={categoriesWithCounts} />
               </section>
 
-              <section className="rounded-sm border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
-                <div className="flex items-end justify-between gap-4 border-b border-zinc-200 pb-3 dark:border-zinc-800">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                      News
-                    </p>
-                    <h3 className="mt-1 font-display text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                      More stories
-                    </h3>
-                  </div>
-                </div>
-
-                <ul className="mt-4 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                  {[...STATIC_LEFT_HEADLINES, ...STATIC_LATEST].slice(0, 13).map((item) => (
-                    <li key={item.title} className="py-3.5 first:pt-0 last:pb-0">
-                      <Link href="/post" className="group block">
-                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                          {"tag" in item ? item.tag : "Latest"}
-                        </p>
-                        <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                          {item.title}
-                        </p>
-                        {"readTime" in item && (
-                          <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                            <Clock className="h-3.5 w-3.5" aria-hidden />
-                            {item.readTime}
-                          </div>
-                        )}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/post"
-                  className={`mt-4 flex items-center justify-between gap-2 border-t border-zinc-100 pt-4 text-sm font-semibold dark:border-zinc-800 ${linkAccent}`}
-                >
-                  View all
-                  <ChevronRight className="h-4 w-4" aria-hidden />
-                </Link>
-              </section>
+              <HeadlineList posts={leftHeadlines} limit={13} viewAllHref="/post" />
             </aside>
 
             {/* Column 2 — Center (major stories with images + sub stories) */}
@@ -902,99 +772,14 @@ export default function HomePageClient({
                     </span>
                   </div>
                 </div>
-                <div className="space-y-7">
-                  {STATIC_CENTER_SECTIONS.slice(0, 3).map((section) => (
-                    <div key={section.major.title} className="space-y-2">
-                      <Link
-                        href="/post"
-                        className="group relative block overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80"
-                      >
-                        <div className="relative aspect-[16/9] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
-                          <Image
-                            src={section.major.imageSrc}
-                            alt=""
-                            fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                            sizes="(min-width: 1024px) 50vw, 100vw"
-                            priority={false}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                          <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
-                            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-white/90">
-                              <span className="rounded-full bg-white/15 px-3 py-1 backdrop-blur">
-                                {section.major.tag}
-                              </span>
-                              <span className="text-white/70">{section.major.readTime}</span>
-                            </div>
-                            <h3 className="mt-3 font-display text-xl font-bold leading-snug text-white sm:text-2xl">
-                              {section.major.title}
-                            </h3>
-                          </div>
-                        </div>
-                      </Link>
-
-                      <ul className="divide-y divide-zinc-100 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:divide-zinc-800/90 dark:border-zinc-800 dark:bg-zinc-950">
-                        {section.minors.slice(0, 4).map((minor) => (
-                          <li key={minor.title} className="px-5 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900">
-                            <Link href="/post" className="group block">
-                              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                                {minor.tag}
-                              </p>
-                              <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                                {minor.title}
-                              </p>
-                              <div className="mt-2 flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-                                <span className="flex items-center gap-1">
-                                  <Clock className="h-3.5 w-3.5" aria-hidden />
-                                  {minor.readTime}
-                                </span>
-                                <span className="h-3 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
-                                <span>{minor.date}</span>
-                              </div>
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
+                <MajorCoverageStack sections={centerSections} heroSizes="(min-width: 1024px) 50vw, 100vw" />
               </section>
 
             </div>
 
             {/* Column 3 — popular / tools / picks */}
             <aside className="order-3 space-y-8 lg:order-3 lg:col-span-3">
-              <section className="rounded-sm border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
-                <div className="flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
-                  <h3 className="font-display text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                    Popular
-                  </h3>
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                    Today
-                  </span>
-                </div>
-                <ol className="mt-4 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                  {STATIC_POPULAR.slice(0, 5).map((p, idx) => (
-                    <li key={p.title} className="py-3.5 first:pt-0 last:pb-0">
-                      <Link href="/post" className="group block">
-                        <div className="flex items-start gap-3">
-                          <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-xs font-bold tabular-nums text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                            {String(idx + 1).padStart(2, "0")}
-                          </span>
-                          <div className="min-w-0">
-                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                              {p.tag}
-                            </p>
-                            <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                              {p.title}
-                            </p>
-                          </div>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ol>
-              </section>
+              <PopularRail posts={popularPosts} limit={5} viewAllHref="/post" />
 
               <section className="rounded-sm border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
                 <h3 className="border-b border-zinc-200 pb-3 font-display text-lg font-bold leading-tight tracking-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
@@ -1062,44 +847,12 @@ export default function HomePageClient({
                 </Link>
               </section>
 
-              <section className="rounded-sm border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
-                <h3 className="border-b border-zinc-200 pb-3 font-display text-base font-bold leading-snug tracking-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100 sm:text-lg">
-                  OUR TOP PICKS FOR {monthPicksUpper}
-                </h3>
-                <ul className="mt-4 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                  {[
-                    { title: "The 1% rule for big purchases", tag: "Spending", readTime: "4 min" },
-                    { title: "A simple IRA contribution ladder", tag: "Retirement", readTime: "5 min" },
-                    { title: "Debt payoff order that minimizes interest", tag: "Debt", readTime: "6 min" },
-                    { title: "Mortgage points: when they pay off", tag: "Housing", readTime: "5 min" },
-                    { title: "A two-account system that simplifies budgeting", tag: "Budgeting", readTime: "4 min" },
-                    { title: "The easiest way to start an emergency fund", tag: "Saving", readTime: "4 min" },
-                    { title: "401(k) match math: what to contribute first", tag: "Retirement", readTime: "5 min" },
-                    { title: "A simple rule for credit card payoff order", tag: "Credit", readTime: "4 min" },
-                  ].slice(0, 8).map((item) => (
-                    <li key={item.title} className="py-3 first:pt-0 last:pb-0">
-                      <Link href="/post" className="group block">
-                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                          {item.tag}
-                        </p>
-                        <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                          {item.title}
-                        </p>
-                        <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                          <Clock className="h-3.5 w-3.5" aria-hidden />
-                          {item.readTime}
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/post?type=guides"
-                  className={`mt-4 flex items-center gap-1 border-t border-zinc-100 pt-4 text-sm font-semibold dark:border-zinc-800 ${linkAccent}`}
-                >
-                  See all guides <ChevronRight className="h-4 w-4" aria-hidden />
-                </Link>
-              </section>
+              <TopPicksRail
+                posts={topPicksPosts}
+                monthLabel={monthPicksUpper}
+                limit={8}
+                viewAllHref="/post?type=guides"
+              />
             </aside>
           </div>
         </div>
@@ -1205,39 +958,7 @@ export default function HomePageClient({
             </Link>
           </div>
 
-          <div className="relative">
-            <div className="-mx-4 flex ml-1 snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0">
-              {STATIC_LATEST_CAROUSEL.map((a) => (
-                <Link
-                  key={a.id}
-                  href="/post"
-                  className="group w-[min(18rem,calc(100vw-4rem))] shrink-0 snap-start overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80 sm:w-72"
-                >
-                  <div className="relative h-40 w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
-                    <Image
-                      src={a.imageSrc}
-                      alt=""
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                      sizes="288px"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                      {a.category}
-                    </p>
-                    <h3 className="mt-2 line-clamp-2 font-display text-base font-bold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                      {a.title}
-                    </h3>
-                    <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                      <CalendarDays className="h-3.5 w-3.5" aria-hidden />
-                      <span>{a.date}</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
+          <PostCarousel posts={latestCarouselPosts} viewAllHref="/post" />
         </div>
       </section>
 
@@ -1331,89 +1052,16 @@ export default function HomePageClient({
                 LATEST ANALYSIS
               </h2>
             </div>
-            <Link href="/post?type=analysis" className={`shrink-0 text-sm font-semibold ${linkAccent}`}>
+            <Link href="/post?type=trending" className={`shrink-0 text-sm font-semibold ${linkAccent}`}>
               View all <ChevronRight className="inline h-4 w-4" aria-hidden />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
-            {/* Left (1/3): featured */}
-            <div className="lg:col-span-4">
-              <Link
-                href="/post"
-                className="group block overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80"
-              >
-                <div className="relative aspect-[3/2] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
-                  <Image
-                    src={STATIC_LATEST_ANALYSIS.featured.imageSrc}
-                    alt=""
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    sizes="(min-width: 1024px) 28rem, 100vw"
-                  />
-                </div>
-                <div className="p-5">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                    {STATIC_LATEST_ANALYSIS.featured.category}
-                  </p>
-                  <h3 className="mt-2 font-display text-xl font-bold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                    {STATIC_LATEST_ANALYSIS.featured.title}
-                  </h3>
-                  <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                    {STATIC_LATEST_ANALYSIS.featured.description}
-                  </p>
-                  <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" aria-hidden />
-                      {STATIC_LATEST_ANALYSIS.featured.readTime}
-                    </span>
-                    <span className="h-3 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
-                    <span>{STATIC_LATEST_ANALYSIS.featured.date}</span>
-                  </div>
-                </div>
-              </Link>
-            </div>
-
-            {/* Right (2/3): list */}
-            <div className="lg:col-span-8">
-              <div className="overflow-hidden bg-white dark:bg-zinc-950">
-                <ul className="grid grid-cols-1 gap-3 p-4 sm:p-5 lg:grid-cols-2">
-                  {STATIC_LATEST_ANALYSIS.items.map((item) => (
-                    <li key={item.title}>
-                      <Link
-                        href="/post"
-                        className="group block h-full rounded-sm border border-zinc-200 bg-zinc-50 p-3.5 transition-colors hover:border-blue-200 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-emerald-800/80 dark:hover:bg-zinc-800 sm:p-4"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <CategoryPills categories={[item.category]} variant="muted" max={2} />
-                            <div className="mt-2 font-display text-base font-bold leading-snug text-zinc-900 line-clamp-2 dark:text-zinc-100 sm:text-lg">
-                              {item.title}
-                            </div>
-                            <div className="mt-2 flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3.5 w-3.5" aria-hidden />
-                                {item.readTime}
-                              </span>
-                              <span className="h-3 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
-                              <span>{item.date}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/post?type=analysis"
-                  className={`flex items-center justify-between gap-2 border-t border-zinc-100 px-5 py-4 text-sm font-semibold dark:border-zinc-800 ${linkAccent}`}
-                >
-                  Browse more analysis
-                  <ChevronRight className="h-4 w-4" aria-hidden />
-                </Link>
-              </div>
-            </div>
-          </div>
+          <LatestAnalysisBlock
+            featured={analysisFeed.featured}
+            items={analysisFeed.items}
+            viewAllHref="/post?type=trending"
+          />
         </div>
       </section>
     </div>

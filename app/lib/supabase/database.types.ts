@@ -1,5 +1,7 @@
 /** Supabase-generated shape — must satisfy @supabase/postgrest-js GenericSchema (Tables + Views + Functions; Relationships on each table). */
 
+import type { ArticlePoll } from "../poll-types";
+
 export type PostRow = {
   id: string;
   title: string;
@@ -28,6 +30,8 @@ export type PostRow = {
   created_at: string;
   /** SEO slug for /post/[slug]; null allowed for legacy rows */
   slug: string | null;
+  /** FactsDeck 5-question reader poll (jsonb) */
+  poll: ArticlePoll | null;
 };
 
 export type PostInsert = Omit<PostRow, "id" | "created_at">;

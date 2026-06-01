@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, PieChart, PiggyBank, Sparkles, Target, Wallet, Compass } from "lucide-react";
+import { ArrowLeft, PieChart, PiggyBank, Sparkles, Target, Wallet, Compass, ArrowRight, DoorOpen } from "lucide-react";
 import WizardSlideShell from "../mortgage/WizardSlideShell";
 import type { BudgetGoal, BudgetJourneyAnswers } from "./budget-journey-types";
 import {
@@ -52,7 +52,20 @@ export default function BudgetQuickJourney({ onComplete, onSkipToDashboard }: Pr
   const back = useCallback(() => setStep((s) => Math.max(0, s - 1)), []);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+    <div className="relative overflow-x-hidden overflow-y-hidden bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      {/* Ambient layers */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute top-[28rem] right-[-10%] h-96 w-96 rounded-full bg-orange-100/30 blur-3xl dark:bg-cyan-950/25"
+        aria-hidden
+      />
       <div className="relative overflow-hidden border-b border-zinc-200 dark:border-zinc-800">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-24 left-1/2 h-72 w-[56rem] -translate-x-1/2 rounded-full bg-zinc-900/[0.04] blur-3xl dark:bg-white/[0.06]" />
@@ -77,9 +90,16 @@ export default function BudgetQuickJourney({ onComplete, onSkipToDashboard }: Pr
             <button
               type="button"
               onClick={onSkipToDashboard}
-              className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white underline-offset-2 hover:underline text-right"
+              className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white underline-offset-2 hover:underline text-right inline-flex items-center gap-1.5"
             >
-              Skip to full planner
+              <span className="sm:hidden flex items-center gap-2">
+                <DoorOpen className="h-4 w-4 inline-block" aria-hidden />
+                Skip
+              </span>
+              <span className="hidden sm:inline flex items-center gap-1">
+                <DoorOpen className="h-4 w-4 inline-block" aria-hidden />
+                Skip to full planner
+              </span>
             </button>
           </div>
         </div>
@@ -100,21 +120,35 @@ export default function BudgetQuickJourney({ onComplete, onSkipToDashboard }: Pr
             onSecondary={onSkipToDashboard}
           >
             <div className="relative text-center">
-              <div className="relative mx-auto mb-8 flex h-36 w-36 items-center justify-center sm:h-44 sm:w-44">
-                <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-emerald-400/35 via-sky-400/20 to-amber-300/25 blur-2xl dark:from-emerald-500/25 dark:via-sky-500/15 dark:to-amber-400/20" />
-                <div className="absolute inset-2 rounded-[2.25rem] border border-dashed border-zinc-300/60 dark:border-zinc-600/50" />
-                <div className="relative flex h-full w-full flex-col items-center justify-center gap-2 rounded-[2rem] border border-zinc-200/90 bg-white/95 shadow-2xl ring-1 ring-zinc-900/5 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-950/95 dark:ring-white/10">
-                  <div className="flex items-end justify-center gap-1">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-sm font-black tracking-tight text-white dark:bg-zinc-100 dark:text-zinc-900">
-                      FD
-                    </span>
-                    <Wallet className="h-14 w-14 text-emerald-700 dark:text-emerald-400" strokeWidth={1.2} aria-hidden />
-                    <PieChart className="h-8 w-8 text-sky-600 dark:text-sky-400" strokeWidth={1.25} aria-hidden />
+              <div className="relative mx-auto mb-10 flex items-center justify-center h-44 sm:h-48">
+                {/* Background Glow */}
+                <div className="pointer-events-none absolute -inset-8 rounded-full bg-gradient-to-br from-emerald-400/30 via-sky-400/20 to-amber-300/15 blur-3xl opacity-80 dark:from-emerald-500/25 dark:via-sky-500/20 dark:to-amber-400/15" />
+                
+                {/* Card Container */}
+                <div className="relative flex flex-row items-center justify-center gap-7 sm:gap-10 rounded-[2.1rem] border border-zinc-200 bg-white/95 shadow-xl ring-1 ring-zinc-900/5 backdrop-blur-lg dark:border-zinc-700 dark:bg-zinc-950/90 dark:ring-white/10 px-8 py-4 sm:px-12 sm:py-6">
+                  {/* Icon Row */}
+                  <div className="flex items-end justify-center gap-4 sm:gap-5">
+                    <div className="h-20 w-20 sm:h-24 sm:w-24 flex items-center justify-center rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+                      <img
+                        src="/logo.png"
+                        alt="Facts Deck"
+                        className="h-14 w-14 sm:h-16 sm:w-16 object-contain"
+                        style={{ minWidth: "3rem", minHeight: "3rem" }}
+                      />
+                    </div>
+                    <div className="h-20 w-20 sm:h-24 sm:w-24 flex items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-900 border border-emerald-200/60 dark:border-emerald-900/40">
+                      <Wallet className="h-12 w-12 sm:h-14 sm:w-14 text-emerald-700 dark:text-emerald-400" strokeWidth={1.25} aria-hidden />
+                    </div>
+                    <div className="h-20 w-20 sm:h-24 sm:w-24 flex items-center justify-center rounded-2xl bg-sky-100 dark:bg-sky-900 border border-sky-200/60 dark:border-sky-900/40">
+                      <PieChart className="h-12 w-12 sm:h-14 sm:w-14 text-sky-600 dark:text-sky-400" strokeWidth={1.3} aria-hidden />
+                    </div>
                   </div>
-                  <div className="flex gap-1" aria-hidden>
-                    <span className="h-1.5 w-6 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-                    <span className="h-1.5 w-10 rounded-full bg-emerald-500/80" />
-                    <span className="h-1.5 w-4 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+                
+                  {/* Progress style bar */}
+                  <div className="absolute left-1/2 -bottom-8 sm:-bottom-10 -translate-x-1/2 flex gap-2" aria-hidden>
+                    <span className="h-2 w-16 sm:w-20 rounded-full bg-zinc-300 dark:bg-zinc-600 opacity-80" />
+                    <span className="h-2 w-20 sm:w-28 rounded-full bg-emerald-500/80" />
+                    <span className="h-2 w-8 sm:w-10 rounded-full bg-zinc-300 dark:bg-zinc-600 opacity-80" />
                   </div>
                 </div>
               </div>

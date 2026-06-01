@@ -31,9 +31,30 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { CategoryPills, categoryLabelList } from "../lib/post-display";
+import type { Post } from "../lib/types";
 import type { CategoryWithCount, PartitionedPosts } from "../lib/posts";
 import { siteTools, type SiteTool } from "../lib/site-config";
 import { toolMatchesSearch } from "../lib/tools-utils";
+import {
+  LATEST_ARTICLES_PAGE_SIZE,
+  buildMajorSections,
+  filterPostsByCategory,
+  filterPostsBySearch,
+  flattenPartitioned,
+  getAnalysisFeed,
+  getTopPicksPosts,
+  postsForTabType,
+  sortPosts,
+} from "../lib/post-feeds";
+import {
+  CompactMajorBlocks,
+  LatestAnalysisBlock,
+  MajorCoverageStack,
+  PopularRail,
+  PostGrid,
+  TopPicksRail,
+} from "./posts/ArticleFeedUi";
+import EmptyState from "./EmptyState";
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Scale,
   BookOpen,
@@ -137,150 +158,18 @@ type ContentType = (typeof CONTENT_TYPES)[number]["key"];
 
 const POST_BASE = "/post";
 
-/** Wide column: two “Major coverage” stacks (mirrors home center sections 1–2). */
-const STATIC_POST_LEAD_LEFT_SECTIONS = [
-  {
-    major: {
-      title: "The simple portfolio rule that makes rebalancing feel automatic",
-      deck: "A clean framework for allocation bands, contribution routing, and the “when to rebalance” decision.",
-      tag: "Investing",
-      readTime: "8 min read",
-      imageSrc: "/first.jpeg",
-    },
-    minors: [
-      { title: "How to rebalance without overthinking it", tag: "Investing", readTime: "3 min", date: "Apr 9" },
-      { title: "The allocation bands rule: a practical example", tag: "Education", readTime: "4 min", date: "Apr 8" },
-      { title: "Contribution routing: the simplest automation", tag: "Planning", readTime: "3 min", date: "Apr 7" },
-      { title: "Taxable vs IRA rebalancing: what to do first", tag: "Taxes", readTime: "5 min", date: "Apr 6" },
-    ],
-  },
-  {
-    major: {
-      title: "A smarter budget: track fewer categories, get better results",
-      deck: "How to design a budget around decisions — not receipts — and still stay in control.",
-      tag: "Personal finance",
-      readTime: "7 min read",
-      imageSrc: "/budget.png",
-    },
-    minors: [
-      { title: "Budget categories you can delete today", tag: "Budgeting", readTime: "4 min", date: "Apr 9" },
-      { title: "The two-account method: checking + bills", tag: "Personal finance", readTime: "5 min", date: "Apr 8" },
-      { title: "How to set targets when income varies", tag: "Planning", readTime: "4 min", date: "Apr 7" },
-      { title: "Weekly budget review: a 10-minute routine", tag: "Habits", readTime: "3 min", date: "Apr 6" },
-    ],
-  },
-] as const;
-
-/** Middle column: three “Latest Articles” majors + “Top picks” minors each (static). */
-const STATIC_POST_LEAD_RIGHT_BLOCKS = [
-  {
-    major: {
-      category: "Investing",
-      title: "ETFs vs index funds: the difference that matters",
-      date: "Apr 9, 2026",
-      imageSrc: "/first.jpeg",
-    },
-    minors: [
-      { title: "The 1% rule for big purchases", tag: "Spending", readTime: "4 min" },
-      { title: "A simple IRA contribution ladder", tag: "Retirement", readTime: "5 min" },
-      { title: "Debt payoff order that minimizes interest", tag: "Debt", readTime: "6 min" },
-    ],
-  },
-  {
-    major: {
-      category: "Budgeting",
-      title: "A two-account system that makes budgeting stick",
-      date: "Apr 7, 2026",
-      imageSrc: "/budget.png",
-    },
-    minors: [
-      { title: "Mortgage points: when they pay off", tag: "Housing", readTime: "5 min" },
-      { title: "A two-account system that simplifies budgeting", tag: "Budgeting", readTime: "4 min" },
-      { title: "The easiest way to start an emergency fund", tag: "Saving", readTime: "4 min" },
-    ],
-  },
-  {
-    major: {
-      category: "Credit",
-      title: "Utilization: the simplest way to lift your score",
-      date: "Apr 8, 2026",
-      imageSrc: "/first.jpeg",
-    },
-    minors: [
-      { title: "401(k) match math: what to contribute first", tag: "Retirement", readTime: "5 min" },
-      { title: "A simple rule for credit card payoff order", tag: "Credit", readTime: "4 min" },
-      { title: "Hard vs soft inquiries: the simple rule", tag: "Basics", readTime: "2 min" },
-    ],
-  },
-] as const;
-
-/** Mirrors `HomePageClient` — static right-rail “Popular” */
-const STATIC_POPULAR = [
-  { title: "How compound interest actually compounds (with examples)", tag: "Education" },
-  { title: "Debt snowball vs avalanche: which wins (and when)?", tag: "Debt" },
-  { title: "What is a good savings rate in 2026?", tag: "Saving" },
-  { title: "Roth vs Traditional: a decision checklist", tag: "Retirement" },
-  { title: "DTI explained: how lenders evaluate you", tag: "Loans" },
-] as const;
-
-/** Mirrors `HomePageClient` — static “Our top picks for {month}” */
-const STATIC_TOP_PICKS_FOR_MONTH = [
-  { title: "The 1% rule for big purchases", tag: "Spending", readTime: "4 min" },
-  { title: "A simple IRA contribution ladder", tag: "Retirement", readTime: "5 min" },
-  { title: "Debt payoff order that minimizes interest", tag: "Debt", readTime: "6 min" },
-  { title: "Mortgage points: when they pay off", tag: "Housing", readTime: "5 min" },
-  { title: "A two-account system that simplifies budgeting", tag: "Budgeting", readTime: "4 min" },
-  { title: "The easiest way to start an emergency fund", tag: "Saving", readTime: "4 min" },
-  { title: "401(k) match math: what to contribute first", tag: "Retirement", readTime: "5 min" },
-  { title: "A simple rule for credit card payoff order", tag: "Credit", readTime: "4 min" },
-] as const;
-
-/** Matches home carousel bank — extra rows so paginated grid can show 16 per page. */
-const LATEST_ARTICLES_PAGE_SIZE = 16;
-const STATIC_LATEST_CAROUSEL_BANK = [
-  { category: "Investing", title: "ETFs vs index funds: the difference that matters", date: "Apr 9, 2026" },
-  { category: "Credit", title: "Utilization: the simplest way to lift your score", date: "Apr 8, 2026" },
-  { category: "Budgeting", title: "A two-account system that makes budgeting stick", date: "Apr 7, 2026" },
-  { category: "Retirement", title: "401(k) match math: what to contribute first", date: "Apr 6, 2026" },
-  { category: "Housing", title: "Mortgage points: when they pay off (and when they don’t)", date: "Apr 5, 2026" },
-] as const;
-const STATIC_LATEST_CAROUSEL = Array.from({ length: 48 }, (_, i) => {
-  const row = STATIC_LATEST_CAROUSEL_BANK[i % STATIC_LATEST_CAROUSEL_BANK.length];
-  const imageSrc = i % 2 === 0 ? "/first.jpeg" : "/budget.png";
-  return { id: `post-latest-${i}`, ...row, imageSrc };
-});
-
-/** Mirrors `HomePageClient` — LATEST ANALYSIS block */
-const STATIC_LATEST_ANALYSIS = {
-  featured: {
-    imageSrc: "/first.jpeg",
-    category: "Markets",
-    title: "The week’s big shift: why risk is back on the table",
-    description:
-      "A quick, plain-English breakdown of what changed in markets, what it means for your portfolio, and how to think about the next 30 days.",
-    readTime: "7 min read",
-    date: "Apr 9, 2026",
-  },
-  items: [
-    { category: "Stocks", title: "Earnings season: what matters more than guidance", readTime: "4 min", date: "Apr 9, 2026" },
-    { category: "Crypto", title: "Bitcoin’s move explained (without the hype)", readTime: "3 min", date: "Apr 8, 2026" },
-    { category: "Rates", title: "Bond yields: the signal hidden in the curve", readTime: "5 min", date: "Apr 8, 2026" },
-    { category: "Personal finance", title: "Budget reset: the fastest way to find $200/month", readTime: "4 min", date: "Apr 7, 2026" },
-    { category: "Strategy", title: "A 3-step checklist for buying dips responsibly", readTime: "6 min", date: "Apr 6, 2026" },
-    { category: "Retirement", title: "Contribution order: match, Roth, HSA, taxable?", readTime: "5 min", date: "Apr 6, 2026" },
-  ],
-} as const;
-
 type PostListContentProps = {
   partitioned: PartitionedPosts;
   categoriesWithCounts: CategoryWithCount[];
   sidebarTools: SiteTool[];
+  popularPosts: Post[];
 };
 
 export default function PostListContent({
   partitioned,
   categoriesWithCounts: _categoriesWithCounts,
   sidebarTools,
+  popularPosts,
 }: PostListContentProps) {
   const searchParams = useSearchParams();
   const typeParam = searchParams.get("type") || "latest";
@@ -302,17 +191,38 @@ export default function PostListContent({
     return siteTools.filter((t) => toolMatchesSearch(t, q));
   }, [searchTerm]);
 
-  const allPostsForCategories = [
-    ...partitioned.featured,
-    ...partitioned.latest,
-    ...partitioned.expertPicks,
-    ...partitioned.trending,
-    ...partitioned.guides,
-  ];
-  const allCategories = [
-    "All Categories",
-    ...Array.from(new Set(allPostsForCategories.flatMap((p) => categoryLabelList(p)))).sort(),
-  ];
+  const allPublished = useMemo(() => flattenPartitioned(partitioned), [partitioned]);
+
+  const allCategories = useMemo(
+    () => [
+      "All Categories",
+      ...Array.from(new Set(allPublished.flatMap((p) => categoryLabelList(p)))).sort(),
+    ],
+    [allPublished]
+  );
+
+  const displayPosts = useMemo(() => {
+    const base = queryParam.trim()
+      ? filterPostsBySearch(allPublished, queryParam)
+      : postsForTabType(partitioned, type);
+    return sortPosts(filterPostsByCategory(base, filterCategory), sortBy);
+  }, [allPublished, partitioned, queryParam, type, filterCategory, sortBy]);
+
+  const editorialSections = useMemo(
+    () => buildMajorSections(displayPosts, 5, 4),
+    [displayPosts]
+  );
+  const leftSections = useMemo(() => editorialSections.slice(0, 2), [editorialSections]);
+  const rightSections = useMemo(() => editorialSections.slice(2, 5), [editorialSections]);
+
+  const latestGridPool = useMemo(() => {
+    let pool = queryParam.trim() ? filterPostsBySearch(allPublished, queryParam) : allPublished;
+    pool = filterPostsByCategory(pool, filterCategory);
+    return sortPosts(pool, sortBy);
+  }, [allPublished, queryParam, filterCategory, sortBy]);
+
+  const analysisFeed = useMemo(() => getAnalysisFeed(partitioned), [partitioned]);
+  const topPicksPosts = useMemo(() => getTopPicksPosts(partitioned, 8), [partitioned]);
 
   const isArticleType = queryParam ? true : type === "featured" || type === "latest" || type === "expert-picks";
 
@@ -345,12 +255,16 @@ export default function PostListContent({
 
   const latestArticlesTotalPages = Math.max(
     1,
-    Math.ceil(STATIC_LATEST_CAROUSEL.length / LATEST_ARTICLES_PAGE_SIZE)
+    Math.ceil(latestGridPool.length / LATEST_ARTICLES_PAGE_SIZE)
   );
   const latestArticlesSlice = useMemo(() => {
     const start = (latestArticlesPage - 1) * LATEST_ARTICLES_PAGE_SIZE;
-    return STATIC_LATEST_CAROUSEL.slice(start, start + LATEST_ARTICLES_PAGE_SIZE);
-  }, [latestArticlesPage]);
+    return latestGridPool.slice(start, start + LATEST_ARTICLES_PAGE_SIZE);
+  }, [latestArticlesPage, latestGridPool]);
+
+  useEffect(() => {
+    setLatestArticlesPage(1);
+  }, [queryParam, type, filterCategory, sortBy]);
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
@@ -540,155 +454,36 @@ export default function PostListContent({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-8">
-                  <div className="min-w-0 lg:col-span-7">
-                    <div className="space-y-7">
-                      {STATIC_POST_LEAD_LEFT_SECTIONS.map((section) => (
-                        <div key={section.major.title} className="space-y-2">
-                          <Link
-                            href={POST_BASE}
-                            className="group relative block overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80"
-                          >
-                            <div className="relative aspect-[16/9] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
-                              <Image
-                                src={section.major.imageSrc}
-                                alt={section.major.title}
-                                fill
-                                className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                                sizes="(min-width: 1024px) 42vw, 100vw"
-                                priority={false}
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                              <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
-                                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-white/90">
-                                  <span className="rounded-full bg-white/15 px-3 py-1 backdrop-blur">
-                                    {section.major.tag}
-                                  </span>
-                                  <span className="text-white/70">{section.major.readTime}</span>
-                                </div>
-                                <h3 className="mt-3 font-display text-xl font-bold leading-snug text-white sm:text-2xl">
-                                  {section.major.title}
-                                </h3>
-                              </div>
-                            </div>
-                          </Link>
-
-                          <ul className="divide-y divide-zinc-100 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:divide-zinc-800/90 dark:border-zinc-800 dark:bg-zinc-950">
-                            {section.minors.map((minor) => (
-                              <li key={minor.title} className="px-5 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900">
-                                <Link href={POST_BASE} className="group block">
-                                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                                    {minor.tag}
-                                  </p>
-                                  <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                                    {minor.title}
-                                  </p>
-                                  <div className="mt-2 flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-                                    <span className="flex items-center gap-1">
-                                      <Clock className="h-3.5 w-3.5" aria-hidden />
-                                      {minor.readTime}
-                                    </span>
-                                    <span className="h-3 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
-                                    <span>{minor.date}</span>
-                                  </div>
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                      <AluxPostListLeadCard />
+                {displayPosts.length === 0 ? (
+                  <EmptyState
+                    iconKey="FileText"
+                    title="No articles found"
+                    description="Try another section, category, or search term."
+                    compact
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-8">
+                    <div className="min-w-0 space-y-8 lg:col-span-5">
+                      <CompactMajorBlocks sections={rightSections} />
+                    </div>
+                    <div className="min-w-0 lg:col-span-7">
+                      <div className="space-y-7">
+                        <MajorCoverageStack
+                          sections={leftSections}
+                          heroSizes="(min-width: 1024px) 42vw, 100vw"
+                        />
+                        <AluxPostListLeadCard />
+                      </div>
                     </div>
                   </div>
-
-                  <div className="min-w-0 space-y-8 lg:col-span-5">
-                    {STATIC_POST_LEAD_RIGHT_BLOCKS.map((block) => (
-                      <div key={block.major.title} className="space-y-2">
-                        <Link
-                          href={POST_BASE}
-                          className="group block overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80"
-                        >
-                          <div className="relative h-40 w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
-                            <Image
-                              src={block.major.imageSrc}
-                              alt={block.major.title}
-                              fill
-                              className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                              sizes="(min-width: 1024px) 320px, 100vw"
-                            />
-                          </div>
-                          <div className="p-4">
-                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                              {block.major.category}
-                            </p>
-                            <h3 className="mt-2 line-clamp-2 font-display text-base font-bold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                              {block.major.title}
-                            </h3>
-                            <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                              <CalendarDays className="h-3.5 w-3.5" aria-hidden />
-                              <span>{block.major.date}</span>
-                            </div>
-                          </div>
-                        </Link>
-                        <ul className="divide-y divide-zinc-100 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:divide-zinc-800/90 dark:border-zinc-800 dark:bg-zinc-950">
-                          {block.minors.map((row) => (
-                            <li key={row.title} className="px-5 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900">
-                              <Link href={`${POST_BASE}?type=guides`} className="group block">
-                                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                                  {row.tag}
-                                </p>
-                                <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                                  {row.title}
-                                </p>
-                                <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                                  <Clock className="h-3.5 w-3.5" aria-hidden />
-                                  {row.readTime}
-                                </div>
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                )}
               </section>
             ) : null}
           </div>
 
           {/* Column 2 — right rail (same as Home column 3) */}
           <aside className="order-2 space-y-8 lg:order-2 lg:col-span-3">
-            <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
-              <div className="flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
-                <h3 className="font-display text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                  Popular
-                </h3>
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                  Today
-                </span>
-              </div>
-              <ol className="mt-4 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                {STATIC_POPULAR.slice(0, 5).map((p, idx) => (
-                  <li key={p.title} className="py-3.5 first:pt-0 last:pb-0">
-                    <Link href={POST_BASE} className="group block">
-                      <div className="flex items-start gap-3">
-                        <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-xs font-bold tabular-nums text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                          {String(idx + 1).padStart(2, "0")}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                            {p.tag}
-                          </p>
-                          <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                            {p.title}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ol>
-            </section>
+            <PopularRail posts={popularPosts} limit={5} viewAllHref={POST_BASE} />
 
             <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
               <h3 className="border-b border-zinc-200 pb-3 font-display text-lg font-bold leading-tight tracking-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
@@ -756,35 +551,12 @@ export default function PostListContent({
               </Link>
             </section>
 
-            <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
-              <h3 className="border-b border-zinc-200 pb-3 font-display text-base font-bold leading-snug tracking-tight text-zinc-900 dark:border-zinc-800 dark:text-zinc-100 sm:text-lg">
-                OUR TOP PICKS FOR {monthPicksUpper}
-              </h3>
-              <ul className="mt-4 space-y-0 divide-y divide-zinc-100 dark:divide-zinc-800/90">
-                {STATIC_TOP_PICKS_FOR_MONTH.slice(0, 8).map((item) => (
-                  <li key={item.title} className="py-3 first:pt-0 last:pb-0">
-                    <Link href={`${POST_BASE}?type=guides`} className="group block">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                        {item.tag}
-                      </p>
-                      <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                        {item.title}
-                      </p>
-                      <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                        <Clock className="h-3.5 w-3.5" aria-hidden />
-                        {item.readTime}
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href={`${POST_BASE}?type=guides`}
-                className={`mt-4 flex items-center gap-1 border-t border-zinc-100 pt-4 text-sm font-semibold dark:border-zinc-800 ${linkAccent}`}
-              >
-                See all guides <ChevronRight className="h-4 w-4" aria-hidden />
-              </Link>
-            </section>
+            <TopPicksRail
+              posts={topPicksPosts}
+              monthLabel={monthPicksUpper}
+              limit={8}
+              viewAllHref={`${POST_BASE}?type=guides`}
+            />
           </aside>
         </div>
       </div>
@@ -802,87 +574,16 @@ export default function PostListContent({
                 LATEST ANALYSIS
               </h2>
             </div>
-            <Link href={`${POST_BASE}?type=analysis`} className={`shrink-0 text-sm font-semibold ${linkAccent}`}>
+            <Link href={`${POST_BASE}?type=trending`} className={`shrink-0 text-sm font-semibold ${linkAccent}`}>
               View all <ChevronRight className="inline h-4 w-4" aria-hidden />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
-            <div className="lg:col-span-4">
-              <Link
-                href={POST_BASE}
-                className="group block overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80"
-              >
-                <div className="relative aspect-[3/2] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
-                  <Image
-                    src={STATIC_LATEST_ANALYSIS.featured.imageSrc}
-                    alt=""
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    sizes="(min-width: 1024px) 28rem, 100vw"
-                  />
-                </div>
-                <div className="p-5">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                    {STATIC_LATEST_ANALYSIS.featured.category}
-                  </p>
-                  <h3 className="mt-2 font-display text-xl font-bold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                    {STATIC_LATEST_ANALYSIS.featured.title}
-                  </h3>
-                  <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                    {STATIC_LATEST_ANALYSIS.featured.description}
-                  </p>
-                  <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" aria-hidden />
-                      {STATIC_LATEST_ANALYSIS.featured.readTime}
-                    </span>
-                    <span className="h-3 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
-                    <span>{STATIC_LATEST_ANALYSIS.featured.date}</span>
-                  </div>
-                </div>
-              </Link>
-            </div>
-
-            <div className="lg:col-span-8">
-              <div className="overflow-hidden bg-white dark:bg-zinc-950">
-                <ul className="grid grid-cols-1 gap-3 p-4 sm:p-5 lg:grid-cols-2">
-                  {STATIC_LATEST_ANALYSIS.items.map((item) => (
-                    <li key={item.title}>
-                      <Link
-                        href={POST_BASE}
-                        className="group block h-full rounded-sm border border-zinc-200 bg-zinc-50 p-3.5 transition-colors hover:border-blue-200 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-emerald-800/80 dark:hover:bg-zinc-800 sm:p-4"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <CategoryPills categories={[item.category]} variant="muted" max={2} />
-                            <div className="mt-2 font-display text-base font-bold leading-snug text-zinc-900 line-clamp-2 dark:text-zinc-100 sm:text-lg">
-                              {item.title}
-                            </div>
-                            <div className="mt-2 flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3.5 w-3.5" aria-hidden />
-                                {item.readTime}
-                              </span>
-                              <span className="h-3 w-px bg-zinc-200 dark:bg-zinc-700" aria-hidden />
-                              <span>{item.date}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href={`${POST_BASE}?type=analysis`}
-                  className={`flex items-center justify-between gap-2 border-t border-zinc-100 px-5 py-4 text-sm font-semibold dark:border-zinc-800 ${linkAccent}`}
-                >
-                  Browse more analysis
-                  <ChevronRight className="h-4 w-4" aria-hidden />
-                </Link>
-              </div>
-            </div>
-          </div>
+          <LatestAnalysisBlock
+            featured={analysisFeed.featured}
+            items={analysisFeed.items}
+            viewAllHref={`${POST_BASE}?type=trending`}
+          />
         </div>
       </section>
 
@@ -899,7 +600,7 @@ export default function PostListContent({
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
               <p className="text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
-                Page {latestArticlesPage} of {latestArticlesTotalPages} · {STATIC_LATEST_CAROUSEL.length} total
+                Page {latestArticlesPage} of {latestArticlesTotalPages} · {latestGridPool.length} total
               </p>
               <Link href={POST_BASE} className={`shrink-0 text-sm font-semibold ${linkAccent}`}>
                 View all <ChevronRight className="inline h-4 w-4" aria-hidden />
@@ -907,44 +608,14 @@ export default function PostListContent({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-5">
-            {latestArticlesSlice.map((a) => (
-              <Link
-                key={a.id}
-                href={POST_BASE}
-                className="group flex h-full flex-col overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm transition-colors hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-emerald-800/80"
-              >
-                <div className="relative h-40 w-full shrink-0 overflow-hidden bg-zinc-100 dark:bg-zinc-900">
-                  <Image
-                    src={a.imageSrc}
-                    alt=""
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col p-4">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500">
-                    {a.category}
-                  </p>
-                  <h3 className="mt-2 line-clamp-2 flex-1 font-display text-base font-bold leading-snug text-zinc-900 transition-colors group-hover:text-blue-800 dark:text-zinc-100 dark:group-hover:text-cyan-300">
-                    {a.title}
-                  </h3>
-                  <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                    <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                    <span>{a.date}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <PostGrid posts={latestArticlesSlice} />
 
           {latestArticlesTotalPages > 1 ? (
             <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-zinc-100 pt-8 dark:border-zinc-800 sm:flex-row">
               <p className="text-sm text-zinc-600 dark:text-zinc-300">
                 Showing {(latestArticlesPage - 1) * LATEST_ARTICLES_PAGE_SIZE + 1}–
-                {Math.min(latestArticlesPage * LATEST_ARTICLES_PAGE_SIZE, STATIC_LATEST_CAROUSEL.length)} of{" "}
-                {STATIC_LATEST_CAROUSEL.length}
+                {Math.min(latestArticlesPage * LATEST_ARTICLES_PAGE_SIZE, latestGridPool.length)} of{" "}
+                {latestGridPool.length}
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <button

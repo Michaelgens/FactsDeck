@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { getPartitionedPosts, getCategoriesWithCounts } from "../lib/posts";
+import { getPublishedPosts, getCategoriesWithCounts, partitionPostsBySection } from "../lib/posts";
+import { SIDEBAR_RAIL_MAX, sortByViewsDesc } from "../lib/post-feeds";
 import PostListContent from "../components/PostListContent";
 import PostListLoading from "./loading";
 import { siteTools } from "../lib/site-config";
@@ -33,10 +34,12 @@ export const metadata: Metadata = {
 };
 
 export default async function PostListPage() {
-  const [partitioned, categoriesWithCounts] = await Promise.all([
-    getPartitionedPosts(),
+  const [published, categoriesWithCounts] = await Promise.all([
+    getPublishedPosts(),
     getCategoriesWithCounts(),
   ]);
+  const partitioned = partitionPostsBySection(published);
+  const popularPosts = sortByViewsDesc(published).slice(0, SIDEBAR_RAIL_MAX);
   const sidebarTools = pickDailyTools(siteTools, 5, "post-list-sidebar");
 
   return (
@@ -45,6 +48,7 @@ export default async function PostListPage() {
         partitioned={partitioned}
         categoriesWithCounts={categoriesWithCounts}
         sidebarTools={sidebarTools}
+        popularPosts={popularPosts}
       />
     </Suspense>
   );

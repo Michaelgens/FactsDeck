@@ -426,15 +426,15 @@ export default function AdvancedBudgetPlanner({
             </Link>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          <div className="mt-7 sm:mt-8 grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 items-start">
             <div className="lg:col-span-2">
               <div className="flex items-center gap-3">
                 <span className={tdIconTile}>
                   <Wallet className="h-6 w-6" />
                 </span>
                 <div>
-                  <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-                    {FACTS_DECK_BUDGET_PLANNER}
+                  <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight">
+                    <span className="bg-gradient-to-r from-sky-700 via-indigo-700 to-violet-700 bg-clip-text text-transparent dark:from-emerald-300 dark:via-cyan-300 dark:to-sky-300">{FACTS_DECK_BUDGET_PLANNER}</span>
                   </h1>
                   <p className="text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
                     Build a budget that actually survives real life: buffer, buckets, and a clear “what next”.
@@ -454,11 +454,31 @@ export default function AdvancedBudgetPlanner({
                 </button>
               </div>
 
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3" data-tour="budget-stats">
-                {headerStat("Monthly income", money(incomeMonthly), "After-tax is best")}
-                {headerStat("Available (after buffer)", money(totals.available), `${pct(bufferPct)} buffer = ${money(totals.buffer)}`)}
-                {headerStat("Remaining", money(totals.remaining), totals.remaining >= 0 ? "Unassigned cash" : "Over budget")}
+              <div
+                className="mt-5 sm:mt-6 grid grid-cols-2 grid-rows-2 gap-3 sm:grid-cols-3 sm:grid-rows-1"
+                data-tour="budget-stats"
+              >
+                {/* Top row: two stats in mobile, three in desktop */}
+                <div className="col-span-1 row-start-1 row-end-2">
+                  {headerStat("Monthly income", money(incomeMonthly), "After-tax is best")}
+                </div>
+                <div className="col-span-1 row-start-1 row-end-2">
+                  {headerStat(
+                    "Available (after buffer)",
+                    money(totals.available),
+                    `${pct(bufferPct)} buffer = ${money(totals.buffer)}`
+                  )}
+                </div>
+                {/* Bottom row: spans both columns in mobile, single column in desktop */}
+                <div className="col-span-2 row-start-2 row-end-3 flex justify-center sm:col-span-1 sm:row-start-1 sm:row-end-2 sm:col-start-3 sm:justify-normal">
+                  {headerStat(
+                    "Remaining",
+                    money(totals.remaining),
+                    totals.remaining >= 0 ? "Unassigned cash" : "Over budget"
+                  )}
+                </div>
               </div>
+         
             </div>
 
             <div className={tdPanelLg} data-tour="budget-style">
@@ -549,7 +569,7 @@ export default function AdvancedBudgetPlanner({
 
           <ToolDashboardTestCta toolSlug="budget-planner" testLabel={FACTS_DECK_BUDGET_PLANNER} />
 
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6" data-tour="budget-buckets">
+          <div className="mt-7 sm:mt-8 grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6" data-tour="budget-buckets">
             <div className="lg:col-span-2 space-y-6">
               {(Object.keys(GROUP_META) as ExpenseGroup[]).map((group) => {
                 const list = items.filter((i) => i.group === group);
@@ -569,7 +589,7 @@ export default function AdvancedBudgetPlanner({
                 return (
                   <section
                     key={group}
-                    className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40"
+                    className="rounded-3xl border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40"
                     data-tour="budget-bucket-card"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -602,7 +622,7 @@ export default function AdvancedBudgetPlanner({
                       <button
                         type="button"
                         onClick={() => addItem(group)}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-2xl bg-zinc-900 text-white font-bold hover:bg-zinc-800 transition-colors dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                        className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 rounded-2xl bg-zinc-900 text-white font-bold hover:bg-zinc-800 transition-colors dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
                         data-tour="budget-add-item"
                       >
                         <Plus className="h-4 w-4" />
@@ -634,7 +654,7 @@ export default function AdvancedBudgetPlanner({
                           <button
                             type="button"
                             onClick={() => removeItem(it.id)}
-                            className="inline-flex items-center justify-center h-10 w-10 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-colors"
+                            className="inline-flex items-center justify-center h-10 w-10 justify-self-end rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-colors"
                             aria-label="Remove item"
                             title="Remove item"
                           >

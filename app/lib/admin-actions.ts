@@ -5,6 +5,8 @@ import { createServerClient, isSupabaseConfigured } from "./supabase/server";
 import { slugify } from "./slug";
 import { postPublicPath } from "./post-url";
 import { getPostById } from "./posts";
+import type { ArticlePoll } from "./poll-types";
+import { serializePollForDb } from "./poll-types";
 
 export type PostFormData = {
   title: string;
@@ -30,6 +32,7 @@ export type PostFormData = {
   expertPicks: boolean;
   trending: boolean;
   guides: boolean;
+  poll?: ArticlePoll | null;
 };
 
 export type PostFlags = {
@@ -124,6 +127,7 @@ export async function createPost(
     expert_picks: Boolean(data.expertPicks),
     trending: Boolean(data.trending),
     guides: Boolean(data.guides),
+    poll: serializePollForDb(data.poll),
   };
 
   const { error } = await supabase.from("posts").insert(row);
@@ -177,6 +181,7 @@ export async function updatePost(
     expert_picks: Boolean(data.expertPicks),
     trending: Boolean(data.trending),
     guides: Boolean(data.guides),
+    poll: serializePollForDb(data.poll),
   };
 
   if (contentUrl) {

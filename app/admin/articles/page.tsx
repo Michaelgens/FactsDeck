@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { FileText, Plus } from "lucide-react";
 import { getAllPostsWithLoadError } from "../../lib/posts";
+import { partitionPostsBySection } from "../../lib/posts";
 import AdminArticleRow from "./AdminArticleRow";
 import AdminFilterBar from "../components/AdminFilterBar";
 import AdminPagination from "../components/AdminPagination";
+import ArticlesSubnav from "../components/ArticlesSubnav";
+import { AdminPageHeader, KpiCard } from "../components/admin-ui";
+import { admin } from "../components/admin-theme";
+import AutoAllocateArticles from "../components/AutoAllocateArticles";
 
 const LIMITS = [10, 50, 100] as const;
 
@@ -44,6 +49,8 @@ export default async function AdminArticlesPage({
   const paginated = filtered.slice(start, start + limit);
 
   const categories = [...new Set(allPosts.flatMap((p) => p.categories ?? []))].filter(Boolean).sort();
+  const published = allPosts.filter((p) => p.published);
+  const partitioned = partitionPostsBySection(published);
 
   return (
     <div>
@@ -57,25 +64,49 @@ export default async function AdminArticlesPage({
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="font-display text-2xl md:text-3xl font-bold text-slate-900 dark:text-dark-100">
-            Articles
-          </h1>
-          <p className="text-slate-600 dark:text-purple-300 mt-1">
-            Manage content. Toggle Featured, Expert Pick, Trending, Popular Guide per article.
-          </p>
-        </div>
+      <AdminPageHeader
+        title="Content management"
+        description="Full CRUD for articles powering Home, Post list, and Post detail. Set placement flags, SEO, and visibility."
+      >
         <Link
           href="/admin/articles/new"
-          className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-accent-600 text-white px-4 py-2 rounded-xl font-bold hover:from-purple-700 hover:to-accent-700 transition-all shrink-0"
+          className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-accent-600 text-white px-4 py-2.5 rounded-xl font-bold hover:from-purple-700 hover:to-accent-700 transition-all shrink-0 text-sm"
         >
           <Plus className="h-5 w-5" />
-          New Article
+          New article
         </Link>
+      </AdminPageHeader>
+
+      <ArticlesSubnav />
+
+      <div className="mb-6">
+        <AutoAllocateArticles variant="panel" />
       </div>
 
-      <div className="rounded-2xl bg-white dark:bg-dark-800/50 border border-slate-200 dark:border-purple-500/30 overflow-hidden">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <KpiCard name="Total" value={String(allPosts.length)} icon={FileText} gradient="from-purple-500 to-purple-600" />
+        <KpiCard
+          name="Published"
+          value={String(published.length)}
+          sub={`${allPosts.length - published.length} hidden`}
+          icon={FileText}
+          gradient="from-emerald-500 to-emerald-600"
+        />
+        <KpiCard
+          name="Featured"
+          value={String(partitioned.featured.length)}
+          icon={FileText}
+          gradient="from-violet-500 to-violet-600"
+        />
+        <KpiCard
+          name="Expert picks"
+          value={String(partitioned.expertPicks.length)}
+          icon={FileText}
+          gradient="from-amber-500 to-amber-600"
+        />
+      </div>
+
+      <div className={`rounded-2xl ${admin.card} overflow-hidden`}>
         <AdminFilterBar
           action="/admin/articles"
           searchName="q"
@@ -106,13 +137,13 @@ export default async function AdminArticlesPage({
 
         {paginated.length === 0 ? (
           <div className="p-12 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mx-auto mb-4">
-              <FileText className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+            <div className="w-16 h-16 rounded-2xl bg-purple-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+              <FileText className="h-8 w-8 text-purple-600 dark:text-violet-400" />
             </div>
-            <h3 className="font-display font-bold text-slate-900 dark:text-dark-100 mb-2">
+            <h3 className="font-display font-bold text-slate-900 dark:text-zinc-100 mb-2">
               {q || category || status ? "No matching articles" : "No articles yet"}
             </h3>
-            <p className="text-slate-600 dark:text-purple-300 mb-6">
+            <p className="text-slate-600 dark:text-zinc-400 mb-6">
               {q || category || status
                 ? "Try different filters."
                 : "Add your first article in Supabase."}
@@ -120,7 +151,7 @@ export default async function AdminArticlesPage({
             {(q || category || status) && (
               <Link
                 href="/admin/articles"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 transition-colors text-sm"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 dark:bg-violet-600 text-white font-semibold hover:bg-purple-700 dark:hover:bg-violet-500 transition-colors text-sm"
               >
                 Clear filters
               </Link>

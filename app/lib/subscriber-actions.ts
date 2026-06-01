@@ -103,3 +103,32 @@ export async function getSubscribers(): Promise<Subscriber[]> {
     createdAt: String(row.created_at),
   }));
 }
+
+/** Remove a subscriber (admin). */
+export async function deleteSubscriber(id: string): Promise<{ ok: boolean; error?: string }> {
+  if (!id?.trim()) return { ok: false, error: "Invalid subscriber" };
+  if (!isSupabaseConfigured()) return { ok: false, error: "Database not configured" };
+
+  const supabase = createServerClient();
+  const { error } = await supabase.from("subscribers").delete().eq("id", id);
+
+  if (error) {
+    console.error("[deleteSubscriber]", error.message);
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/admin/users");
+  revalidatePath("/admin");
+  revalidatePath("/admin/analytics");
+  return { ok: true };
+}
+
+/** CSV export for admin download (server-generated string). */
+export async function exportSubscribersCsv(): Promise<string> {
+  const rows = await getSubscribers();
+  const header = "email,subscribed_at\n";
+  const body = rows
+    .map((s) => `"${s.email.replace(/"/g, '""')}","${s.createdAt}"`)
+    .join("\n");
+  return header + body;
+}

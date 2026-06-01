@@ -1,6 +1,20 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { getPostBySlugOrId, getPostContent } from "../../lib/posts";
+import {
+  getPostBySlugOrId,
+  getPostContent,
+  getPublishedPosts,
+  getRelatedPosts,
+  partitionPostsBySection,
+} from "../../lib/posts";
+import {
+  READ_MORE_MAX,
+  RELATED_CAROUSEL_MAX,
+  SIDEBAR_RAIL_MAX,
+  getTopPicksPosts,
+  sortByPublishDateDesc,
+  sortByViewsDesc,
+} from "../../lib/post-feeds";
 import PostPageView from "../../components/PostPageView";
 import { SITE_URL, absoluteUrl } from "../../lib/seo";
 import { postPublicPath } from "../../lib/post-url";
@@ -90,6 +104,21 @@ export default async function PostPage({
 
   const content = await getPostContent(post.content, post.contentUrl);
 
+  const published = await getPublishedPosts();
+  const partitioned = partitionPostsBySection(published, post.id);
+  const popularPosts = sortByViewsDesc(published.filter((p) => p.id !== post.id)).slice(
+    0,
+    SIDEBAR_RAIL_MAX
+  );
+  const topPicksPosts = getTopPicksPosts(partitioned, SIDEBAR_RAIL_MAX);
+  const relatedPosts = await getRelatedPosts(
+    post.id,
+    post.categories,
+    post.tags,
+    RELATED_CAROUSEL_MAX
+  );
+  const readMorePosts = sortByPublishDateDesc(partitioned.latest).slice(0, READ_MORE_MAX);
+
   const sidebarTools = pickDailyTools(siteTools, 5, `post-article-${post.id}`);
 
   const canonicalUrl = canonicalPostUrl(post);
@@ -171,7 +200,16 @@ export default async function PostPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <PostPageView article={post} content={content} from={from} sidebarTools={sidebarTools} />
+      <PostPageView
+        article={post}
+        content={content}
+        from={from}
+        sidebarTools={sidebarTools}
+        popularPosts={popularPosts}
+        topPicksPosts={topPicksPosts}
+        relatedPosts={relatedPosts}
+        readMorePosts={readMorePosts}
+      />
     </>
   );
 }

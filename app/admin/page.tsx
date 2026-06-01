@@ -1,15 +1,31 @@
+import Link from "next/link";
 import {
   FileText,
-  Users,
   Eye,
+  Heart,
   Bookmark,
+  Users,
+  PenLine,
   BarChart3,
-  ArrowUpRight,
+  Plus,
+  Settings,
+  TrendingUp,
+  Sparkles,
+  Database,
 } from "lucide-react";
-import Link from "next/link";
-import { getAdminStats, formatCount } from "../lib/admin";
-import { getAllPostsWithLoadError } from "../lib/posts";
+import { getDashboardInsights, formatCount } from "../lib/admin-insights";
 import { postPublicPath } from "../lib/post-url";
+import {
+  AdminPageHeader,
+  AdminAlert,
+  KpiCard,
+  AdminPanel,
+  PlacementPill,
+  RankedListRow,
+} from "./components/admin-ui";
+import { MiniSparkline } from "./components/admin-charts";
+import { isSupabaseConfigured } from "../lib/supabase/server";
+import { HOME_LATEST_CAROUSEL, PLACEMENT_PRIORITY, PLACEMENT_SLOTS } from "../lib/placement-labels";
 
 function timeAgo(dateStr: string): string {
   const d = new Date(dateStr);
@@ -18,142 +34,272 @@ function timeAgo(dateStr: string): string {
   const diffMins = Math.floor(diffMs / 60_000);
   const diffHours = Math.floor(diffMs / 3_600_000);
   const diffDays = Math.floor(diffMs / 86_400_000);
-  if (diffMins < 60) return diffMins <= 1 ? "Just now" : `${diffMins} mins ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
-  if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
+  if (diffMins < 60) return diffMins <= 1 ? "Just now" : `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
   return d.toLocaleDateString();
 }
 
 export default async function AdminDashboardPage() {
-  const [stats, postsBundle] = await Promise.all([getAdminStats(), getAllPostsWithLoadError()]);
-  const { posts: allPosts, loadError: postsLoadError } = postsBundle;
-  const latestPosts = allPosts.slice(0, 5);
+  const data = await getDashboardInsights();
+  const { stats, placement, topByViews, recentPosts, subscriberSparkline } = data;
 
-  const statCards = [
-    { name: "Total Articles", value: String(stats.totalArticles), icon: FileText, href: "/admin/articles", color: "from-purple-500 to-purple-600" },
-    { name: "Total Views", value: formatCount(stats.totalViews), icon: Eye, href: "/admin/analytics", color: "from-accent-500 to-accent-600" },
-    { name: "Total Likes", value: formatCount(stats.totalLikes), icon: Users, href: "/admin/analytics", color: "from-emerald-500 to-emerald-600" },
-    { name: "Total Bookmarks", value: formatCount(stats.totalBookmarks), icon: Bookmark, href: "/admin/articles", color: "from-amber-500 to-amber-600" },
-  ];
+  const publishRate =
+    stats.totalArticles > 0
+      ? Math.round((data.publishedCount / stats.totalArticles) * 100)
+      : 0;
 
-  const recentActivity = latestPosts.map((p) => ({
-    action: "Article",
-    title: p.title,
-    time: timeAgo(p.publishDate),
-    id: p.id,
-    href: postPublicPath(p),
-  }));
   return (
     <div>
-      {postsLoadError && (
-        <div
-          className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-100"
-          role="alert"
-        >
-          <p className="font-semibold">Could not load articles from the database</p>
-          <p className="mt-1 text-amber-900/90 dark:text-amber-200/90">{postsLoadError}</p>
-        </div>
-      )}
+      {data.postsLoadError ? (
+        <AdminAlert title="Could not load articles from the database">{data.postsLoadError}</AdminAlert>
+      ) : null}
 
-      <div className="mb-8">
-        <h1 className="font-display text-2xl md:text-3xl font-bold text-slate-900 dark:text-dark-100">
-          Dashboard
-        </h1>
-        <p className="text-slate-600 dark:text-purple-300 mt-1">
-          Overview of your Facts Deck admin
-        </p>
+      <AdminPageHeader
+        title="Executive Dashboard"
+        description="Audience growth, feed placement counts, and recent articles — your editorial command center for Home, Post list, and article detail."
+      >
+        <Link
+          href="/admin/articles/new"
+          className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-accent-600 text-white px-4 py-2.5 rounded-xl font-bold hover:from-purple-700 hover:to-accent-700 transition-all text-sm"
+        >
+          <Plus className="h-4 w-4" />
+          New article
+        </Link>
+        <Link
+          href="/admin/analytics"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 font-semibold hover:bg-purple-50 dark:hover:bg-zinc-800 text-sm"
+        >
+          <BarChart3 className="h-4 w-4" />
+          Analytics
+        </Link>
+      </AdminPageHeader>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        <KpiCard
+          name="Published articles"
+          value={String(data.publishedCount)}
+          sub={`${data.draftCount} drafts · ${publishRate}% live`}
+          icon={FileText}
+          href="/admin/articles"
+          gradient="from-purple-500 to-purple-600"
+        />
+        <KpiCard
+          name="Total views"
+          value={formatCount(stats.totalViews)}
+          sub="Across all articles (Supabase)"
+          icon={Eye}
+          href="/admin/analytics"
+          gradient="from-accent-500 to-accent-600"
+        />
+        <KpiCard
+          name="Newsletter subscribers"
+          value={formatCount(data.subscriberTotal)}
+          icon={Users}
+          href="/admin/users"
+          gradient="from-emerald-500 to-emerald-600"
+          trend={{
+            label: `+${data.subscribersLast7Days} this week · +${data.subscribersLast30Days} this month`,
+            positive: data.subscribersLast7Days > 0,
+          }}
+        />
+        <KpiCard
+          name="Engagement"
+          value={formatCount(stats.totalLikes)}
+          sub={`${formatCount(stats.totalBookmarks)} bookmarks`}
+          icon={Heart}
+          href="/admin/analytics"
+          gradient="from-amber-500 to-amber-600"
+        />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {statCards.map((stat) => {
-          const Icon = stat.icon;
-          return (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <AdminPanel
+          title="Editorial placement buckets"
+          description="How many published articles sit in each slot (one bucket per article)"
+          className="lg:col-span-1"
+          action={
             <Link
-              key={stat.name}
-              href={stat.href}
-              className="group relative overflow-hidden rounded-2xl bg-white dark:bg-dark-800/50 border border-slate-200 dark:border-purple-500/30 p-6 hover:shadow-xl hover:border-purple-200 dark:hover:border-purple-500/50 transition-all"
+              href="/admin/articles/placements"
+              className="text-sm font-semibold text-purple-600 dark:text-violet-400 hover:underline"
             >
-              <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${stat.color} opacity-10 rounded-bl-full`} />
-              <div className="relative flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-slate-500 dark:text-purple-400 font-medium">
-                    {stat.name}
-                  </p>
-                  <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-dark-100">
-                    {stat.value}
-                  </p>
-                </div>
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}>
-                  <Icon className="h-6 w-6 text-white" />
-                </div>
-              </div>
-              <ArrowUpRight className="absolute bottom-4 right-4 h-4 w-4 text-slate-300 dark:text-purple-600 group-hover:text-purple-500 dark:group-hover:text-purple-400 transition-colors" />
+              Placement guide →
             </Link>
-          );
-        })}
+          }
+        >
+          {PLACEMENT_SLOTS.map((slot) => (
+            <PlacementPill
+              key={slot.key}
+              label={slot.label}
+              count={placement[slot.key]}
+              color={slot.color}
+            />
+          ))}
+          <p className="mt-3 text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+            Priority: {PLACEMENT_PRIORITY}. The count for <strong>Latest slot</strong> is articles with{" "}
+            <em>no</em> Featured / Expert / Trending / Guide flags — not the number of cards in a carousel.
+          </p>
+          <div className="mt-3 rounded-xl border border-sky-200/80 bg-sky-50/80 dark:border-sky-800/50 dark:bg-sky-950/30 px-3 py-2.5 text-xs text-sky-950 dark:text-sky-100 leading-relaxed">
+            <p className="font-semibold">{HOME_LATEST_CAROUSEL.title}</p>
+            <p className="mt-1 text-sky-900/90 dark:text-sky-200/90">
+              <strong>Where:</strong> {HOME_LATEST_CAROUSEL.location}.{" "}
+              {HOME_LATEST_CAROUSEL.behavior}
+            </p>
+          </div>
+        </AdminPanel>
+
+        <AdminPanel
+          title="Subscriber momentum"
+          description="Footer newsletter signups (last 14 days)"
+          className="lg:col-span-1"
+          action={
+            <Link href="/admin/users" className="text-sm font-semibold text-purple-600 dark:text-violet-400 hover:underline">
+              Manage →
+            </Link>
+          }
+        >
+          <p className="text-3xl font-bold text-slate-900 dark:text-zinc-100 mb-1">{data.subscriberTotal}</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mb-4">Total active subscribers</p>
+          <MiniSparkline values={subscriberSparkline} className="h-14" />
+          <div className="mt-4 grid grid-cols-2 gap-3 text-center">
+            <div className="rounded-xl bg-slate-50 dark:bg-zinc-800/80 py-3 px-2">
+              <p className="text-lg font-bold text-slate-900 dark:text-zinc-100">{data.subscribersLast7Days}</p>
+              <p className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-zinc-400 font-semibold">7 days</p>
+            </div>
+            <div className="rounded-xl bg-slate-50 dark:bg-zinc-800/80 py-3 px-2">
+              <p className="text-lg font-bold text-slate-900 dark:text-zinc-100">{data.subscribersLast30Days}</p>
+              <p className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-zinc-400 font-semibold">30 days</p>
+            </div>
+          </div>
+        </AdminPanel>
+
+        <AdminPanel title="System status" description="Infrastructure at a glance" className="lg:col-span-1">
+          <ul className="space-y-3">
+            <li className="flex items-center gap-3 text-sm">
+              <Database className="h-4 w-4 text-purple-500 shrink-0" />
+              <span className="text-slate-700 dark:text-zinc-200 flex-1">Supabase</span>
+              <span
+                className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                  isSupabaseConfigured()
+                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
+                    : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+                }`}
+              >
+                {isSupabaseConfigured() ? "Connected" : "Not configured"}
+              </span>
+            </li>
+            <li className="flex items-center gap-3 text-sm">
+              <TrendingUp className="h-4 w-4 text-accent-500 shrink-0" />
+              <span className="text-slate-700 dark:text-zinc-200 flex-1">Vercel Analytics</span>
+              <Link href="/admin/analytics" className="text-xs font-semibold text-purple-600 dark:text-violet-400">
+                View →
+              </Link>
+            </li>
+            <li className="flex items-center gap-3 text-sm">
+              <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+              <span className="text-slate-700 dark:text-zinc-200 flex-1">Site settings</span>
+              <Link href="/admin/settings" className="text-xs font-semibold text-purple-600 dark:text-violet-400">
+                Configure →
+              </Link>
+            </li>
+          </ul>
+        </AdminPanel>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-2xl bg-white dark:bg-dark-800/50 border border-slate-200 dark:border-purple-500/30 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display font-bold text-lg text-slate-900 dark:text-dark-100">
-              Recent Activity
-            </h2>
-            <Link
-              href="/admin/analytics"
-              className="text-sm text-purple-600 dark:text-purple-400 font-semibold hover:text-purple-700 dark:hover:text-emerald-400 transition-colors"
-            >
-              View all
+        <AdminPanel
+          title="Top performing content"
+          description="By recorded views in Supabase"
+          action={
+            <Link href="/admin/analytics" className="text-sm font-semibold text-purple-600 dark:text-violet-400">
+              Full report →
             </Link>
-          </div>
-          <ul className="space-y-4">
-            {recentActivity.length === 0 ? (
-              <li className="py-8 text-center text-slate-500 dark:text-purple-400 text-sm">
-                No articles yet. Add content in Articles.
-              </li>
-            ) : (
-              recentActivity.map((item) => (
+          }
+        >
+          {topByViews.length === 0 ? (
+            <p className="text-sm text-slate-500 dark:text-zinc-400 py-4 text-center">Publish articles to see rankings.</p>
+          ) : (
+            <ul>
+              {topByViews.map((p, i) => (
+                <RankedListRow
+                  key={p.id}
+                  rank={i + 1}
+                  title={p.title}
+                  meta={p.published ? "Live" : "Draft"}
+                  href={p.slug ? postPublicPath({ id: p.id, slug: p.slug }) : `/admin/articles/${p.id}/edit`}
+                  value={formatCount(p.views)}
+                />
+              ))}
+            </ul>
+          )}
+        </AdminPanel>
+
+        <AdminPanel
+          title="Recent articles"
+          description="All posts in Supabase, newest publish date first (includes drafts and live articles)"
+          action={
+            <Link href="/admin/articles" className="text-sm font-semibold text-purple-600 dark:text-violet-400">
+              All articles →
+            </Link>
+          }
+        >
+          {recentPosts.length === 0 ? (
+            <p className="text-sm text-slate-500 dark:text-zinc-400 py-4 text-center">No articles yet.</p>
+          ) : (
+            <ul className="space-y-0">
+              {recentPosts.map((p) => (
                 <li
-                  key={item.id}
-                  className="flex items-center gap-4 py-3 border-b border-slate-100 dark:border-purple-500/20 last:border-0"
+                  key={p.id}
+                  className="flex items-center gap-3 py-3 border-b border-slate-100 dark:border-zinc-800 last:border-0"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                    <BarChart3 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
+                    <PenLine className="h-4 w-4 text-purple-600 dark:text-violet-400" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <Link href={item.href} className="font-medium text-slate-900 dark:text-dark-100 truncate block hover:text-purple-600 dark:hover:text-purple-400">
-                      {item.title}
+                    <Link
+                      href={`/admin/articles/${p.id}/edit`}
+                      className="font-medium text-slate-900 dark:text-zinc-100 truncate block hover:text-purple-600"
+                    >
+                      {p.title}
                     </Link>
-                    <p className="text-sm text-slate-500 dark:text-purple-400">
-                      {item.time}
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      {timeAgo(p.publishDate)} · {p.published ? "Published" : "Hidden"}
                     </p>
                   </div>
+                  <span
+                    className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full shrink-0 ${
+                      p.published
+                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
+                        : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+                    }`}
+                  >
+                    {p.published ? "Live" : "Draft"}
+                  </span>
                 </li>
-              ))
-            )}
-          </ul>
-        </div>
+              ))}
+            </ul>
+          )}
+        </AdminPanel>
+      </div>
 
-        <div className="rounded-2xl bg-gradient-to-br from-purple-500/10 to-accent-500/10 dark:from-purple-900/30 dark:to-accent-900/20 border border-purple-200/50 dark:border-purple-500/30 p-6">
-          <h2 className="font-display font-bold text-lg text-slate-900 dark:text-dark-100 mb-4">
-            Quick Actions
-          </h2>
-          <div className="space-y-3">
+      <div className="mt-6 rounded-2xl bg-gradient-to-br from-purple-500/10 via-transparent to-violet-500/10 dark:from-violet-950/40 dark:to-zinc-900 border border-purple-200/50 dark:border-zinc-800 p-6">
+        <h2 className="font-display font-bold text-lg text-slate-900 dark:text-zinc-100 mb-4">Quick actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { href: "/admin/articles/new", label: "Create article", icon: Plus },
+            { href: "/admin/articles/placements", label: "Placement guide", icon: Sparkles },
+            { href: "/admin/users", label: "Subscribers", icon: Users },
+            { href: "/admin/settings", label: "Site settings", icon: Settings },
+          ].map(({ href, label, icon: Icon }) => (
             <Link
-              href="/admin/articles"
-              className="flex items-center gap-3 p-3 rounded-xl bg-white/80 dark:bg-dark-800/50 hover:bg-white dark:hover:bg-dark-800 transition-colors"
+              key={href}
+              href={href}
+              className="flex items-center gap-3 p-4 rounded-xl bg-white/80 dark:bg-zinc-900 hover:bg-white dark:hover:bg-zinc-800 border border-slate-200/60 dark:border-zinc-800 transition-colors"
             >
-              <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-              <span className="font-medium text-slate-900 dark:text-dark-100">New Article</span>
+              <Icon className="h-5 w-5 text-purple-600 dark:text-violet-400" />
+              <span className="font-semibold text-slate-900 dark:text-zinc-100 text-sm">{label}</span>
             </Link>
-            <Link
-              href="/admin/analytics"
-              className="flex items-center gap-3 p-3 rounded-xl bg-white/80 dark:bg-dark-800/50 hover:bg-white dark:hover:bg-dark-800 transition-colors"
-            >
-              <BarChart3 className="h-5 w-5 text-accent-600 dark:text-accent-400" />
-              <span className="font-medium text-slate-900 dark:text-dark-100">View Analytics</span>
-            </Link>
-          </div>
+          ))}
         </div>
       </div>
     </div>

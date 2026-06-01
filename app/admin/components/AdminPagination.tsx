@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { admin } from "./admin-theme";
 
 const LIMIT_OPTIONS = [10, 50, 100] as const;
 
@@ -41,16 +42,12 @@ export default function AdminPagination({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-4 border-t border-slate-200 dark:border-purple-500/20 bg-slate-50/50 dark:bg-dark-900/30">
+    <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-4 border-t ${admin.divide} ${admin.muted}`}>
       <div className="flex items-center gap-4 flex-wrap">
-        <p className="text-sm text-slate-600 dark:text-purple-400">
+        <p className={`text-sm ${admin.body}`}>
           {hasResults ? (
             <>
-              Showing{" "}
-              <span className="font-semibold text-slate-900 dark:text-dark-100">
-                {start}–{end}
-              </span>{" "}
-              of{" "}
+              Showing <span className={`font-semibold ${admin.heading}`}>{start}–{end}</span> of{" "}
               <span className="font-semibold">{totalCount}</span> {itemLabel}
             </>
           ) : (
@@ -58,35 +55,25 @@ export default function AdminPagination({
           )}
         </p>
         <div className="flex items-center gap-1">
-          <span className="text-xs text-slate-500 dark:text-purple-500 mr-2">
-            Per page:
-          </span>
+          <span className={`text-xs mr-2 ${admin.subtle}`}>Per page:</span>
           {LIMIT_OPTIONS.map((opt) => (
-            <LimitButton
-              key={opt}
-              value={opt}
-              active={limit === opt}
-              onClick={() => handleLimitChange(opt)}
-            />
+            <LimitButton key={opt} value={opt} active={limit === opt} onClick={() => handleLimitChange(opt)} />
           ))}
         </div>
       </div>
 
       {totalPages > 1 && (
-        <nav
-          className="flex items-center gap-1"
-          aria-label="Pagination"
-        >
+        <nav className="flex items-center gap-1" aria-label="Pagination">
           {currentPage > 1 ? (
             <a
               href={buildHref(currentPage - 1, limit)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40"
+              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${admin.label} hover:bg-slate-100 dark:hover:bg-zinc-800`}
             >
               <ChevronLeft className="h-4 w-4" />
               Prev
             </a>
           ) : (
-            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 dark:text-purple-600 cursor-not-allowed">
+            <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium ${admin.subtle} cursor-not-allowed opacity-50`}>
               <ChevronLeft className="h-4 w-4" />
               Prev
             </span>
@@ -94,10 +81,7 @@ export default function AdminPagination({
           <div className="flex items-center gap-0.5 mx-1">
             {pageNumbers.map((num, i) =>
               num === "..." ? (
-                <span
-                  key={`ellipsis-${i}`}
-                  className="px-2 py-1 text-slate-400 dark:text-purple-500"
-                >
+                <span key={`ellipsis-${i}`} className={`px-2 py-1 ${admin.subtle}`}>
                   …
                 </span>
               ) : (
@@ -106,8 +90,8 @@ export default function AdminPagination({
                   href={buildHref(num, limit)}
                   className={`min-w-[2rem] h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-all ${
                     num === currentPage
-                      ? "bg-purple-600 text-white shadow-md shadow-purple-500/30"
-                      : "text-slate-600 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40"
+                      ? "bg-purple-600 dark:bg-violet-600 text-white shadow-md"
+                      : `${admin.body} hover:bg-slate-100 dark:hover:bg-zinc-800`
                   }`}
                 >
                   {num}
@@ -118,13 +102,13 @@ export default function AdminPagination({
           {currentPage < totalPages ? (
             <a
               href={buildHref(currentPage + 1, limit)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40"
+              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${admin.label} hover:bg-slate-100 dark:hover:bg-zinc-800`}
             >
               Next
               <ChevronRight className="h-4 w-4" />
             </a>
           ) : (
-            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 dark:text-purple-600 cursor-not-allowed">
+            <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium ${admin.subtle} cursor-not-allowed opacity-50`}>
               Next
               <ChevronRight className="h-4 w-4" />
             </span>
@@ -150,8 +134,8 @@ function LimitButton({
       onClick={onClick}
       className={`px-2.5 py-1 rounded-md text-sm font-medium transition-all ${
         active
-          ? "bg-purple-600 text-white shadow-sm"
-          : "text-slate-600 dark:text-purple-400 hover:bg-slate-200 dark:hover:bg-purple-900/40"
+          ? "bg-purple-600 dark:bg-violet-600 text-white shadow-sm"
+          : `${admin.body} hover:bg-slate-200 dark:hover:bg-zinc-700`
       }`}
     >
       {value}
@@ -159,18 +143,9 @@ function LimitButton({
   );
 }
 
-function getPageNumbers(
-  current: number,
-  total: number
-): (number | "...")[] {
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1);
-  }
-  if (current <= 3) {
-    return [1, 2, 3, 4, "...", total];
-  }
-  if (current >= total - 2) {
-    return [1, "...", total - 3, total - 2, total - 1, total];
-  }
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (current <= 3) return [1, 2, 3, 4, "...", total];
+  if (current >= total - 2) return [1, "...", total - 3, total - 2, total - 1, total];
   return [1, "...", current - 1, current, current + 1, "...", total];
 }

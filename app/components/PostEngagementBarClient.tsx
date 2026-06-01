@@ -20,7 +20,9 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  MessageCircleQuestion,
 } from "lucide-react";
+import { requestOpenArticlePoll } from "../lib/poll-open-event";
 
 type Props = {
   articleId: string;
@@ -28,6 +30,8 @@ type Props = {
   initialBookmarks: number;
   initialViews: string | number;
   title: string;
+  /** When set, show poll button in the sticky engagement bar */
+  poll?: { questionCount: number };
 };
 
 export default function PostEngagementBarClient({
@@ -36,6 +40,7 @@ export default function PostEngagementBarClient({
   initialBookmarks,
   initialViews,
   title,
+  poll,
 }: Props) {
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -236,6 +241,19 @@ export default function PostEngagementBarClient({
               <Eye className="h-4 w-4 md:h-5 md:w-5" />
               <span className="hidden sm:inline">{views}</span>
             </div>
+
+            {poll ? (
+              <button
+                type="button"
+                onClick={() => requestOpenArticlePoll(articleId)}
+                className="flex items-center space-x-1 md:space-x-2 px-3 md:px-4 py-2 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base bg-violet-100 text-violet-800 hover:bg-violet-200/80 dark:bg-violet-950/50 dark:text-violet-200 dark:hover:bg-violet-900/50"
+                aria-label={`Open ${poll.questionCount}-question reader poll`}
+              >
+                <MessageCircleQuestion className="h-4 w-4 md:h-5 md:w-5 shrink-0" />
+                <span className="hidden sm:inline">Poll</span>
+                <span className="sm:hidden tabular-nums">{poll.questionCount}</span>
+              </button>
+            ) : null}
           </div>
 
           {/* Share button and mobile show/hide button grouped together */}

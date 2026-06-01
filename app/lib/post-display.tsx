@@ -22,7 +22,7 @@ export function categoriesLabelList(categories: string[] | undefined | null): st
   return c?.length ? c : ["General"];
 }
 
-export function categoryLabelList(post: Post): string[] {
+export function categoryLabelList(post: { categories?: string[] }): string[] {
   return categoriesLabelList(post.categories);
 }
 
