@@ -2,7 +2,7 @@
 
 export const FACTS_DECK_LOAN_TEST = "Facts Deck Loan Test";
 
-export const FACTS_DECK_LOAN_CALCULATOR = "Facts Deck Loan Calculator";
+export const FACTS_DECK_LOAN_CALCULATOR = "Loan Calculator";
 
 export type LoanGoal = "auto" | "personal" | "refinance" | "exploring";
 

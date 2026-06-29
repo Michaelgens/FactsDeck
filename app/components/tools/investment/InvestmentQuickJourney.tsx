@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, BarChart3, Flame, Sparkles, TrendingUp, Wallet } from "lucide-react";
+import { ArrowLeft, BarChart3, DoorOpen, Flame, Sparkles, TrendingUp, Wallet } from "lucide-react";
 import WizardSlideShell from "../mortgage/WizardSlideShell";
 import {
   FACTS_DECK_INVESTMENT_CALCULATOR,
@@ -11,6 +11,7 @@ import {
   type InvestmentGoal,
   type InvestmentJourneyAnswers,
 } from "./investment-journey-types";
+import { INVESTMENT_SLUG, trackToolEvent } from "../../../lib/tool-analytics-client";
 
 const TOTAL_STEPS = 6;
 const SERIES = FACTS_DECK_INVESTMENT_TEST;
@@ -45,6 +46,9 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
   const finish = useCallback(() => onComplete({ ...a }), [a, onComplete]);
 
   const next = useCallback(() => {
+    if (step === 0) {
+      trackToolEvent(INVESTMENT_SLUG, "journey_start", undefined, true);
+    }
     if (step >= TOTAL_STEPS - 1) {
       finish();
       return;
@@ -55,10 +59,23 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
   const back = useCallback(() => setStep((s) => Math.max(0, s - 1)), []);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+    <div className="relative overflow-x-hidden overflow-y-hidden bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-violet-950/50 dark:via-fuchsia-950/30 dark:to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute top-[28rem] right-[-10%] h-96 w-96 rounded-full bg-orange-100/30 blur-3xl dark:bg-amber-950/25"
+        aria-hidden
+      />
+
       <div className="relative overflow-hidden border-b border-zinc-200 dark:border-zinc-800">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 left-1/2 h-72 w-[56rem] -translate-x-1/2 rounded-full bg-zinc-900/[0.04] blur-3xl dark:bg-white/[0.06]" />
+          <div className="absolute -top-24 left-1/2 h-72 w-[56rem] -translate-x-1/2 rounded-full bg-violet-500/[0.06] blur-3xl dark:bg-violet-400/[0.08]" />
         </div>
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4 flex items-center gap-2 sm:gap-3">
           <div className="flex-1 flex justify-start min-w-0">
@@ -80,9 +97,16 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
             <button
               type="button"
               onClick={onSkipToDashboard}
-              className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white underline-offset-2 hover:underline text-right"
+              className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white underline-offset-2 hover:underline text-right inline-flex items-center gap-1.5"
             >
-              Skip to full calculator
+              <span className="sm:hidden flex items-center gap-2">
+                <DoorOpen className="h-4 w-4 inline-block" aria-hidden />
+                Skip
+              </span>
+              <span className="hidden sm:inline flex items-center gap-1">
+                <DoorOpen className="h-4 w-4 inline-block mr-2" aria-hidden />
+                Skip to full calculator
+              </span>
             </button>
           </div>
         </div>
@@ -104,31 +128,14 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
           >
             <div className="relative text-center">
               <div className="relative mx-auto mb-8 flex h-36 w-36 items-center justify-center sm:h-44 sm:w-44">
-                <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-violet-400/35 via-fuchsia-400/20 to-amber-300/25 blur-2xl dark:from-violet-500/25 dark:via-fuchsia-500/15 dark:to-amber-400/20" />
-                <div className="absolute inset-2 rounded-[2.25rem] border border-dashed border-zinc-300/60 dark:border-zinc-600/50" />
-                <div className="relative flex h-full w-full flex-col items-center justify-center gap-3 rounded-[2rem] border border-zinc-200/90 bg-white/95 shadow-2xl ring-1 ring-zinc-900/5 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-950/95 dark:ring-white/10">
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-zinc-900 text-xs font-black tracking-tight text-white shadow-inner dark:bg-zinc-100 dark:text-zinc-900">
-                      FD
-                    </span>
-                    <div className="relative" aria-hidden>
-                      <BarChart3 className="h-12 w-12 text-violet-600 dark:text-violet-400" strokeWidth={1.35} />
-                      <TrendingUp className="absolute -right-1 -bottom-1 h-7 w-7 rounded-lg border-2 border-white bg-emerald-500 p-0.5 text-white shadow-md dark:border-zinc-900" strokeWidth={2.5} />
-                    </div>
-                  </div>
-                  <div className="flex h-10 w-full items-end justify-center gap-0.5 px-3" aria-hidden>
-                    {[14, 24, 18, 28, 20].map((px, i) => (
-                      <span
-                        key={i}
-                        className="w-2 rounded-sm bg-gradient-to-t from-zinc-300 to-violet-400 dark:from-zinc-600 dark:to-violet-500"
-                        style={{ height: px }}
-                      />
-                    ))}
-                  </div>
+                <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-violet-400/30 via-fuchsia-400/15 to-amber-400/20 blur-2xl dark:from-violet-500/20 dark:via-fuchsia-500/10" />
+                <div className="absolute inset-2 rounded-[2.25rem] border border-dashed border-violet-300/60 dark:border-violet-600/50" />
+                <div className="relative flex h-full w-full flex-col items-center justify-center gap-2 rounded-[2rem] border border-zinc-200/90 bg-white/95 shadow-2xl ring-1 ring-violet-900/5 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-950/95 dark:ring-violet-400/10">
+                  <BarChart3 className="h-16 w-16 text-violet-700 dark:text-violet-400" strokeWidth={1.2} aria-hidden />
                 </div>
               </div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-violet-700 dark:text-violet-400/90">Facts Deck</p>
-              <h1 className="font-display text-3xl font-bold leading-[1.12] tracking-tight text-zinc-900 text-balance dark:text-zinc-50 sm:text-5xl md:text-6xl">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-violet-800 dark:text-violet-400/90">Facts Deck</p>
+              <h1 className="font-display text-2xl font-bold leading-[1.12] tracking-tight text-zinc-900 text-balance dark:text-zinc-50 sm:text-4xl md:text-5xl">
                 {FACTS_DECK_INVESTMENT_CALCULATOR}
               </h1>
               <p className="mt-3 text-sm font-semibold text-zinc-500 dark:text-zinc-400">{FACTS_DECK_INVESTMENT_TEST}</p>
@@ -149,8 +156,8 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
             seriesTitle={SERIES}
             stepIndex={1}
             totalSteps={TOTAL_STEPS}
-            title="What’s your main focus?"
-            subtitle="We’ll tune labels on your results — about a minute."
+            title="What's your main focus?"
+            subtitle="We'll tune labels on your results — about a minute."
             onBack={back}
             onNext={next}
             nextDisabled={!canProceed()}
@@ -165,7 +172,8 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
                     key={g.id}
                     type="button"
                     onClick={() => setField("goal", g.id)}
-                    className={`text-left rounded-2xl border-2 p-5 transition-all ${
+                    aria-pressed={on}
+                    className={`text-left rounded-2xl border-2 p-5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 ${
                       on
                         ? "border-zinc-900 bg-zinc-50 shadow-md dark:border-zinc-100 dark:bg-zinc-900/60"
                         : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600"
@@ -213,6 +221,7 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
                 step={1000}
                 value={Math.min(500_000, a.initial)}
                 onChange={(e) => setField("initial", Number(e.target.value))}
+                aria-label="Starting balance"
                 className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
               />
               <label className="block">
@@ -224,6 +233,7 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
                   step={100}
                   value={a.initial}
                   onChange={(e) => setField("initial", Number(e.target.value) || 0)}
+                  aria-label="Exact starting balance"
                   className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                 />
               </label>
@@ -254,6 +264,7 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
                 step={50}
                 value={Math.min(15_000, a.monthly)}
                 onChange={(e) => setField("monthly", Number(e.target.value))}
+                aria-label="Monthly contribution"
                 className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
               />
               <input
@@ -263,6 +274,7 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
                 step={50}
                 value={a.monthly}
                 onChange={(e) => setField("monthly", Number(e.target.value) || 0)}
+                aria-label="Exact monthly contribution"
                 className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
               />
             </div>
@@ -275,7 +287,7 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
             stepIndex={4}
             totalSteps={TOTAL_STEPS}
             title="Horizon & expected return"
-            subtitle="Illustrative nominal return before fund fees — you’ll refine fees in the full tool."
+            subtitle="Illustrative nominal return before fund fees — you'll refine fees in the full tool."
             onBack={back}
             onNext={next}
             nextDisabled={!canProceed()}
@@ -293,6 +305,7 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
                   step={1}
                   value={a.years}
                   onChange={(e) => setField("years", Number(e.target.value))}
+                  aria-label="Investment horizon in years"
                   className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
                 />
               </div>
@@ -308,6 +321,7 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
                   step={0.25}
                   value={a.nominal}
                   onChange={(e) => setField("nominal", Number(e.target.value))}
+                  aria-label="Expected nominal return percent"
                   className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
                 />
               </div>
@@ -321,7 +335,7 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
             stepIndex={5}
             totalSteps={TOTAL_STEPS}
             title="Spending, withdrawal rule & inflation"
-            subtitle="Used for FIRE-style targets and “today’s dollars.” Expense ratio is fixed at 0.08% for this snapshot."
+            subtitle="Used for FIRE-style targets and today's dollars. Expense ratio is fixed at 0.08% for this snapshot."
             onBack={back}
             onNext={finish}
             nextLabel="See my snapshot"
@@ -331,7 +345,7 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
             <div className="space-y-6">
               <label className="block">
                 <span className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400">
-                  Annual spending (today’s dollars)
+                  Annual spending (today&apos;s dollars)
                 </span>
                 <input
                   type="number"
@@ -339,6 +353,7 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
                   step={1000}
                   value={a.annualSpend || ""}
                   onChange={(e) => setField("annualSpend", Number(e.target.value) || 0)}
+                  aria-label="Annual spending"
                   className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                 />
               </label>
@@ -350,7 +365,8 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
                       key={pct}
                       type="button"
                       onClick={() => setField("swr", pct)}
-                      className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-colors ${
+                      aria-pressed={a.swr === pct}
+                      className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 ${
                         a.swr === pct
                           ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
                           : "border-zinc-200 text-zinc-700 dark:border-zinc-700 dark:text-zinc-200"
@@ -373,6 +389,7 @@ export default function InvestmentQuickJourney({ onComplete, onSkipToDashboard }
                   step={0.1}
                   value={a.inflation}
                   onChange={(e) => setField("inflation", Number(e.target.value))}
+                  aria-label="Inflation percent"
                   className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
                 />
               </div>

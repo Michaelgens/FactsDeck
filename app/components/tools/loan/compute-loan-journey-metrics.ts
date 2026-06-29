@@ -1,4 +1,4 @@
-import type { LoanJourneyAnswers } from "./loan-journey-types";
+import type { LoanGoal, LoanJourneyAnswers } from "./loan-journey-types";
 
 function clamp(n: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, n));
@@ -64,4 +64,69 @@ export function computeLoanJourneyMetrics(a: LoanJourneyAnswers) {
     feeAmount,
     termMonths,
   };
+}
+
+export type RelatedTool = {
+  slug: string;
+  name: string;
+  reason: string;
+};
+
+export function computeLoanReadinessFromBands(apr: number, extraMonthly: number, feePct: number): number {
+  const aprScore = apr <= 5 ? 1 : apr <= 8 ? 0.75 : apr <= 12 ? 0.5 : 0.25;
+  const extraScore = extraMonthly >= 100 ? 1 : extraMonthly >= 25 ? 0.75 : extraMonthly > 0 ? 0.55 : 0.35;
+  const feeScore = feePct <= 0.5 ? 1 : feePct <= 2 ? 0.7 : feePct <= 5 ? 0.45 : 0.25;
+  return Math.round((aprScore * 0.45 + extraScore * 0.3 + feeScore * 0.25) * 100);
+}
+
+export function computeLoanReadinessScore(a: LoanJourneyAnswers): number {
+  return computeLoanReadinessFromBands(a.apr, a.extraMonthly, a.feePct);
+}
+
+export function buildLoanTextSummary(answers: LoanJourneyAnswers, m: ReturnType<typeof computeLoanJourneyMetrics>): string {
+  const goalLabel =
+    answers.goal === "auto"
+      ? "Auto loan"
+      : answers.goal === "personal"
+        ? "Personal loan"
+        : answers.goal === "refinance"
+          ? "Refinance"
+          : "Exploring";
+  return [
+    "Facts Deck Loan Test — summary",
+    `Goal: ${goalLabel}`,
+    `Principal: ${formatLoanMoney(answers.principal)}`,
+    `APR: ${answers.apr.toFixed(2)}% · Term: ${answers.termYears} yr`,
+    `Extra: ${formatLoanMoney(answers.extraMonthly)}/mo · Fee: ${answers.feePct.toFixed(1)}%`,
+    `Monthly payment (P&I): ${formatLoanMoney(m.monthlyPayment)}`,
+    `Total interest: ${formatLoanMoney(m.totalInterest)}`,
+    `Payoff: ~${m.payoffMonths} mo · Interest saved vs no-extra: ${formatLoanMoney(m.interestSavedWithExtra)}`,
+    `Readiness score: ${computeLoanReadinessScore(answers)}/100`,
+  ].join("\n");
+}
+
+export function suggestRelatedTools(goal: LoanGoal, a: LoanJourneyAnswers): RelatedTool[] {
+  const out: RelatedTool[] = [];
+  const push = (slug: string, name: string, reason: string) => {
+    if (!out.some((t) => t.slug === slug)) out.push({ slug, name, reason });
+  };
+
+  if (goal === "refinance" || a.apr >= 10) {
+    push("mortgage-calculator", "Mortgage Calculator", "Compare a refi against a full PITI picture.");
+  }
+  if (a.apr >= 8 || a.principal >= 15_000) {
+    push("debt-payoff-planner", "Debt Payoff Planner", "Stack this loan against cards and other debts.");
+  }
+  if (goal === "auto" || goal === "personal") {
+    push("budget-planner", "Budget Planner", "See how the payment fits your monthly cash flow.");
+  }
+  if (a.extraMonthly <= 0) {
+    push("subscription-spend-audit", "Subscription Audit", "Find recurring costs to fund extra principal.");
+  }
+  if (goal === "exploring") {
+    push("emergency-fund-calculator", "Emergency Fund & Runway", "Keep borrowing decisions aligned with your cushion.");
+  }
+  push("credit-score-simulator", "Credit Score Simulator", "See how rate bands might shift with score changes.");
+
+  return out.slice(0, 4);
 }

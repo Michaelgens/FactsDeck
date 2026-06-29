@@ -3,44 +3,64 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, Copy, Home, RefreshCw, Repeat, Sparkles } from "lucide-react";
-import { computeSubscriptionJourneyMetrics, formatSubMoney } from "./compute-subscription-audit-metrics";
+import {
+  computeSubscriptionJourneyMetrics,
+  formatSubMoney,
+  GOAL_LABEL,
+  MODE_LABEL,
+  goalResultsHeadline,
+  suggestRelatedTools,
+} from "./compute-subscription-audit-metrics";
 import type { SubscriptionJourneyAnswers } from "./subscription-audit-journey-types";
 import { FACTS_DECK_SUBSCRIPTION_AUDIT_TEST } from "./subscription-audit-journey-types";
+import SubscriptionRelatedTools from "./SubscriptionRelatedTools";
+import { SUBSCRIPTION_AUDIT_SLUG, trackToolEvent } from "../../../lib/tool-analytics-client";
 
 type Props = {
   answers: SubscriptionJourneyAnswers;
-  onOpenDashboard: () => void;
+  onOpenDashboard: (useStarter?: boolean) => void;
   onStartOver: () => void;
-};
-
-const GOAL_LABEL: Record<SubscriptionJourneyAnswers["goal"], string> = {
-  leaks: "Find leaks",
-  cut: "Cut costs",
-  exploring: "Exploring",
 };
 
 export default function SubscriptionAuditJourneyResults({ answers, onOpenDashboard, onStartOver }: Props) {
   const m = computeSubscriptionJourneyMetrics(answers);
   const [copied, setCopied] = useState(false);
+  const headline = goalResultsHeadline(answers.goal);
+  const relatedTools = suggestRelatedTools(answers.goal, {
+    monthly: m.monthly,
+    annual: m.annual,
+    daily: m.daily,
+    lineCount: answers.subscriptionCount,
+    avgPerLine: m.avgPerSub,
+    trimMonthly: m.targetTrimMonthly,
+    trimAnnual: m.targetTrimAnnual,
+    byCategory: {},
+    topCategory: null,
+    duplicateCategories: [],
+  });
 
   const summaryText = [
     `${FACTS_DECK_SUBSCRIPTION_AUDIT_TEST} — Summary`,
     `Goal: ${GOAL_LABEL[answers.goal]}`,
+    `Workspace: ${MODE_LABEL[answers.mode]}`,
     `Estimated recurring: ${formatSubMoney(m.monthly)}/mo`,
-    `Active subscriptions (rough count): ${m.subscriptionCount}`,
+    `Active subscriptions (rough): ${m.subscriptionCount}`,
+    `Trim target: ${m.targetTrimPercent}%`,
     ``,
     `Annualized: ${formatSubMoney(m.annual)}`,
     `≈ per day: ${formatSubMoney(m.daily)}`,
-    `Avg per sub (if spread evenly): ${formatSubMoney(m.avgPerSub)}/mo`,
+    `Avg per sub: ${formatSubMoney(m.avgPerSub)}/mo`,
     ``,
-    `If you cut 10%: ~${formatSubMoney(m.cut10Annual)}/yr`,
-    `If you cut 15%: ~${formatSubMoney(m.cut15Annual)}/yr`,
-    `If you cut 25%: ~${formatSubMoney(m.cut25Annual)}/yr`,
+    `At ${m.targetTrimPercent}% trim: ~${formatSubMoney(m.targetTrimAnnual)}/yr saved`,
+    `10% trim: ~${formatSubMoney(m.cut10Annual)}/yr`,
+    `15% trim: ~${formatSubMoney(m.cut15Annual)}/yr`,
+    `25% trim: ~${formatSubMoney(m.cut25Annual)}/yr`,
   ].join("\n");
 
   const copySummary = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(summaryText);
+      trackToolEvent(SUBSCRIPTION_AUDIT_SLUG, "export_text");
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -48,98 +68,157 @@ export default function SubscriptionAuditJourneyResults({ answers, onOpenDashboa
     }
   }, [summaryText]);
 
+  const loadSamplePlan = useCallback(() => {
+    trackToolEvent(SUBSCRIPTION_AUDIT_SLUG, "starter_plan_load");
+    onOpenDashboard(true);
+  }, [onOpenDashboard]);
+
+  const trimCardClass = (isFocus: boolean) =>
+    isFocus
+      ? "ring-2 ring-violet-500/60 dark:ring-violet-400/50 border-violet-200 dark:border-violet-800"
+      : "border-zinc-100 dark:border-zinc-800";
+
   return (
-    <div className="dark min-h-screen bg-slate-950 text-slate-100">
-      <div className="relative overflow-hidden border-b border-slate-800">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-20 left-1/2 h-80 w-[60rem] -translate-x-1/2 rounded-full bg-rose-500/12 blur-3xl" />
-        </div>
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8 pb-6 border-b border-slate-800/80">
+    <div className="relative min-h-screen overflow-x-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
+        aria-hidden
+      />
+
+      <div className="relative overflow-hidden border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 sm:mb-8 pb-5 sm:pb-6 border-b border-zinc-200/80 dark:border-zinc-800/80">
             <button
               type="button"
               onClick={onStartOver}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-white w-fit"
+              className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white w-fit"
             >
               <RefreshCw className="h-4 w-4 shrink-0" />
               Retake {FACTS_DECK_SUBSCRIPTION_AUDIT_TEST}
             </button>
             <Link
               href="/tools"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-200 w-fit sm:ml-auto"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 w-fit sm:ml-auto"
             >
               <Home className="h-4 w-4 shrink-0" />
               All tools
             </Link>
           </div>
           <div className="flex flex-wrap items-center gap-3 mb-6">
-            <span className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-xs font-semibold text-slate-200">
-              <Sparkles className="h-3.5 w-3.5 shrink-0 text-rose-400" />
+            <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
+              <Sparkles className="h-3.5 w-3.5 shrink-0" />
               <span className="leading-snug">{FACTS_DECK_SUBSCRIPTION_AUDIT_TEST} · Results</span>
             </span>
-            <span className="text-xs font-semibold text-slate-500">{GOAL_LABEL[answers.goal]}</span>
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+              Focus: {GOAL_LABEL[answers.goal]}
+            </span>
           </div>
-          <h1 className="font-display text-3xl sm:text-5xl font-bold text-balance max-w-3xl">Recurring spend, annualized</h1>
-          <p className="mt-4 text-lg text-slate-400 max-w-2xl leading-relaxed">
-            The same autopay, expressed as yearly dollars—open the audit to name each line and export JSON.
+          <h1 className="font-display text-[1.7rem] leading-tight sm:text-5xl font-bold text-balance max-w-3xl">
+            {headline.title}
+          </h1>
+          <p className="mt-3 sm:mt-4 text-base sm:text-lg text-zinc-600 dark:text-zinc-300 max-w-2xl leading-relaxed">
+            {headline.subtitle}
           </p>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-10">
-        <div className="rounded-3xl border border-rose-500/20 bg-gradient-to-br from-rose-950/50 to-slate-900/80 p-8 sm:p-10">
-          <p className="text-sm font-semibold uppercase tracking-wider text-rose-400/90">Annualized recurring</p>
-          <p className="mt-2 font-display text-5xl sm:text-6xl font-bold tabular-nums text-white">{formatSubMoney(m.annual)}</p>
-          <p className="mt-3 text-slate-400">
-            {formatSubMoney(m.monthly)}/mo · ~{formatSubMoney(m.daily)}/day · ~{m.subscriptionCount} subs · avg{" "}
-            {formatSubMoney(m.avgPerSub)}/mo if spread evenly
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14 space-y-8 sm:space-y-10 pb-28 sm:pb-14">
+        <div className="rounded-3xl border border-zinc-200 bg-white p-6 sm:p-10 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+          <p className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            Annualized recurring
           </p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          {(
-            [
-              ["10% trim", m.cut10Annual],
-              ["15% trim", m.cut15Annual],
-              ["25% trim", m.cut25Annual],
-            ] as const
-          ).map(([label, amt]) => (
-            <div key={label} className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-              <p className="text-xs font-bold uppercase text-slate-500">{label} (illustrative)</p>
-              <p className="mt-2 text-2xl font-bold tabular-nums text-rose-300">{formatSubMoney(amt)}/yr</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="rounded-3xl border-2 border-rose-500/40 bg-gradient-to-br from-rose-950/60 to-slate-950 p-8">
-            <div className="flex items-center gap-2 mb-3">
-              <Repeat className="h-6 w-6 text-rose-400" />
-              <h2 className="font-display text-xl font-bold">Full subscription audit</h2>
-            </div>
-            <p className="text-sm text-slate-400 leading-relaxed mb-6">
-              Line-by-line rows, categories, trim %—your test estimate is imported as a starter line you can split.
-            </p>
-            <button
-              type="button"
-              onClick={onOpenDashboard}
-              className="inline-flex items-center gap-2 w-full sm:w-auto justify-center px-6 py-3.5 rounded-2xl bg-white text-slate-900 text-sm font-bold hover:bg-slate-100"
-            >
-              Open subscription audit
-              <ArrowRight className="h-4 w-4" />
-            </button>
+          <p className="mt-2 font-display text-4xl sm:text-6xl font-bold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
+            {formatSubMoney(m.annual)}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <span>
+              {formatSubMoney(m.monthly)}/mo · ~{formatSubMoney(m.daily)}/day
+            </span>
+            <span className="hidden h-3 w-px bg-zinc-200 dark:bg-zinc-700 sm:inline" aria-hidden />
+            <span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+              ~{m.subscriptionCount} subs
+            </span>
+            <span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+              avg {formatSubMoney(m.avgPerSub)}/mo
+            </span>
+            <span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+              {MODE_LABEL[answers.mode]}
+            </span>
           </div>
 
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-8">
-            <div className="flex items-center gap-2 mb-3">
-              <Copy className="h-6 w-6 text-slate-300" />
-              <h2 className="font-display text-xl font-bold">Copy summary</h2>
+          <div className="mt-6 sm:mt-8 -mx-6 px-6 sm:mx-0 sm:px-0">
+            <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:pb-0">
+              <div
+                className={`min-w-[14.5rem] sm:min-w-0 rounded-2xl bg-zinc-50 dark:bg-zinc-950/80 p-5 border ${trimCardClass(true)}`}
+              >
+                <p className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
+                  Your trim target ({m.targetTrimPercent}%)
+                  <span className="ml-1 normal-case font-semibold text-violet-700 dark:text-violet-400">· Your focus</span>
+                </p>
+                <p className="mt-2 text-2xl font-bold tabular-nums">{formatSubMoney(m.targetTrimAnnual)}/yr</p>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">≈ {formatSubMoney(m.targetTrimMonthly)}/mo saved</p>
+              </div>
+              <div
+                className={`min-w-[14.5rem] sm:min-w-0 rounded-2xl bg-zinc-50 dark:bg-zinc-950/80 p-5 border ${trimCardClass(false)}`}
+              >
+                <p className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">10% trim</p>
+                <p className="mt-2 text-2xl font-bold tabular-nums">{formatSubMoney(m.cut10Annual)}/yr</p>
+              </div>
+              <div
+                className={`min-w-[14.5rem] sm:min-w-0 rounded-2xl bg-zinc-50 dark:bg-zinc-950/80 p-5 border ${trimCardClass(false)}`}
+              >
+                <p className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">25% trim</p>
+                <p className="mt-2 text-2xl font-bold tabular-nums">{formatSubMoney(m.cut25Annual)}/yr</p>
+              </div>
             </div>
-            <p className="text-sm text-slate-500 mb-4">Plain text for notes.</p>
+            <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 sm:hidden">Swipe to see trim scenarios</p>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-900 p-6 sm:p-8 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900">
+            <div className="flex items-center gap-2 mb-3">
+              <Repeat className="h-6 w-6" />
+              <h2 className="font-display text-xl font-bold">Full subscription audit</h2>
+            </div>
+            <p className="text-sm opacity-90 leading-relaxed mb-6">
+              {answers.mode === "line_item_audit"
+                ? `Empty line list to start — load a ${GOAL_LABEL[answers.goal].toLowerCase()} starter or add rows for all ~${m.subscriptionCount} subs.`
+                : "Your estimate carries over — switch to line-item mode anytime for named charges."}
+            </p>
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => onOpenDashboard()}
+                className="inline-flex items-center gap-2 w-full justify-center px-6 py-3.5 rounded-2xl bg-white text-zinc-900 text-sm font-bold hover:bg-zinc-100 transition-colors dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800"
+              >
+                Open subscription audit
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={loadSamplePlan}
+                className="inline-flex items-center gap-2 w-full justify-center px-6 py-3 rounded-xl border border-zinc-200 bg-white text-zinc-900 text-sm font-semibold hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+              >
+                Load starter list
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+            <div className="flex items-center gap-2 mb-3">
+              <Copy className="h-6 w-6 text-zinc-700 dark:text-zinc-200" />
+              <h2 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-50">Copy summary</h2>
+            </div>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">Plain-text snapshot for notes or sharing.</p>
             <button
               type="button"
               onClick={copySummary}
-              className="inline-flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl bg-rose-600 text-white text-sm font-bold hover:bg-rose-500"
+              className="inline-flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900"
             >
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               {copied ? "Copied" : "Copy text summary"}
@@ -147,9 +226,46 @@ export default function SubscriptionAuditJourneyResults({ answers, onOpenDashboa
           </div>
         </div>
 
-        <p className="text-center text-xs text-slate-600 max-w-2xl mx-auto pb-8">
-          Educational planning only. Categories and totals are only as accurate as your inputs.
+        {relatedTools.length > 0 ? (
+          <div className="max-w-xl">
+            <SubscriptionRelatedTools tools={relatedTools} />
+          </div>
+        ) : null}
+
+        <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed pb-8">
+          Educational planning only — categories and totals are only as accurate as your inputs.
         </p>
+      </div>
+
+      <div className="sm:hidden fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white/95 backdrop-blur pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 dark:border-zinc-800 dark:bg-zinc-950/95">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => onOpenDashboard()}
+              className="col-span-2 inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-900 text-sm font-bold text-white shadow-sm transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+            >
+              Open audit
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={onStartOver}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-800 shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden />
+              Retake
+            </button>
+            <button
+              type="button"
+              onClick={copySummary}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-800 shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+            >
+              {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

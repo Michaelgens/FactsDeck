@@ -10,6 +10,12 @@ const ADMIN_EMAILS = (
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
 
+function isAuthorizedAdminEmail(email: string | undefined | null): boolean {
+  if (ADMIN_EMAILS.length === 0) return true;
+  const normalized = email?.toLowerCase();
+  return !!normalized && ADMIN_EMAILS.includes(normalized);
+}
+
 export async function loginAdmin(email: string, password: string) {
   const supabase = await createAuthServerClient();
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -58,4 +64,21 @@ export async function requireAdmin() {
     }
   }
   return session;
+}
+
+/** For server actions that return `{ ok: boolean }` instead of redirecting. */
+export async function verifyAdminForAction(): Promise<
+  { ok: true } | { ok: false; error: string }
+> {
+  const session = await getAdminSession();
+  if (!session?.user) {
+    return { ok: false, error: "Unauthorized" };
+  }
+  if (ADMIN_EMAILS.length > 0) {
+    const email = session.user.email?.toLowerCase();
+    if (!email || !ADMIN_EMAILS.includes(email)) {
+      return { ok: false, error: "Unauthorized" };
+    }
+  }
+  return { ok: true };
 }

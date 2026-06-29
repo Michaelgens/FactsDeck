@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, type FormEvent } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -13,8 +13,6 @@ import {
   Home,
   Landmark,
   LineChart,
-  Loader2,
-  Mail,
   PiggyBank,
   RefreshCw,
   Save,
@@ -36,22 +34,34 @@ import {
   pmiCancellationBalance,
   type ScheduleResult,
 } from "../../lib/mortgage-math";
-import type { MortgageSummaryPayload } from "../../lib/mortgage-summary-email";
 import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
-import { FACTS_DECK_MORTGAGE_TEST } from "./mortgage/mortgage-journey-types";
-import ToolDashboardTestCta from "./ToolDashboardTestCta";
 import {
+  FACTS_DECK_MORTGAGE_CALCULATOR,
+  FACTS_DECK_MORTGAGE_TEST,
+  JOURNEY_DEFAULTS,
+  type BuyerGoal,
+} from "./mortgage/mortgage-journey-types";
+import { computeMortgageReadinessFromBands } from "./mortgage/compute-journey-metrics";
+import {
+  loadMortgageState,
+  saveMortgageState,
+} from "./mortgage/mortgage-storage";
+import ToolDashboardTestCta from "./ToolDashboardTestCta";
+import { MORTGAGE_SLUG, trackToolEvent } from "../../lib/tool-analytics-client";
+import {
+  ToolDashboardGridBackdrop,
   ToolDashboardHeroBackdrop,
   tdGhostBtn,
   tdHero,
   tdHeroInnerNarrow,
+  tdIconTile,
   tdNavLink,
   tdPage,
   tdPanel,
-  tdProductPill,
 } from "./tool-dashboard-ui";
 
 export type MortgageCalculatorInitialValues = {
+  goal?: BuyerGoal;
   homePrice?: number;
   downPercent?: number;
   rate?: number;
@@ -63,6 +73,7 @@ export type MortgageCalculatorInitialValues = {
   extraMonthly?: number;
   incomeMonthly?: number;
   debtsMonthly?: number;
+  fromJourney?: boolean;
 };
 
 type AdvancedMortgageCalculatorProps = {
@@ -81,24 +92,86 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "lab", label: "What-if lab", icon: Sparkles },
 ];
 
+const GOAL_LABEL: Record<BuyerGoal, string> = {
+  buying: "Buying a home",
+  refinancing: "Refinancing",
+  exploring: "Exploring",
+};
+
+function resolveInitialState(initialValues?: MortgageCalculatorInitialValues) {
+  const saved = typeof window !== "undefined" ? loadMortgageState() : null;
+  const d = JOURNEY_DEFAULTS;
+
+  if (initialValues?.fromJourney) {
+    return {
+      goal: initialValues.goal ?? d.goal,
+      homePrice: initialValues.homePrice ?? d.homePrice,
+      downPercent: initialValues.downPercent ?? d.downPercent,
+      rate: initialValues.rate ?? d.rate,
+      termYears: initialValues.termYears ?? d.termYears,
+      propertyTaxPercent: initialValues.propertyTaxPercent ?? 1.15,
+      insuranceYearly: initialValues.insuranceYearly ?? Math.round((initialValues.homePrice ?? d.homePrice) * 0.0035),
+      hoaMonthly: initialValues.hoaMonthly ?? 0,
+      pmiAnnualPercent: initialValues.pmiAnnualPercent ?? 0.65,
+      extraMonthly: initialValues.extraMonthly ?? d.extraMonthly,
+      incomeMonthly: initialValues.incomeMonthly ?? d.incomeMonthly,
+      debtsMonthly: initialValues.debtsMonthly ?? 0,
+    };
+  }
+
+  if (saved) {
+    return {
+      goal: saved.goal,
+      homePrice: saved.homePrice,
+      downPercent: saved.downPercent,
+      rate: saved.rate,
+      termYears: saved.termYears,
+      propertyTaxPercent: saved.propertyTaxPercent,
+      insuranceYearly: saved.insuranceYearly,
+      hoaMonthly: saved.hoaMonthly,
+      pmiAnnualPercent: saved.pmiAnnualPercent,
+      extraMonthly: saved.extraMonthly,
+      incomeMonthly: saved.incomeMonthly,
+      debtsMonthly: saved.debtsMonthly,
+    };
+  }
+
+  return {
+    goal: initialValues?.goal ?? d.goal,
+    homePrice: initialValues?.homePrice ?? 425_000,
+    downPercent: initialValues?.downPercent ?? 10,
+    rate: initialValues?.rate ?? 6.75,
+    termYears: initialValues?.termYears ?? 30,
+    propertyTaxPercent: initialValues?.propertyTaxPercent ?? 1.15,
+    insuranceYearly: initialValues?.insuranceYearly ?? 1800,
+    hoaMonthly: initialValues?.hoaMonthly ?? 0,
+    pmiAnnualPercent: initialValues?.pmiAnnualPercent ?? 0.65,
+    extraMonthly: initialValues?.extraMonthly ?? 0,
+    incomeMonthly: initialValues?.incomeMonthly ?? 9_500,
+    debtsMonthly: initialValues?.debtsMonthly ?? 450,
+  };
+}
+
 export default function AdvancedMortgageCalculator({
   initialValues,
   deferWalkthrough = false,
 }: AdvancedMortgageCalculatorProps = {}) {
+  const [hydrated, setHydrated] = useState(false);
+  const [goal, setGoal] = useState<BuyerGoal>("buying");
   const [tab, setTab] = useState<Tab>("overview");
   const [tourOpen, setTourOpen] = useState(false);
 
   const TOUR_ID = "mortgage-calculator";
 
-  const [homePrice, setHomePrice] = useState(() => initialValues?.homePrice ?? 425_000);
-  const [downPercent, setDownPercent] = useState(() => initialValues?.downPercent ?? 10);
-  const [rate, setRate] = useState(() => initialValues?.rate ?? 6.75);
-  const [termYears, setTermYears] = useState(() => initialValues?.termYears ?? 30);
-  const [propertyTaxPercent, setPropertyTaxPercent] = useState(() => initialValues?.propertyTaxPercent ?? 1.15);
-  const [insuranceYearly, setInsuranceYearly] = useState(() => initialValues?.insuranceYearly ?? 1800);
-  const [hoaMonthly, setHoaMonthly] = useState(() => initialValues?.hoaMonthly ?? 0);
-  const [pmiAnnualPercent, setPmiAnnualPercent] = useState(() => initialValues?.pmiAnnualPercent ?? 0.65);
-  const [extraMonthly, setExtraMonthly] = useState(() => initialValues?.extraMonthly ?? 0);
+  const [homePrice, setHomePrice] = useState(425_000);
+  const [downPercent, setDownPercent] = useState(10);
+  const [rate, setRate] = useState(6.75);
+  const [termYears, setTermYears] = useState(30);
+  const [propertyTaxPercent, setPropertyTaxPercent] = useState(1.15);
+  const [insuranceYearly, setInsuranceYearly] = useState(1800);
+  const [hoaMonthly, setHoaMonthly] = useState(0);
+  const [pmiAnnualPercent, setPmiAnnualPercent] = useState(0.65);
+  const [extraMonthly, setExtraMonthly] = useState(0);
   const [lumpYear1, setLumpYear1] = useState(0);
   const [inflationDiscount, setInflationDiscount] = useState(2.5);
 
@@ -107,18 +180,59 @@ export default function AdvancedMortgageCalculator({
   const [refiClosingPct, setRefiClosingPct] = useState(2.5);
   const [pointsPercent, setPointsPercent] = useState(1.0);
 
-  const [incomeMonthly, setIncomeMonthly] = useState(() => initialValues?.incomeMonthly ?? 9_500);
-  const [debtsMonthly, setDebtsMonthly] = useState(() => initialValues?.debtsMonthly ?? 450);
+  const [incomeMonthly, setIncomeMonthly] = useState(9_500);
+  const [debtsMonthly, setDebtsMonthly] = useState(450);
   const [dtiHousing, setDtiHousing] = useState(28);
   const [dtiTotal, setDtiTotal] = useState(43);
 
-  const [emailSummaryAddr, setEmailSummaryAddr] = useState("");
-  const [emailHp, setEmailHp] = useState("");
-  const [emailSummarySending, setEmailSummarySending] = useState(false);
-  const [emailSummaryNote, setEmailSummaryNote] = useState<{
-    kind: "ok" | "err";
-    text: string;
-  } | null>(null);
+  useEffect(() => {
+    const state = resolveInitialState(initialValues);
+    setGoal(state.goal);
+    setHomePrice(state.homePrice);
+    setDownPercent(state.downPercent);
+    setRate(state.rate);
+    setTermYears(state.termYears);
+    setPropertyTaxPercent(state.propertyTaxPercent);
+    setInsuranceYearly(state.insuranceYearly);
+    setHoaMonthly(state.hoaMonthly);
+    setPmiAnnualPercent(state.pmiAnnualPercent);
+    setExtraMonthly(state.extraMonthly);
+    setIncomeMonthly(state.incomeMonthly);
+    setDebtsMonthly(state.debtsMonthly);
+    setHydrated(true);
+  }, [initialValues]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveMortgageState({
+      goal,
+      homePrice,
+      downPercent,
+      rate,
+      termYears,
+      propertyTaxPercent,
+      insuranceYearly,
+      hoaMonthly,
+      pmiAnnualPercent,
+      extraMonthly,
+      incomeMonthly,
+      debtsMonthly,
+    });
+  }, [
+    hydrated,
+    goal,
+    homePrice,
+    downPercent,
+    rate,
+    termYears,
+    propertyTaxPercent,
+    insuranceYearly,
+    hoaMonthly,
+    pmiAnnualPercent,
+    extraMonthly,
+    incomeMonthly,
+    debtsMonthly,
+  ]);
 
   const loanAmount = useMemo(
     () => Math.max(0, homePrice * (1 - downPercent / 100)),
@@ -175,6 +289,12 @@ export default function AdvancedMortgageCalculator({
 
   const pitiFirstMonth =
     pi + escrowTaxMonthly + escrowInsMonthly + hoaMonthly + (schedule.rows[0]?.pmi ?? 0);
+
+  const housingDtiPct = incomeMonthly > 0 ? (pitiFirstMonth / incomeMonthly) * 100 : 0;
+  const readinessScore = useMemo(
+    () => computeMortgageReadinessFromBands(housingDtiPct, downPercent, ltv),
+    [housingDtiPct, downPercent, ltv]
+  );
 
   const biweeklyExtra = useMemo(
     () => biweeklyExtraEquivalentMonthly(loanAmount, rate, termMonths),
@@ -270,88 +390,8 @@ export default function AdvancedMortgageCalculator({
     );
   }, [schedule.rows, escrowTaxMonthly, escrowInsMonthly, hoaMonthly, inflationDiscount]);
 
-  const buildSummaryPayload = useCallback((): MortgageSummaryPayload => {
-    return {
-      homePrice,
-      downPercent,
-      loanAmount,
-      rate,
-      termYears,
-      monthlyPI: pi,
-      pitiFirstMonth,
-      totalInterest: schedule.totalInterest,
-      totalPmi: schedule.totalPmi,
-      payoffMonths: schedule.monthsToPayoff,
-      ltv,
-      extraMonthly,
-      propertyTaxPercent,
-      insuranceYearly,
-      hoaMonthly,
-      generatedAt: new Date().toISOString(),
-    };
-  }, [
-    homePrice,
-    downPercent,
-    loanAmount,
-    rate,
-    termYears,
-    pi,
-    pitiFirstMonth,
-    schedule.totalInterest,
-    schedule.totalPmi,
-    schedule.monthsToPayoff,
-    ltv,
-    extraMonthly,
-    propertyTaxPercent,
-    insuranceYearly,
-    hoaMonthly,
-  ]);
-
-  const sendSummaryEmail = useCallback(
-    async (e: FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      setEmailSummaryNote(null);
-      if (emailHp.trim()) return;
-
-      const trimmed = emailSummaryAddr.trim().toLowerCase();
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-        setEmailSummaryNote({ kind: "err", text: "Enter a valid email address." });
-        return;
-      }
-
-      setEmailSummarySending(true);
-      try {
-        const res = await fetch("/api/tools/mortgage-summary", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: trimmed,
-            website: emailHp,
-            summary: buildSummaryPayload(),
-          }),
-        });
-        const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
-        if (!res.ok || !data.ok) {
-          setEmailSummaryNote({
-            kind: "err",
-            text: data.error ?? "Could not send. Try again later.",
-          });
-          return;
-        }
-        setEmailSummaryNote({
-          kind: "ok",
-          text: "Sent. Check your inbox (and spam) for your summary.",
-        });
-      } catch {
-        setEmailSummaryNote({ kind: "err", text: "Network error. Try again." });
-      } finally {
-        setEmailSummarySending(false);
-      }
-    },
-    [emailHp, emailSummaryAddr, buildSummaryPayload]
-  );
-
   const exportCsv = useCallback(() => {
+    trackToolEvent(MORTGAGE_SLUG, "export_text");
     const header = "Month,Principal,Interest,Balance,PMI\n";
     const lines = schedule.rows
       .map(
@@ -367,11 +407,54 @@ export default function AdvancedMortgageCalculator({
   }, [schedule.rows]);
 
   useEffect(() => {
-    if (deferWalkthrough) return;
+    if (!hydrated || deferWalkthrough) return;
     if (hasCompletedWalkthrough(TOUR_ID)) return;
-    const t = window.setTimeout(() => setTourOpen(true), 450);
+    const t = window.setTimeout(() => {
+      trackToolEvent(MORTGAGE_SLUG, "walkthrough_open", undefined, true);
+      setTourOpen(true);
+    }, 450);
     return () => window.clearTimeout(t);
-  }, [deferWalkthrough]);
+  }, [deferWalkthrough, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const t = window.setTimeout(() => {
+      trackToolEvent(
+        MORTGAGE_SLUG,
+        "session_telemetry",
+        {
+          goal,
+          score: readinessScore,
+          homePrice: Math.round(homePrice),
+          downPercent,
+          rate,
+          ltv: Math.round(ltv * 10) / 10,
+          housingDtiPct: Math.round(housingDtiPct * 10) / 10,
+          pitiFirstMonth: Math.round(pitiFirstMonth),
+          highDti: housingDtiPct > 36,
+          needsPmi,
+        },
+        true
+      );
+    }, 4000);
+    return () => window.clearTimeout(t);
+  }, [
+    hydrated,
+    goal,
+    readinessScore,
+    homePrice,
+    downPercent,
+    rate,
+    ltv,
+    housingDtiPct,
+    pitiFirstMonth,
+    needsPmi,
+  ]);
+
+  const openWalkthrough = () => {
+    trackToolEvent(MORTGAGE_SLUG, "walkthrough_open", undefined, true);
+    setTourOpen(true);
+  };
 
   const walkthroughSteps: WalkthroughStep[] = useMemo(
     () => [
@@ -638,19 +721,6 @@ export default function AdvancedMortgageCalculator({
         ),
       },
       {
-        id: "email",
-        target: "[data-tour='mortgage-email']",
-        title: "Email summary: send it to yourself",
-        body: (
-          <div className="space-y-2">
-            <p>Want a record? Email yourself a quick summary of your inputs and key results.</p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Tip: send a few scenarios (like 10% down vs 20%) and compare later.
-            </p>
-          </div>
-        ),
-      },
-      {
         id: "finish",
         placement: "center",
         title: "All set",
@@ -668,7 +738,7 @@ export default function AdvancedMortgageCalculator({
                 Try a small <strong>extra principal</strong>
               </li>
               <li>
-                Export the <strong>schedule</strong> or email yourself a summary
+                Export the <strong>schedule</strong> or copy scenario JSON from the lab
               </li>
             </ol>
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
@@ -681,13 +751,23 @@ export default function AdvancedMortgageCalculator({
     [downPercent, pmiAnnualPercent, pitiFirstMonth, schedule.monthsToPayoff, scheduleBiweekly.monthsToPayoff, tab]
   );
 
+  if (!hydrated) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center bg-white dark:bg-zinc-950 text-zinc-500 text-sm font-medium">
+        Loading calculator…
+      </div>
+    );
+  }
+
   return (
     <div className={tdPage}>
+      <ToolDashboardGridBackdrop />
       <ToolWalkthrough
         id={TOUR_ID}
         open={tourOpen}
         onClose={() => setTourOpen(false)}
         onFinish={() => {
+          trackToolEvent(MORTGAGE_SLUG, "walkthrough_complete", undefined, true);
           setTab("overview");
           try {
             window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
@@ -697,41 +777,62 @@ export default function AdvancedMortgageCalculator({
         }}
         steps={walkthroughSteps}
       />
-      <div className={tdHero}>
-        <ToolDashboardHeroBackdrop />
+      <section className={tdHero}>
+        <ToolDashboardHeroBackdrop accent="emerald" />
 
         <div className={tdHeroInnerNarrow}>
-          <div className="flex items-center justify-between mb-8">
-            <div className={tdProductPill}>
-              <Sparkles className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
-              Pro workspace
-            </div>
+          <div className="flex items-center justify-between gap-3 flex-wrap" data-tour="mortgage-top-nav">
             <Link href="/" className={tdNavLink}>
               <ArrowLeft className="h-4 w-4" />
               Back to Home
             </Link>
+            <Link href="/post?category=Personal%20Finance&q=mortgage" className={tdNavLink}>
+              Read mortgage guides
+              <ChevronRight className="h-4 w-4" />
+            </Link>
           </div>
 
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10" data-tour="mortgage-hero">
-            <div>
-              {/* Removed duplicated "Pro tool" badge here */}
-              <h1 className="font-display text-3xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-3">
-                Mortgage Calculator
-              </h1>
-              <p className="text-zinc-600 dark:text-zinc-400 max-w-2xl text-base md:text-lg leading-relaxed">
-                Full PITI + PMI drop-off, extra payments, bi-weekly equivalence, refinance break-even,
-                affordability from DTI, inflation-adjusted cost, and exportable schedules — in one place.
-              </p>
+          <div className="mt-7 sm:mt-8" data-tour="mortgage-hero">
+            <div className="flex items-center gap-3">
+              <span className={tdIconTile}>
+                <Building2 className="h-6 w-6" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight">
+                  <span className="bg-gradient-to-r from-sky-700 via-indigo-700 to-violet-700 bg-clip-text text-transparent dark:from-emerald-300 dark:via-cyan-300 dark:to-sky-300">
+                    {FACTS_DECK_MORTGAGE_CALCULATOR}
+                  </span>
+                </h1>
+                <p className="text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
+                  <span className="hidden sm:inline">
+                    Focus: <strong className="text-zinc-800 dark:text-zinc-200">{GOAL_LABEL[goal]}</strong> — full PITI, amortization, refinance break-even, and affordability.
+                  </span>
+                  <span className="sm:hidden">
+                    Focus: <strong className="text-zinc-800 dark:text-zinc-200">{GOAL_LABEL[goal]}</strong> — PITI & schedules
+                  </span>
+                </p>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2" data-tour="mortgage-tabs">
-              <button
-                type="button"
-                onClick={() => setTourOpen(true)}
-                className={tdGhostBtn}
-              >
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button type="button" onClick={openWalkthrough} className={tdGhostBtn}>
                 <BookOpen className="h-4 w-4" />
                 Walk-through
               </button>
+            </div>
+
+            <div className="mt-6">
+              <ToolDashboardTestCta
+                toolSlug="mortgage-calculator"
+                testLabel={FACTS_DECK_MORTGAGE_TEST}
+                blurb="Run the short interactive flow again—fresh answers, results snapshot, then land back here with the full workspace."
+              />
+            </div>
+
+            <div
+              className="mt-5 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0"
+              data-tour="mortgage-tabs"
+            >
               {TABS.map((t) => {
                 const Icon = t.icon;
                 const active = tab === t.id;
@@ -740,7 +841,7 @@ export default function AdvancedMortgageCalculator({
                     key={t.id}
                     type="button"
                     onClick={() => setTab(t.id)}
-                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    className={`inline-flex shrink-0 items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       active
                         ? "bg-zinc-900 text-white shadow-md shadow-zinc-900/15 ring-1 ring-zinc-900/10 dark:bg-zinc-100 dark:text-zinc-900 dark:shadow-lg dark:ring-white/20"
                         : "bg-zinc-100/90 text-zinc-700 hover:bg-zinc-200/90 dark:bg-zinc-900/80 dark:text-zinc-200 dark:hover:bg-zinc-800"
@@ -754,13 +855,7 @@ export default function AdvancedMortgageCalculator({
             </div>
           </div>
 
-          <ToolDashboardTestCta
-            toolSlug="mortgage-calculator"
-            testLabel={FACTS_DECK_MORTGAGE_TEST}
-            blurb="Retake the 5-step interactive flow for a new snapshot—quick questions, then your results page."
-          />
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="mt-7 sm:mt-8 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8">
             <div className="lg:col-span-4 space-y-6">
               <div
                 className={tdPanel}
@@ -1314,6 +1409,7 @@ export default function AdvancedMortgageCalculator({
                       data-tour="mortgage-copy-json"
                       type="button"
                       onClick={() => {
+                        trackToolEvent(MORTGAGE_SLUG, "export_json");
                         navigator.clipboard.writeText(
                           JSON.stringify(
                             {
@@ -1348,85 +1444,12 @@ export default function AdvancedMortgageCalculator({
             </div>
           </div>
 
-          <section
-            className="mt-12 max-w-xl mx-auto rounded-2xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
-            aria-labelledby="email-summary-heading"
-            data-tour="mortgage-email"
-          >
-            <h2
-              id="email-summary-heading"
-              className="font-display font-bold text-lg text-zinc-900 dark:text-zinc-100 flex items-center gap-2 mb-2"
-            >
-              <Mail className="h-5 w-5 text-zinc-900 dark:text-zinc-100 shrink-0" aria-hidden />
-              Email this summary
-            </h2>
-            <p className="text-zinc-600 dark:text-zinc-300 text-sm mb-4 leading-relaxed">
-              Get a plain-text and HTML snapshot of your current inputs and key results (P&amp;I, PITI, payoff,
-              interest, PMI totals).
-            </p>
-            <form onSubmit={sendSummaryEmail} className="space-y-3">
-              <label className="sr-only" htmlFor="mortgage-summary-email">
-                Email address
-              </label>
-              <input
-                id="mortgage-summary-email"
-                type="email"
-                name="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={emailSummaryAddr}
-                onChange={(e) => setEmailSummaryAddr(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 text-sm focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-white/10 dark:focus:border-zinc-700"
-                disabled={emailSummarySending}
-              />
-              <input
-                type="text"
-                name="website"
-                tabIndex={-1}
-                autoComplete="off"
-                value={emailHp}
-                onChange={(e) => setEmailHp(e.target.value)}
-                className="hidden"
-                aria-hidden
-              />
-              <button
-                type="submit"
-                disabled={emailSummarySending}
-                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-3 rounded-xl bg-zinc-900 text-white text-sm font-semibold hover:bg-zinc-800 transition-colors disabled:opacity-60 disabled:pointer-events-none dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-              >
-                {emailSummarySending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                    Sending…
-                  </>
-                ) : (
-                  <>
-                    <Mail className="h-4 w-4" aria-hidden />
-                    Email me the summary
-                  </>
-                )}
-              </button>
-              {emailSummaryNote && (
-                <p
-                  role="status"
-                  className={`text-sm ${
-                    emailSummaryNote.kind === "ok"
-                      ? "text-zinc-700 dark:text-zinc-300"
-                      : "text-red-600 dark:text-red-400"
-                  }`}
-                >
-                  {emailSummaryNote.text}
-                </p>
-              )}
-            </form>
-          </section>
-
           <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 mt-12 max-w-3xl mx-auto leading-relaxed">
             Educational estimates only — not financial, tax, or legal advice. PMI removal, DTI limits, and
             refinance terms depend on your lender, credit profile, and program. Rates and costs change daily.
           </p>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

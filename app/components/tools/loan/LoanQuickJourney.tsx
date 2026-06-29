@@ -2,10 +2,11 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Car, Compass, DollarSign, RefreshCw, Sparkles } from "lucide-react";
+import { ArrowLeft, Car, Compass, DollarSign, DoorOpen, RefreshCw, Sparkles } from "lucide-react";
 import WizardSlideShell from "../mortgage/WizardSlideShell";
 import type { LoanGoal, LoanJourneyAnswers } from "./loan-journey-types";
 import { FACTS_DECK_LOAN_CALCULATOR, FACTS_DECK_LOAN_TEST, LOAN_JOURNEY_DEFAULTS } from "./loan-journey-types";
+import { LOAN_SLUG, trackToolEvent } from "../../../lib/tool-analytics-client";
 
 const TOTAL_STEPS = 6;
 
@@ -40,6 +41,9 @@ export default function LoanQuickJourney({ onComplete, onSkipToDashboard }: Prop
   const finish = useCallback(() => onComplete({ ...a }), [a, onComplete]);
 
   const next = useCallback(() => {
+    if (step === 0) {
+      trackToolEvent(LOAN_SLUG, "journey_start", undefined, true);
+    }
     if (step >= TOTAL_STEPS - 1) {
       finish();
       return;
@@ -50,10 +54,23 @@ export default function LoanQuickJourney({ onComplete, onSkipToDashboard }: Prop
   const back = useCallback(() => setStep((s) => Math.max(0, s - 1)), []);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+    <div className="relative overflow-x-hidden overflow-y-hidden bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute top-[28rem] right-[-10%] h-96 w-96 rounded-full bg-orange-100/30 blur-3xl dark:bg-cyan-950/25"
+        aria-hidden
+      />
+
       <div className="relative overflow-hidden border-b border-zinc-200 dark:border-zinc-800">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 left-1/2 h-72 w-[56rem] -translate-x-1/2 rounded-full bg-zinc-900/[0.04] blur-3xl dark:bg-white/[0.06]" />
+          <div className="absolute -top-24 left-1/2 h-72 w-[56rem] -translate-x-1/2 rounded-full bg-amber-500/[0.06] blur-3xl dark:bg-amber-400/[0.08]" />
         </div>
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4 flex items-center gap-2 sm:gap-3">
           <div className="flex-1 flex justify-start min-w-0">
@@ -75,9 +92,16 @@ export default function LoanQuickJourney({ onComplete, onSkipToDashboard }: Prop
             <button
               type="button"
               onClick={onSkipToDashboard}
-              className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white underline-offset-2 hover:underline text-right"
+              className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white underline-offset-2 hover:underline text-right inline-flex items-center gap-1.5"
             >
-              Skip to full calculator
+              <span className="sm:hidden flex items-center gap-2">
+                <DoorOpen className="h-4 w-4 inline-block" aria-hidden />
+                Skip
+              </span>
+              <span className="hidden sm:inline flex items-center gap-1">
+                <DoorOpen className="h-4 w-4 inline-block mr-2" aria-hidden />
+                Skip to full calculator
+              </span>
             </button>
           </div>
         </div>
@@ -100,23 +124,13 @@ export default function LoanQuickJourney({ onComplete, onSkipToDashboard }: Prop
             <div className="relative text-center">
               <div className="relative mx-auto mb-8 flex h-36 w-36 items-center justify-center sm:h-44 sm:w-44">
                 <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-amber-400/35 via-orange-400/20 to-zinc-400/25 blur-2xl dark:from-amber-500/25 dark:via-orange-500/15 dark:to-zinc-500/20" />
-                <div className="absolute inset-2 rounded-[2.25rem] border border-dashed border-zinc-300/60 dark:border-zinc-600/50" />
-                <div className="relative flex h-full w-full flex-col items-center justify-center gap-2 rounded-[2rem] border border-zinc-200/90 bg-white/95 shadow-2xl ring-1 ring-zinc-900/5 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-950/95 dark:ring-white/10">
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-xs font-black tracking-tight text-white shadow-inner dark:bg-zinc-100 dark:text-zinc-900">
-                      FD
-                    </span>
-                    <DollarSign className="h-14 w-14 text-amber-700 dark:text-amber-400" strokeWidth={1.2} aria-hidden />
-                  </div>
-                  <div className="flex gap-1" aria-hidden>
-                    <span className="h-1.5 w-8 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-                    <span className="h-1.5 w-12 rounded-full bg-amber-500/80" />
-                    <span className="h-1.5 w-5 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-                  </div>
+                <div className="absolute inset-2 rounded-[2.25rem] border border-dashed border-amber-300/60 dark:border-amber-600/50" />
+                <div className="relative flex h-full w-full flex-col items-center justify-center gap-2 rounded-[2rem] border border-zinc-200/90 bg-white/95 shadow-2xl ring-1 ring-amber-900/5 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-950/95 dark:ring-amber-400/10">
+                  <DollarSign className="h-16 w-16 text-amber-700 dark:text-amber-400" strokeWidth={1.2} aria-hidden />
                 </div>
               </div>
               <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-amber-800 dark:text-amber-400/90">Facts Deck</p>
-              <h1 className="font-display text-3xl font-bold leading-[1.12] tracking-tight text-zinc-900 text-balance dark:text-zinc-50 sm:text-5xl md:text-6xl">
+              <h1 className="font-display text-2xl font-bold leading-[1.12] tracking-tight text-zinc-900 text-balance dark:text-zinc-50 sm:text-4xl md:text-5xl">
                 {FACTS_DECK_LOAN_CALCULATOR}
               </h1>
               <p className="mt-3 text-sm font-semibold text-zinc-500 dark:text-zinc-400">{FACTS_DECK_LOAN_TEST}</p>
@@ -139,7 +153,7 @@ export default function LoanQuickJourney({ onComplete, onSkipToDashboard }: Prop
             stepIndex={1}
             totalSteps={TOTAL_STEPS}
             title="What kind of loan?"
-            subtitle="We’ll label your snapshot — you can change anything in the full calculator."
+            subtitle="Your focus shapes labels on your snapshot — you can change anything in the full calculator."
             onBack={back}
             onNext={next}
             nextDisabled={!canProceed()}
@@ -153,7 +167,7 @@ export default function LoanQuickJourney({ onComplete, onSkipToDashboard }: Prop
                     key={g.id}
                     type="button"
                     onClick={() => setField("goal", g.id)}
-                    className={`text-left rounded-2xl border-2 p-5 transition-all ${
+                    className={`text-left rounded-2xl border-2 p-5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 ${
                       on
                         ? "border-zinc-900 bg-zinc-50 shadow-md dark:border-zinc-100 dark:bg-zinc-900/60"
                         : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600"
@@ -185,7 +199,7 @@ export default function LoanQuickJourney({ onComplete, onSkipToDashboard }: Prop
             stepIndex={2}
             totalSteps={TOTAL_STEPS}
             title="Loan amount (principal)"
-            subtitle="Amount you’re borrowing before fees."
+            subtitle="Amount you're borrowing before fees."
             onBack={back}
             onNext={next}
             nextDisabled={!canProceed()}
@@ -201,17 +215,23 @@ export default function LoanQuickJourney({ onComplete, onSkipToDashboard }: Prop
                 step={500}
                 value={Math.min(150_000, Math.max(2_000, a.principal))}
                 onChange={(e) => setField("principal", Number(e.target.value))}
+                aria-label="Loan principal amount"
+                aria-valuetext={`$${Number(a.principal).toLocaleString()}`}
                 className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
               />
-              <input
-                type="number"
-                min={500}
-                max={2_000_000}
-                step={100}
-                value={a.principal}
-                onChange={(e) => setField("principal", Number(e.target.value) || 0)}
-                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-              />
+              <label className="block">
+                <span className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400">Exact amount</span>
+                <input
+                  type="number"
+                  min={500}
+                  max={2_000_000}
+                  step={100}
+                  value={a.principal}
+                  onChange={(e) => setField("principal", Number(e.target.value) || 0)}
+                  aria-label="Exact loan principal"
+                  className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
+                />
+              </label>
             </div>
           </WizardSlideShell>
         )}
@@ -238,8 +258,23 @@ export default function LoanQuickJourney({ onComplete, onSkipToDashboard }: Prop
                 step={0.05}
                 value={a.apr}
                 onChange={(e) => setField("apr", Number(e.target.value))}
+                aria-label="Annual percentage rate"
+                aria-valuetext={`${a.apr.toFixed(2)} percent`}
                 className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
               />
+              <label className="block">
+                <span className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400">Exact APR</span>
+                <input
+                  type="number"
+                  min={0.5}
+                  max={40}
+                  step={0.01}
+                  value={a.apr}
+                  onChange={(e) => setField("apr", Number(e.target.value) || 0)}
+                  aria-label="Exact APR"
+                  className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
+                />
+              </label>
             </div>
           </WizardSlideShell>
         )}
@@ -250,7 +285,7 @@ export default function LoanQuickJourney({ onComplete, onSkipToDashboard }: Prop
             stepIndex={4}
             totalSteps={TOTAL_STEPS}
             title="Term (years)"
-            subtitle="How long you’ll pay the loan."
+            subtitle="How long you'll pay the loan."
             onBack={back}
             onNext={next}
             nextDisabled={!canProceed()}
@@ -266,8 +301,26 @@ export default function LoanQuickJourney({ onComplete, onSkipToDashboard }: Prop
                 step={0.5}
                 value={a.termYears}
                 onChange={(e) => setField("termYears", Number(e.target.value))}
+                aria-label="Loan term in years"
+                aria-valuetext={`${a.termYears} years`}
                 className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
               />
+              <div className="flex flex-wrap justify-center gap-2">
+                {[3, 5, 7, 10].map((y) => (
+                  <button
+                    key={y}
+                    type="button"
+                    onClick={() => setField("termYears", y)}
+                    className={`px-5 py-3 rounded-xl text-sm font-bold border-2 transition-colors ${
+                      a.termYears === y
+                        ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                        : "border-zinc-200 text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-200"
+                    }`}
+                  >
+                    {y} yr
+                  </button>
+                ))}
+              </div>
             </div>
           </WizardSlideShell>
         )}
@@ -298,6 +351,7 @@ export default function LoanQuickJourney({ onComplete, onSkipToDashboard }: Prop
                   step={25}
                   value={Math.min(2_000, a.extraMonthly)}
                   onChange={(e) => setField("extraMonthly", Number(e.target.value))}
+                  aria-label="Extra monthly principal payment"
                   className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
                 />
               </div>
@@ -313,6 +367,7 @@ export default function LoanQuickJourney({ onComplete, onSkipToDashboard }: Prop
                   step={0.25}
                   value={a.feePct}
                   onChange={(e) => setField("feePct", Number(e.target.value))}
+                  aria-label="Origination fee percentage"
                   className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
                 />
               </div>

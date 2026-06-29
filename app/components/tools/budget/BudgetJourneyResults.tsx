@@ -3,9 +3,20 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, Copy, Home, RefreshCw, Sparkles, Wallet } from "lucide-react";
-import { computeBudgetJourneyMetrics, formatBudgetMoney } from "./compute-budget-journey-metrics";
+import {
+  computeBudgetJourneyMetrics,
+  formatBudgetMoney,
+  GOAL_LABEL,
+  goalHighlightTarget,
+  goalResultsHeadline,
+  suggestRelatedTools,
+  defaultDemoItems,
+} from "./compute-budget-journey-metrics";
 import type { BudgetJourneyAnswers } from "./budget-journey-types";
 import { FACTS_DECK_BUDGET_TEST } from "./budget-journey-types";
+import BudgetRelatedTools from "./BudgetRelatedTools";
+import { BUDGET_PLANNER_SLUG, trackToolEvent } from "../../../lib/tool-analytics-client";
+import { saveBudgetState } from "./budget-storage";
 
 type Props = {
   answers: BudgetJourneyAnswers;
@@ -13,16 +24,22 @@ type Props = {
   onStartOver: () => void;
 };
 
-const GOAL_LABEL: Record<BudgetJourneyAnswers["goal"], string> = {
-  organize: "Get organized",
-  debt: "Pay down debt",
-  save: "Save more",
-  exploring: "Exploring",
-};
-
 export default function BudgetJourneyResults({ answers, onOpenDashboard, onStartOver }: Props) {
   const m = computeBudgetJourneyMetrics(answers);
   const [copied, setCopied] = useState(false);
+  const headline = goalResultsHeadline(answers.goal, answers.mode);
+  const highlight = m.targets ? goalHighlightTarget(answers.goal, m.targets) : null;
+  const relatedTools = suggestRelatedTools(
+    answers.goal,
+    {
+      byGroup: { Needs: 0, Wants: 0, Savings: 0, Debt: 0 },
+      planned: 0,
+      buffer: m.bufferMonthly,
+      available: m.available,
+      remaining: m.available,
+    },
+    m.targets
+  );
 
   const summaryText = [
     `${FACTS_DECK_BUDGET_TEST} — Summary`,
@@ -41,6 +58,7 @@ export default function BudgetJourneyResults({ answers, onOpenDashboard, onStart
   const copySummary = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(summaryText);
+      trackToolEvent(BUDGET_PLANNER_SLUG, "export_text");
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -48,9 +66,30 @@ export default function BudgetJourneyResults({ answers, onOpenDashboard, onStart
     }
   }, [summaryText]);
 
+  const loadSamplePlan = useCallback(() => {
+    try {
+      saveBudgetState({
+        mode: answers.mode,
+        incomeMonthly: answers.incomeMonthly,
+        bufferPct: answers.bufferPct,
+        goal: answers.goal,
+        items: defaultDemoItems(),
+      });
+      trackToolEvent(BUDGET_PLANNER_SLUG, "starter_plan_load");
+      onOpenDashboard();
+    } catch (err) {
+      console.error("[loadSamplePlan]", err);
+      onOpenDashboard();
+    }
+  }, [answers, onOpenDashboard]);
+
+  const targetCardClass = (key: "needs" | "wants" | "savingsDebt") =>
+    highlight === key
+      ? "ring-2 ring-emerald-500/60 dark:ring-emerald-400/50 border-emerald-200 dark:border-emerald-800"
+      : "border-zinc-100 dark:border-zinc-800";
+
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
-      {/* Ambient layers */}
       <div
         className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
         aria-hidden
@@ -59,14 +98,8 @@ export default function BudgetJourneyResults({ answers, onOpenDashboard, onStart
         className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
         aria-hidden
       />
-      <div
-        className="pointer-events-none absolute top-[28rem] right-[-10%] h-96 w-96 rounded-full bg-orange-100/30 blur-3xl dark:bg-cyan-950/25"
-        aria-hidden
-      />
+
       <div className="relative overflow-hidden border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-20 left-1/2 h-80 w-[60rem] -translate-x-1/2 rounded-full bg-emerald-500/[0.07] blur-3xl dark:bg-emerald-400/[0.08]" />
-        </div>
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 sm:mb-8 pb-5 sm:pb-6 border-b border-zinc-200/80 dark:border-zinc-800/80">
             <button
@@ -90,13 +123,15 @@ export default function BudgetJourneyResults({ answers, onOpenDashboard, onStart
               <Sparkles className="h-3.5 w-3.5 shrink-0" />
               <span className="leading-snug">{FACTS_DECK_BUDGET_TEST} · Results</span>
             </span>
-            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Focus: {GOAL_LABEL[answers.goal]}</span>
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+              Focus: {GOAL_LABEL[answers.goal]}
+            </span>
           </div>
           <h1 className="font-display text-[1.7rem] leading-tight sm:text-5xl font-bold text-balance max-w-3xl">
-            Your budget snapshot
+            {headline.title}
           </h1>
           <p className="mt-3 sm:mt-4 text-base sm:text-lg text-zinc-600 dark:text-zinc-300 max-w-2xl leading-relaxed">
-            Available cash after your buffer — then open the full planner to add real line items and buckets.
+            {headline.subtitle}
           </p>
         </div>
       </div>
@@ -109,42 +144,52 @@ export default function BudgetJourneyResults({ answers, onOpenDashboard, onStart
           <p className="mt-2 font-display text-4xl sm:text-6xl font-bold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
             {formatBudgetMoney(m.available)}
           </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-              <span>
-                Income {formatBudgetMoney(answers.incomeMonthly)} − buffer{" "}
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                  {formatBudgetMoney(m.bufferMonthly)}
-                </span>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <span>
+              Income {formatBudgetMoney(answers.incomeMonthly)} − buffer{" "}
+              <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                {formatBudgetMoney(m.bufferMonthly)}
               </span>
-              <span className="hidden h-3 w-px bg-zinc-200 dark:bg-zinc-700 sm:inline" aria-hidden />
-              <span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                Buffer {(answers.bufferPct * 100).toFixed(1)}%
-              </span>
-              <span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
-                {answers.mode === "50-30-20" ? "50/30/20" : "Zero-based"}
-              </span>
-            </div>
+            </span>
+            <span className="hidden h-3 w-px bg-zinc-200 dark:bg-zinc-700 sm:inline" aria-hidden />
+            <span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+              Buffer {(answers.bufferPct * 100).toFixed(1)}%
+            </span>
+            <span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+              {answers.mode === "50-30-20" ? "50/30/20" : "Zero-based"}
+            </span>
+          </div>
           {m.targets ? (
-            <>
-              {/* Mobile: swipe targets; sm+: 3-up grid */}
-              <div className="mt-6 sm:mt-8 -mx-6 px-6 sm:mx-0 sm:px-0">
-                <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:pb-0">
-                  <div className="min-w-[14.5rem] sm:min-w-0 rounded-2xl bg-zinc-50 dark:bg-zinc-950/80 p-5 border border-zinc-100 dark:border-zinc-800">
-                    <p className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Needs target (50%)</p>
-                    <p className="mt-2 text-2xl font-bold tabular-nums">{formatBudgetMoney(m.targets.needs)}</p>
-                  </div>
-                  <div className="min-w-[14.5rem] sm:min-w-0 rounded-2xl bg-zinc-50 dark:bg-zinc-950/80 p-5 border border-zinc-100 dark:border-zinc-800">
-                    <p className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Wants target (30%)</p>
-                    <p className="mt-2 text-2xl font-bold tabular-nums">{formatBudgetMoney(m.targets.wants)}</p>
-                  </div>
-                  <div className="min-w-[14.5rem] sm:min-w-0 rounded-2xl bg-zinc-50 dark:bg-zinc-950/80 p-5 border border-zinc-100 dark:border-zinc-800">
-                    <p className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Savings + debt (20%)</p>
-                    <p className="mt-2 text-2xl font-bold tabular-nums">{formatBudgetMoney(m.targets.savingsDebt)}</p>
-                  </div>
+            <div className="mt-6 sm:mt-8 -mx-6 px-6 sm:mx-0 sm:px-0">
+              <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:pb-0">
+                <div
+                  className={`min-w-[14.5rem] sm:min-w-0 rounded-2xl bg-zinc-50 dark:bg-zinc-950/80 p-5 border ${targetCardClass("needs")}`}
+                >
+                  <p className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Needs target (50%)</p>
+                  <p className="mt-2 text-2xl font-bold tabular-nums">{formatBudgetMoney(m.targets.needs)}</p>
                 </div>
-                <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 sm:hidden">Swipe to see all targets</p>
+                <div
+                  className={`min-w-[14.5rem] sm:min-w-0 rounded-2xl bg-zinc-50 dark:bg-zinc-950/80 p-5 border ${targetCardClass("wants")}`}
+                >
+                  <p className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Wants target (30%)</p>
+                  <p className="mt-2 text-2xl font-bold tabular-nums">{formatBudgetMoney(m.targets.wants)}</p>
+                </div>
+                <div
+                  className={`min-w-[14.5rem] sm:min-w-0 rounded-2xl bg-zinc-50 dark:bg-zinc-950/80 p-5 border ${targetCardClass("savingsDebt")}`}
+                >
+                  <p className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">
+                    Savings + debt (20%)
+                    {highlight === "savingsDebt" ? (
+                      <span className="ml-1 normal-case font-semibold text-emerald-700 dark:text-emerald-400">
+                        · Your focus
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className="mt-2 text-2xl font-bold tabular-nums">{formatBudgetMoney(m.targets.savingsDebt)}</p>
+                </div>
               </div>
-            </>
+              <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 sm:hidden">Swipe to see all targets</p>
+            </div>
           ) : (
             <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-300">
               Zero-based mode: assign every dollar in the full planner so remaining trends toward zero.
@@ -159,16 +204,26 @@ export default function BudgetJourneyResults({ answers, onOpenDashboard, onStart
               <h2 className="font-display text-xl font-bold">Full budget workspace</h2>
             </div>
             <p className="text-sm opacity-90 leading-relaxed mb-6">
-              Buckets, line items, insights, and JSON export — your test answers are pre-filled.
+              Empty buckets to start — your test answers are pre-filled. Load a {GOAL_LABEL[answers.goal].toLowerCase()}{" "}
+              starter plan or add line items yourself.
             </p>
-            <button
-              type="button"
-              onClick={onOpenDashboard}
-              className="inline-flex items-center gap-2 w-full justify-center px-6 py-3.5 rounded-2xl bg-white text-zinc-900 text-sm font-bold hover:bg-zinc-100 transition-colors dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800"
-            >
-              Open budget planner
-              <ArrowRight className="h-4 w-4" />
-            </button>
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={onOpenDashboard}
+                className="inline-flex items-center gap-2 w-full justify-center px-6 py-3.5 rounded-2xl bg-white text-zinc-900 text-sm font-bold hover:bg-zinc-100 transition-colors dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800"
+              >
+                Open budget planner
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={loadSamplePlan}
+                className="inline-flex items-center gap-2 w-full justify-center px-6 py-3 rounded-xl border border-zinc-200 bg-white text-zinc-900 text-sm font-semibold hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+              >
+                Load sample plan
+              </button>
+            </div>
           </div>
 
           <div className="rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
@@ -188,12 +243,17 @@ export default function BudgetJourneyResults({ answers, onOpenDashboard, onStart
           </div>
         </div>
 
+        {relatedTools.length > 0 ? (
+          <div className="max-w-xl">
+            <BudgetRelatedTools tools={relatedTools} />
+          </div>
+        ) : null}
+
         <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed pb-8">
           Educational planning only — not financial advice.
         </p>
       </div>
 
-      {/* Mobile: sticky actions so users don’t hunt for buttons */}
       <div className="sm:hidden fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white/95 backdrop-blur pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 dark:border-zinc-800 dark:bg-zinc-950/95">
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid grid-cols-2 gap-2">

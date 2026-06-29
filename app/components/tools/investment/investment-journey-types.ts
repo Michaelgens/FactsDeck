@@ -3,7 +3,7 @@
 export const FACTS_DECK_INVESTMENT_TEST = "Facts Deck Investment Test";
 
 /** Full product name on the welcome slide. */
-export const FACTS_DECK_INVESTMENT_CALCULATOR = "Facts Deck Investment Calculator";
+export const FACTS_DECK_INVESTMENT_CALCULATOR = "Investment Calculator";
 
 export type InvestmentGoal = "wealth" | "fire" | "exploring";
 

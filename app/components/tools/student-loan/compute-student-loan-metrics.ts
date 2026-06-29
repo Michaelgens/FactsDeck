@@ -1,4 +1,4 @@
-import type { StudentLoanJourneyAnswers } from "./student-loan-journey-types";
+import type { StudentLoanJourneyAnswers, StudentLoanPathGoal } from "./student-loan-journey-types";
 
 /** Approximate contiguous US federal poverty guidelines (annual) — educational model only. */
 export function federalPovertyLineAnnual(familySize: number): number {
@@ -142,4 +142,79 @@ export function computeStudentLoanJourneyMetrics(
 export function formatSlMoney(n: number) {
   if (!Number.isFinite(n)) return "—";
   return n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+}
+
+export function computeStudentLoanReadinessScore(
+  a: StudentLoanJourneyAnswers,
+  m: ReturnType<typeof computeStudentLoanJourneyMetrics>
+): number {
+  const paymentToIncome = (m.standardMonthly * 12) / Math.max(1, a.annualIncome);
+  const paymentScore =
+    paymentToIncome <= 0.1 ? 1 : paymentToIncome <= 0.15 ? 0.75 : paymentToIncome <= 0.2 ? 0.5 : 0.3;
+  const idrScore = m.idrBelowInterest ? 0.35 : 0.85;
+  const balanceScore =
+    a.balance <= 20_000 ? 1 : a.balance <= 40_000 ? 0.7 : a.balance <= 80_000 ? 0.5 : 0.35;
+  return Math.round((paymentScore * 0.35 + idrScore * 0.35 + balanceScore * 0.3) * 100);
+}
+
+export function buildStudentLoanTextSummary(
+  a: StudentLoanJourneyAnswers,
+  m: ReturnType<typeof computeStudentLoanJourneyMetrics>
+): string {
+  const goalLabel =
+    a.goal === "standard"
+      ? "Standard repayment"
+      : a.goal === "idr"
+        ? "IDR (illustrative)"
+        : a.goal === "compare"
+          ? "Compare both"
+          : "Exploring";
+  return [
+    "Facts Deck Student Loan Path Test — summary",
+    `Goal: ${goalLabel}`,
+    `Balance: ${formatSlMoney(a.balance)} @ ${a.aprPercent.toFixed(2)}%`,
+    `Income: ${formatSlMoney(a.annualIncome)}/yr | Family size: ${a.familySize}`,
+    `Discretionary income (est.): ${formatSlMoney(m.discretionaryAnnual)}/yr`,
+    `Standard (10 yr) payment: ${formatSlMoney(m.standardMonthly)}/mo | Total interest ≈ ${formatSlMoney(m.standardTotalInterest)}`,
+    `IDR illustrative payment (${m.idrPercentOfDiscretionary}% of discretionary / yr): ${formatSlMoney(m.idrMonthly)}/mo`,
+    m.idrBelowInterest ? "Warning: IDR payment is below first-month interest (balance can grow)." : "",
+    `After 20 yrs (illustrative IDR path): balance ≈ ${formatSlMoney(m.idrAfter20y.endingBalance)}`,
+    `Readiness score: ${computeStudentLoanReadinessScore(a, m)}/100`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export type RelatedTool = {
+  slug: string;
+  name: string;
+  reason: string;
+};
+
+export function suggestRelatedTools(goal: StudentLoanPathGoal, a: StudentLoanJourneyAnswers): RelatedTool[] {
+  const out: RelatedTool[] = [];
+  const push = (slug: string, name: string, reason: string) => {
+    if (!out.some((t) => t.slug === slug)) out.push({ slug, name, reason });
+  };
+
+  const m = computeStudentLoanJourneyMetrics(a);
+  const paymentToIncome = (m.standardMonthly * 12) / Math.max(1, a.annualIncome);
+
+  if (goal === "idr" || goal === "compare" || m.idrBelowInterest) {
+    push("budget-planner", "Budget Planner", "See how IDR vs standard payments fit your monthly cash flow.");
+  }
+  if (a.balance >= 15_000) {
+    push("debt-payoff-planner", "Debt Payoff Planner", "Compare snowball vs avalanche if you also carry non-student debt.");
+  }
+  if (paymentToIncome > 0.12 || a.annualIncome < 45_000) {
+    push("emergency-fund-calculator", "Emergency Fund & Runway", "Build runway while payments are income-driven.");
+  }
+  if (goal === "standard" || paymentToIncome > 0.15) {
+    push("loan-calculator", "Loan Calculator", "Model consolidation or refi scenarios against your balance.");
+  }
+  if (goal === "exploring") {
+    push("subscription-spend-audit", "Subscription Audit", "Find recurring cuts to free up payment room.");
+  }
+
+  return out.slice(0, 4);
 }

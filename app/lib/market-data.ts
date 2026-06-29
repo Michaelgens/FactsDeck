@@ -35,13 +35,18 @@ async function fetchQuote(
   token: string
 ): Promise<FinnhubQuote | null> {
   const url = `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${token}`;
-  const res = await fetch(url, {
-    next: { revalidate: REVALIDATE_SECONDS },
-  });
-  if (!res.ok) return null;
-  const data = (await res.json()) as FinnhubQuote;
-  if (data.c == null || data.c === 0) return null;
-  return data;
+  try {
+    const res = await fetch(url, {
+      next: { revalidate: REVALIDATE_SECONDS },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as FinnhubQuote;
+    if (data.c == null || data.c === 0) return null;
+    return data;
+  } catch {
+    return null;
+  }
 }
 
 function formatValue(val: number, prefix = ""): string {
@@ -52,21 +57,29 @@ function formatValue(val: number, prefix = ""): string {
 }
 
 export async function getMarketData(): Promise<MarketDataItem[] | null> {
-  const token = process.env.FINNHUB_API_KEY;
-  if (!token?.trim()) return null;
+  const token = process.env.FINNHUB_API_KEY?.trim();
+  if (!token) return null;
 
-  const results: MarketDataItem[] = [];
-  for (const { finnhub, label, prefix = "" } of SYMBOLS) {
-    const quote = await fetchQuote(finnhub, token);
-    if (!quote) continue;
-    const dp = quote.dp ?? 0;
-    const change = `${dp >= 0 ? "+" : ""}${dp.toFixed(2)}%`;
-    results.push({
-      symbol: label,
-      value: formatValue(quote.c, prefix),
-      change,
-      positive: dp >= 0,
-    });
+  try {
+    const quotes = await Promise.all(
+      SYMBOLS.map(({ finnhub }) => fetchQuote(finnhub, token))
+    );
+
+    const results: MarketDataItem[] = [];
+    for (let i = 0; i < SYMBOLS.length; i++) {
+      const quote = quotes[i];
+      if (!quote) continue;
+      const { label, prefix = "" } = SYMBOLS[i];
+      const dp = quote.dp ?? 0;
+      results.push({
+        symbol: label,
+        value: formatValue(quote.c, prefix),
+        change: `${dp >= 0 ? "+" : ""}${dp.toFixed(2)}%`,
+        positive: dp >= 0,
+      });
+    }
+    return results.length > 0 ? results : null;
+  } catch {
+    return null;
   }
-  return results.length > 0 ? results : null;
 }

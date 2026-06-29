@@ -6,6 +6,7 @@ import AdvancedBudgetPlanner from "./AdvancedBudgetPlanner";
 import BudgetQuickJourney from "./budget/BudgetQuickJourney";
 import BudgetJourneyResults from "./budget/BudgetJourneyResults";
 import type { BudgetJourneyAnswers } from "./budget/budget-journey-types";
+import { BUDGET_PLANNER_SLUG, trackToolEvent } from "../../lib/tool-analytics-client";
 
 type Phase = "journey" | "results" | "dashboard";
 
@@ -35,7 +36,23 @@ function BudgetCalculatorEntryInner() {
     }
   }, [retakeTest, dashboardParam]);
 
+  useEffect(() => {
+    trackToolEvent(BUDGET_PLANNER_SLUG, "page_view", undefined, true);
+  }, []);
+
+  useEffect(() => {
+    if (phase === "results") {
+      trackToolEvent(BUDGET_PLANNER_SLUG, "results_view", undefined, true);
+    }
+  }, [phase]);
+
   const handleJourneyComplete = useCallback((a: BudgetJourneyAnswers) => {
+    trackToolEvent(BUDGET_PLANNER_SLUG, "journey_complete", {
+      goal: a.goal,
+      mode: a.mode,
+      incomeMonthly: a.incomeMonthly,
+      bufferPct: a.bufferPct,
+    });
     setAnswers(a);
     setPhase("results");
     try {
@@ -46,15 +63,19 @@ function BudgetCalculatorEntryInner() {
   }, []);
 
   const handleSkip = useCallback(() => {
+    trackToolEvent(BUDGET_PLANNER_SLUG, "journey_skip", undefined, true);
+    trackToolEvent(BUDGET_PLANNER_SLUG, "dashboard_open", { source: "journey_skip" }, true);
     setPhase("dashboard");
     setAnswers(null);
   }, []);
 
   const handleOpenDashboard = useCallback(() => {
+    trackToolEvent(BUDGET_PLANNER_SLUG, "dashboard_open", { source: "results" }, true);
     setPhase("dashboard");
   }, []);
 
   const handleStartOver = useCallback(() => {
+    trackToolEvent(BUDGET_PLANNER_SLUG, "retake_click");
     setAnswers(null);
     setPhase("journey");
   }, []);
@@ -63,9 +84,11 @@ function BudgetCalculatorEntryInner() {
     () =>
       answers
         ? {
+            goal: answers.goal,
             mode: answers.mode,
             incomeMonthly: answers.incomeMonthly,
             bufferPct: answers.bufferPct,
+            fromJourney: true as const,
           }
         : undefined,
     [answers]
@@ -79,7 +102,9 @@ function BudgetCalculatorEntryInner() {
     return <BudgetJourneyResults answers={answers} onOpenDashboard={handleOpenDashboard} onStartOver={handleStartOver} />;
   }
 
-  return <AdvancedBudgetPlanner initialValues={plannerInitial} deferWalkthrough={Boolean(answers)} />;
+  return (
+    <AdvancedBudgetPlanner initialValues={plannerInitial} deferWalkthrough={Boolean(answers)} />
+  );
 }
 
 export default function BudgetCalculatorEntry() {

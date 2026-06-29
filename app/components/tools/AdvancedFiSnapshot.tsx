@@ -2,11 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, Check, ChevronRight, Copy, Gem, Sparkles } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, ChevronRight, Copy, Gem } from "lucide-react";
 import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
-import { FI_SNAPSHOT_JOURNEY_DEFAULTS, FACTS_DECK_FI_SNAPSHOT_TOOL } from "./fi-snapshot/fi-snapshot-journey-types";
+import {
+  FI_SNAPSHOT_JOURNEY_DEFAULTS,
+  FACTS_DECK_FI_SNAPSHOT_TEST,
+  FACTS_DECK_FI_SNAPSHOT_TOOL,
+} from "./fi-snapshot/fi-snapshot-journey-types";
+import type { FiSnapshotGoal, FiSnapshotJourneyAnswers } from "./fi-snapshot/fi-snapshot-journey-types";
 import ToolDashboardTestCta from "./ToolDashboardTestCta";
 import {
+  ToolDashboardGridBackdrop,
   ToolDashboardHeroBackdrop,
   tdGhostBtn,
   tdHero,
@@ -15,22 +21,32 @@ import {
   tdNavLink,
   tdPage,
 } from "./tool-dashboard-ui";
-import type { FiSnapshotJourneyAnswers } from "./fi-snapshot/fi-snapshot-journey-types";
 import {
   computeFiSnapshotMetrics,
+  computeFiSnapshotReadinessScore,
   formatFiMoney,
   FREEDOM_BAND_COPY,
 } from "./fi-snapshot/compute-fi-snapshot-metrics";
+import { loadFiSnapshotState, saveFiSnapshotState } from "./fi-snapshot/fi-snapshot-storage";
+import { FI_SNAPSHOT_SLUG, trackToolEvent } from "../../lib/tool-analytics-client";
 import FiOrbitRing from "./fi-snapshot/FiOrbitRing";
+
+const GOAL_LABEL: Record<FiSnapshotGoal, string> = {
+  freedom: "Freedom runway",
+  clarity: "Clarity",
+  milestone: "Milestone",
+  exploring: "Exploring",
+};
 
 export type FiSnapshotInitialValues = Partial<
   Pick<
     FiSnapshotJourneyAnswers,
-    "liquidCash" | "invested" | "otherAssets" | "liabilities" | "monthlyExpenses" | "monthlyInvesting"
+    "goal" | "liquidCash" | "invested" | "otherAssets" | "liabilities" | "monthlyExpenses" | "monthlyInvesting"
   >
 > & {
   withdrawalRatePct?: number;
   investmentReturnAnnual?: number;
+  fromJourney?: true;
 };
 
 type Props = {
@@ -42,16 +58,102 @@ function clamp(n: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, n));
 }
 
-export default function AdvancedFiSnapshot({ initialValues, deferWalkthrough = false }: Props = {}) {
+function resolveInitialState(initialValues?: FiSnapshotInitialValues) {
+  const saved = typeof window !== "undefined" ? loadFiSnapshotState() : null;
   const d = FI_SNAPSHOT_JOURNEY_DEFAULTS;
-  const [liquidCash, setLiquidCash] = useState(initialValues?.liquidCash ?? d.liquidCash);
-  const [invested, setInvested] = useState(initialValues?.invested ?? d.invested);
-  const [otherAssets, setOtherAssets] = useState(initialValues?.otherAssets ?? d.otherAssets);
-  const [liabilities, setLiabilities] = useState(initialValues?.liabilities ?? d.liabilities);
-  const [monthlyExpenses, setMonthlyExpenses] = useState(initialValues?.monthlyExpenses ?? d.monthlyExpenses);
-  const [monthlyInvesting, setMonthlyInvesting] = useState(initialValues?.monthlyInvesting ?? d.monthlyInvesting);
-  const [withdrawalRatePct, setWithdrawalRatePct] = useState(initialValues?.withdrawalRatePct ?? 4);
-  const [investmentReturnAnnual, setInvestmentReturnAnnual] = useState(initialValues?.investmentReturnAnnual ?? 0.07);
+
+  if (initialValues?.fromJourney) {
+    return {
+      goal: initialValues.goal ?? d.goal,
+      liquidCash: initialValues.liquidCash ?? d.liquidCash,
+      invested: initialValues.invested ?? d.invested,
+      otherAssets: initialValues.otherAssets ?? d.otherAssets,
+      liabilities: initialValues.liabilities ?? d.liabilities,
+      monthlyExpenses: initialValues.monthlyExpenses ?? d.monthlyExpenses,
+      monthlyInvesting: initialValues.monthlyInvesting ?? d.monthlyInvesting,
+      withdrawalRatePct: initialValues.withdrawalRatePct ?? 4,
+      investmentReturnAnnual: initialValues.investmentReturnAnnual ?? 0.07,
+    };
+  }
+
+  if (saved) {
+    return {
+      goal: saved.goal,
+      liquidCash: saved.liquidCash,
+      invested: saved.invested,
+      otherAssets: saved.otherAssets,
+      liabilities: saved.liabilities,
+      monthlyExpenses: saved.monthlyExpenses,
+      monthlyInvesting: saved.monthlyInvesting,
+      withdrawalRatePct: saved.withdrawalRatePct,
+      investmentReturnAnnual: saved.investmentReturnAnnual,
+    };
+  }
+
+  return {
+    goal: initialValues?.goal ?? d.goal,
+    liquidCash: initialValues?.liquidCash ?? d.liquidCash,
+    invested: initialValues?.invested ?? d.invested,
+    otherAssets: initialValues?.otherAssets ?? d.otherAssets,
+    liabilities: initialValues?.liabilities ?? d.liabilities,
+    monthlyExpenses: initialValues?.monthlyExpenses ?? d.monthlyExpenses,
+    monthlyInvesting: initialValues?.monthlyInvesting ?? d.monthlyInvesting,
+    withdrawalRatePct: initialValues?.withdrawalRatePct ?? 4,
+    investmentReturnAnnual: initialValues?.investmentReturnAnnual ?? 0.07,
+  };
+}
+
+export default function AdvancedFiSnapshot({ initialValues, deferWalkthrough = false }: Props = {}) {
+  const [hydrated, setHydrated] = useState(false);
+  const [goal, setGoal] = useState<FiSnapshotGoal>("clarity");
+  const [liquidCash, setLiquidCash] = useState(FI_SNAPSHOT_JOURNEY_DEFAULTS.liquidCash);
+  const [invested, setInvested] = useState(FI_SNAPSHOT_JOURNEY_DEFAULTS.invested);
+  const [otherAssets, setOtherAssets] = useState(FI_SNAPSHOT_JOURNEY_DEFAULTS.otherAssets);
+  const [liabilities, setLiabilities] = useState(FI_SNAPSHOT_JOURNEY_DEFAULTS.liabilities);
+  const [monthlyExpenses, setMonthlyExpenses] = useState(FI_SNAPSHOT_JOURNEY_DEFAULTS.monthlyExpenses);
+  const [monthlyInvesting, setMonthlyInvesting] = useState(FI_SNAPSHOT_JOURNEY_DEFAULTS.monthlyInvesting);
+  const [withdrawalRatePct, setWithdrawalRatePct] = useState(4);
+  const [investmentReturnAnnual, setInvestmentReturnAnnual] = useState(0.07);
+
+  useEffect(() => {
+    const state = resolveInitialState(initialValues);
+    setGoal(state.goal);
+    setLiquidCash(state.liquidCash);
+    setInvested(state.invested);
+    setOtherAssets(state.otherAssets);
+    setLiabilities(state.liabilities);
+    setMonthlyExpenses(state.monthlyExpenses);
+    setMonthlyInvesting(state.monthlyInvesting);
+    setWithdrawalRatePct(state.withdrawalRatePct);
+    setInvestmentReturnAnnual(state.investmentReturnAnnual);
+    setHydrated(true);
+  }, [initialValues]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveFiSnapshotState({
+      goal,
+      liquidCash,
+      invested,
+      otherAssets,
+      liabilities,
+      monthlyExpenses,
+      monthlyInvesting,
+      withdrawalRatePct,
+      investmentReturnAnnual,
+    });
+  }, [
+    hydrated,
+    goal,
+    liquidCash,
+    invested,
+    otherAssets,
+    liabilities,
+    monthlyExpenses,
+    monthlyInvesting,
+    withdrawalRatePct,
+    investmentReturnAnnual,
+  ]);
 
   const [copied, setCopied] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
@@ -59,7 +161,7 @@ export default function AdvancedFiSnapshot({ initialValues, deferWalkthrough = f
 
   const answers: FiSnapshotJourneyAnswers = useMemo(
     () => ({
-      goal: "exploring",
+      goal,
       liquidCash,
       invested,
       otherAssets,
@@ -67,7 +169,7 @@ export default function AdvancedFiSnapshot({ initialValues, deferWalkthrough = f
       monthlyExpenses,
       monthlyInvesting,
     }),
-    [liquidCash, invested, otherAssets, liabilities, monthlyExpenses, monthlyInvesting]
+    [goal, liquidCash, invested, otherAssets, liabilities, monthlyExpenses, monthlyInvesting]
   );
 
   const m = useMemo(
@@ -80,6 +182,7 @@ export default function AdvancedFiSnapshot({ initialValues, deferWalkthrough = f
   );
 
   const band = FREEDOM_BAND_COPY[m.band];
+  const readinessScore = useMemo(() => computeFiSnapshotReadinessScore(answers, m), [answers, m]);
 
   const exportPayload = useMemo(
     () => ({
@@ -112,16 +215,68 @@ export default function AdvancedFiSnapshot({ initialValues, deferWalkthrough = f
 
   const copyJson = async () => {
     await navigator.clipboard.writeText(JSON.stringify(exportPayload, null, 2));
+    trackToolEvent(FI_SNAPSHOT_SLUG, "export_json");
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
   };
 
   useEffect(() => {
-    if (deferWalkthrough) return;
+    if (!hydrated || deferWalkthrough) return;
     if (hasCompletedWalkthrough(TOUR_ID)) return;
-    const t = window.setTimeout(() => setTourOpen(true), 450);
+    const t = window.setTimeout(() => {
+      trackToolEvent(FI_SNAPSHOT_SLUG, "walkthrough_open", undefined, true);
+      setTourOpen(true);
+    }, 450);
     return () => window.clearTimeout(t);
-  }, [deferWalkthrough]);
+  }, [deferWalkthrough, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const t = window.setTimeout(() => {
+      trackToolEvent(
+        FI_SNAPSHOT_SLUG,
+        "session_telemetry",
+        {
+          goal,
+          score: readinessScore,
+          netWorth: Math.round(m.netWorth),
+          totalAssets: Math.round(m.totalAssets),
+          liabilities: Math.round(liabilities),
+          monthlyExpenses: Math.round(monthlyExpenses),
+          monthlyInvesting: Math.round(monthlyInvesting),
+          fiNumber: Math.round(m.fiNumber),
+          fiProgressPct: Math.round(m.fiProgressPct * 10) / 10,
+          freedomBand: m.band,
+          yearsToFi: m.yearsToFi,
+          freedomGoal: goal === "freedom",
+          independenceBand: m.band === "independence",
+          highProgress: m.fiProgressPct >= 75,
+          negativeNetWorth: m.netWorth < 0,
+          highInvesting: monthlyInvesting >= 1000,
+        },
+        true
+      );
+    }, 4000);
+    return () => window.clearTimeout(t);
+  }, [
+    hydrated,
+    goal,
+    readinessScore,
+    m.netWorth,
+    m.totalAssets,
+    m.fiNumber,
+    m.fiProgressPct,
+    m.band,
+    m.yearsToFi,
+    liabilities,
+    monthlyExpenses,
+    monthlyInvesting,
+  ]);
+
+  const openWalkthrough = () => {
+    trackToolEvent(FI_SNAPSHOT_SLUG, "walkthrough_open", undefined, true);
+    setTourOpen(true);
+  };
 
   const walkthroughSteps: WalkthroughStep[] = useMemo(
     () => [
@@ -203,11 +358,13 @@ export default function AdvancedFiSnapshot({ initialValues, deferWalkthrough = f
 
   return (
     <div className={tdPage}>
+      <ToolDashboardGridBackdrop />
       <ToolWalkthrough
         id={TOUR_ID}
         open={tourOpen}
         onClose={() => setTourOpen(false)}
         onFinish={() => {
+          trackToolEvent(FI_SNAPSHOT_SLUG, "walkthrough_complete", undefined, true);
           try {
             window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
           } catch {
@@ -218,90 +375,108 @@ export default function AdvancedFiSnapshot({ initialValues, deferWalkthrough = f
       />
 
       <section className={tdHero}>
-        <ToolDashboardHeroBackdrop />
+        <ToolDashboardHeroBackdrop accent="default" />
 
         <div className={tdHeroInner}>
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap" data-tour="fi-top-nav">
             <Link href="/" className={tdNavLink}>
               <ArrowLeft className="h-4 w-4" />
               Back to Home
             </Link>
-            <Link href="/tools" className={tdNavLink}>
-              All tools
+            <Link href="/post?category=Personal%20Finance&q=financial%20independence" className={tdNavLink}>
+              Read FI & net worth guides
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
 
-          <div className="mt-8 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
-            <div className="flex items-start gap-4">
+          <div className="mt-7 sm:mt-8" data-tour="fi-hero">
+            <div className="flex items-center gap-3 min-w-0">
               <span className={tdIconTile}>
-                <Gem className="h-7 w-7" />
+                <Gem className="h-6 w-6" />
               </span>
-              <div>
-                <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  {FACTS_DECK_FI_SNAPSHOT_TOOL}
-                </h1>
-                <p className="mt-2 text-zinc-600 dark:text-zinc-400 max-w-2xl leading-relaxed">
-                  Net worth, FI progress, freedom band, and three spend “moons”—all illustrative, all yours to question.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setTourOpen(true)}
-                    className={tdGhostBtn}
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    Walk-through
-                  </button>
-                  <span className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Education only — not advice
+              <div className="min-w-0">
+                <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight">
+                  <span className="bg-gradient-to-r from-violet-700 via-fuchsia-700 to-emerald-700 bg-clip-text text-transparent dark:from-violet-300 dark:via-fuchsia-300 dark:to-emerald-300">
+                    {FACTS_DECK_FI_SNAPSHOT_TOOL}
                   </span>
-                </div>
+                </h1>
+                <p className="text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
+                  <span className="hidden sm:inline">
+                    Focus: <strong className="text-zinc-800 dark:text-zinc-200">{GOAL_LABEL[goal]}</strong> — net worth, FI progress, freedom band, and three spend moons. Autosaved in this browser.
+                  </span>
+                  <span className="sm:hidden">
+                    <strong className="text-zinc-800 dark:text-zinc-200">{GOAL_LABEL[goal]}</strong> — net worth & FI
+                  </span>
+                </p>
               </div>
             </div>
-            <button
-              type="button"
-              data-tour="fi-copy-json"
-              onClick={copyJson}
-              className={`${tdGhostBtn} px-5`}
-            >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {copied ? "Copied" : "Copy JSON"}
-            </button>
-          </div>
 
-          <ToolDashboardTestCta toolSlug="net-worth-fi-snapshot" testLabel={FACTS_DECK_FI_SNAPSHOT_TOOL} />
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={openWalkthrough}
+                className={tdGhostBtn}
+                aria-label="Open FI snapshot walk-through"
+              >
+                <BookOpen className="h-4 w-4" />
+                Walk-through
+              </button>
+              <button
+                type="button"
+                data-tour="fi-copy-json"
+                onClick={copyJson}
+                className={`${tdGhostBtn} shrink-0 sm:ml-auto`}
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? "Copied JSON" : "Copy JSON"}
+              </button>
+            </div>
+
+            <div className="mt-6">
+              <ToolDashboardTestCta
+                toolSlug="net-worth-fi-snapshot"
+                testLabel={FACTS_DECK_FI_SNAPSHOT_TEST}
+                blurb="Run the short interactive flow again—fresh answers, results snapshot, then land back here with the full workspace."
+              />
+            </div>
+          </div>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14 space-y-12">
-        <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
-          <div className="flex flex-col items-center rounded-3xl border border-zinc-200 bg-zinc-50 p-8 dark:border-zinc-800 dark:bg-zinc-900/40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14 space-y-8 sm:space-y-12">
+        <div className="grid min-w-0 gap-6 sm:gap-8 lg:grid-cols-2 lg:items-start">
+          <div
+            className="flex w-full min-w-0 flex-col items-center rounded-3xl border border-zinc-200 bg-zinc-50 p-5 sm:p-8 dark:border-zinc-800 dark:bg-zinc-900/40"
+            data-tour="fi-orbit"
+          >
             <FiOrbitRing pct={m.fiProgressPct} />
-            <p className="mt-4 text-center text-sm text-zinc-600 dark:text-zinc-400">
-              {band.title} — {band.blurb}
-            </p>
+            <div className="mt-4 w-full max-w-sm space-y-1.5 text-center">
+              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{band.title}</p>
+              <p className="text-sm text-balance leading-relaxed text-zinc-600 dark:text-zinc-400">{band.blurb}</p>
+            </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
-              <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Net worth</p>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-zinc-900 dark:text-zinc-100">{formatFiMoney(m.netWorth)}</p>
+          <div className="min-w-0 w-full">
+            <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:pb-0">
+              <div className="min-w-[14rem] sm:min-w-0 shrink-0 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+                <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Net worth</p>
+                <p className="mt-1 text-2xl font-bold tabular-nums text-zinc-900 dark:text-zinc-100">{formatFiMoney(m.netWorth)}</p>
+              </div>
+              <div className="min-w-[14rem] sm:min-w-0 shrink-0 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+                <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">FI number</p>
+                <p className="mt-1 text-2xl font-bold tabular-nums text-zinc-900 dark:text-zinc-100">{formatFiMoney(m.fiNumber)}</p>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{withdrawalRatePct}% withdrawal shortcut</p>
+              </div>
+              <div className="min-w-[14rem] sm:min-w-0 shrink-0 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 sm:col-span-2 dark:border-zinc-800 dark:bg-zinc-900/40">
+                <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Illustrative years to FI</p>
+                <p className="mt-1 text-2xl font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
+                  {m.yearsToFi == null ? "—" : `${m.yearsToFi} yr`}
+                </p>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  {(investmentReturnAnnual * 100).toFixed(1)}% nominal return, {formatFiMoney(monthlyInvesting)}/mo added
+                </p>
+              </div>
             </div>
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
-              <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">FI number</p>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-zinc-900 dark:text-zinc-100">{formatFiMoney(m.fiNumber)}</p>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{withdrawalRatePct}% withdrawal shortcut</p>
-            </div>
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 sm:col-span-2 dark:border-zinc-800 dark:bg-zinc-900/40">
-              <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Illustrative years to FI</p>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
-                {m.yearsToFi == null ? "—" : `${m.yearsToFi} yr`}
-              </p>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                {(investmentReturnAnnual * 100).toFixed(1)}% nominal return, {formatFiMoney(monthlyInvesting)}/mo added
-              </p>
-            </div>
+            <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 sm:hidden">Swipe to see all metrics</p>
           </div>
         </div>
 
@@ -396,7 +571,8 @@ export default function AdvancedFiSnapshot({ initialValues, deferWalkthrough = f
 
         <div data-tour="fi-moons">
           <h2 className="font-display text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-4">Three moons (spend scenarios)</h2>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="min-w-0 w-full">
+            <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:pb-0">
             {[
               { label: "Lean", sub: "75% spend", val: m.leanFiNumber },
               { label: "Standard", sub: "100% spend", val: m.fiNumber },
@@ -404,13 +580,15 @@ export default function AdvancedFiSnapshot({ initialValues, deferWalkthrough = f
             ].map((moon) => (
               <div
                 key={moon.label}
-                className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900/40"
+                className="min-w-[12rem] md:min-w-0 shrink-0 rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900/40"
               >
                 <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{moon.label}</p>
                 <p className="text-xs text-zinc-500 dark:text-zinc-500 mb-2">{moon.sub}</p>
                 <p className="text-2xl font-bold tabular-nums text-zinc-900 dark:text-zinc-100">{formatFiMoney(moon.val)}</p>
               </div>
             ))}
+            </div>
+            <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 md:hidden">Swipe to compare spend scenarios</p>
           </div>
         </div>
       </div>

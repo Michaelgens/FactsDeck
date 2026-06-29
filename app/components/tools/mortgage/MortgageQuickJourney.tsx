@@ -2,10 +2,11 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Building2, Home, RefreshCw, Sparkles, Compass } from "lucide-react";
+import { ArrowLeft, Building2, Home, RefreshCw, Sparkles, Compass, DoorOpen } from "lucide-react";
 import WizardSlideShell from "./WizardSlideShell";
 import type { BuyerGoal, MortgageJourneyAnswers } from "./mortgage-journey-types";
 import { FACTS_DECK_MORTGAGE_CALCULATOR, FACTS_DECK_MORTGAGE_TEST, JOURNEY_DEFAULTS } from "./mortgage-journey-types";
+import { MORTGAGE_SLUG, trackToolEvent } from "../../../lib/tool-analytics-client";
 
 const TOTAL_STEPS = 6;
 
@@ -41,6 +42,9 @@ export default function MortgageQuickJourney({ onComplete, onSkipToDashboard }: 
   }, [a, onComplete]);
 
   const next = useCallback(() => {
+    if (step === 0) {
+      trackToolEvent(MORTGAGE_SLUG, "journey_start", undefined, true);
+    }
     if (step >= TOTAL_STEPS - 1) {
       finish();
       return;
@@ -51,7 +55,19 @@ export default function MortgageQuickJourney({ onComplete, onSkipToDashboard }: 
   const back = useCallback(() => setStep((s) => Math.max(0, s - 1)), []);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+    <div className="relative overflow-x-hidden overflow-y-hidden bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute top-[28rem] right-[-10%] h-96 w-96 rounded-full bg-orange-100/30 blur-3xl dark:bg-cyan-950/25"
+        aria-hidden
+      />
       <div className="relative overflow-hidden border-b border-zinc-200 dark:border-zinc-800">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-24 left-1/2 h-72 w-[56rem] -translate-x-1/2 rounded-full bg-zinc-900/[0.04] blur-3xl dark:bg-white/[0.06]" />
@@ -76,9 +92,16 @@ export default function MortgageQuickJourney({ onComplete, onSkipToDashboard }: 
             <button
               type="button"
               onClick={onSkipToDashboard}
-              className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white underline-offset-2 hover:underline text-right"
+              className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white underline-offset-2 hover:underline text-right inline-flex items-center gap-1.5"
             >
-              Skip to full calculator
+              <span className="sm:hidden flex items-center gap-2">
+                <DoorOpen className="h-4 w-4 inline-block" aria-hidden />
+                Skip
+              </span>
+              <span className="hidden sm:inline flex items-center gap-1">
+                <DoorOpen className="h-4 w-4 inline-block mr-2" aria-hidden />
+                Skip to full calculator
+              </span>
             </button>
           </div>
         </div>
@@ -88,6 +111,7 @@ export default function MortgageQuickJourney({ onComplete, onSkipToDashboard }: 
         {step === 0 && (
           <WizardSlideShell
             layout="hero"
+            seriesTitle={FACTS_DECK_MORTGAGE_TEST}
             stepIndex={0}
             totalSteps={TOTAL_STEPS}
             title=""
@@ -134,6 +158,7 @@ export default function MortgageQuickJourney({ onComplete, onSkipToDashboard }: 
 
         {step === 1 && (
           <WizardSlideShell
+            seriesTitle={FACTS_DECK_MORTGAGE_TEST}
             stepIndex={1}
             totalSteps={TOTAL_STEPS}
             title="What brings you here today?"
@@ -151,7 +176,7 @@ export default function MortgageQuickJourney({ onComplete, onSkipToDashboard }: 
                     key={g.id}
                     type="button"
                     onClick={() => setField("goal", g.id)}
-                    className={`text-left rounded-2xl border-2 p-5 transition-all ${
+                    className={`text-left rounded-2xl border-2 p-5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 ${
                       on
                         ? "border-zinc-900 bg-zinc-50 shadow-md dark:border-zinc-100 dark:bg-zinc-900/60"
                         : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600"
@@ -179,6 +204,7 @@ export default function MortgageQuickJourney({ onComplete, onSkipToDashboard }: 
 
         {step === 2 && (
           <WizardSlideShell
+            seriesTitle={FACTS_DECK_MORTGAGE_TEST}
             stepIndex={2}
             totalSteps={TOTAL_STEPS}
             title="What’s the home price or target budget?"
@@ -201,6 +227,8 @@ export default function MortgageQuickJourney({ onComplete, onSkipToDashboard }: 
                 step={5000}
                 value={Math.min(2_000_000, Math.max(100_000, a.homePrice))}
                 onChange={(e) => setField("homePrice", Number(e.target.value))}
+                aria-label="Home price or target budget"
+                aria-valuetext={`$${Number(a.homePrice).toLocaleString()}`}
                 className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
               />
               <label className="block">
@@ -212,7 +240,8 @@ export default function MortgageQuickJourney({ onComplete, onSkipToDashboard }: 
                   step={1000}
                   value={a.homePrice}
                   onChange={(e) => setField("homePrice", Number(e.target.value) || 0)}
-                  className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                  aria-label="Exact home price"
+                  className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
                 />
               </label>
             </div>
@@ -221,6 +250,7 @@ export default function MortgageQuickJourney({ onComplete, onSkipToDashboard }: 
 
         {step === 3 && (
           <WizardSlideShell
+            seriesTitle={FACTS_DECK_MORTGAGE_TEST}
             stepIndex={3}
             totalSteps={TOTAL_STEPS}
             title="How much are you putting down?"
@@ -258,6 +288,7 @@ export default function MortgageQuickJourney({ onComplete, onSkipToDashboard }: 
                   step={0.5}
                   value={a.downPercent}
                   onChange={(e) => setField("downPercent", Number(e.target.value))}
+                  aria-label="Down payment percentage"
                   className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
                 />
               </div>
@@ -267,6 +298,7 @@ export default function MortgageQuickJourney({ onComplete, onSkipToDashboard }: 
 
         {step === 4 && (
           <WizardSlideShell
+            seriesTitle={FACTS_DECK_MORTGAGE_TEST}
             stepIndex={4}
             totalSteps={TOTAL_STEPS}
             title="Rate & loan length"
@@ -288,6 +320,7 @@ export default function MortgageQuickJourney({ onComplete, onSkipToDashboard }: 
                   step={0.125}
                   value={a.rate}
                   onChange={(e) => setField("rate", Number(e.target.value))}
+                  aria-label="Interest rate APR"
                   className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
                 />
               </div>
@@ -316,13 +349,14 @@ export default function MortgageQuickJourney({ onComplete, onSkipToDashboard }: 
 
         {step === 5 && (
           <WizardSlideShell
+            seriesTitle={FACTS_DECK_MORTGAGE_TEST}
             stepIndex={5}
             totalSteps={TOTAL_STEPS}
             title="Income & extra toward principal"
             subtitle="Gross monthly household income helps us show a simple affordability check. Extra payment is optional."
             onBack={back}
             onNext={finish}
-            nextLabel="See my estimate"
+            nextLabel="See my snapshot"
             variant="finish"
             nextDisabled={!canProceed()}
           >

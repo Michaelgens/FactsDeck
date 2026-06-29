@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, FileText, LayoutGrid, Plus } from "lucide-react";
+import { BarChart3, FileText, GraduationCap, LayoutGrid, MessageCircleQuestion, Plus } from "lucide-react";
 import { admin } from "./admin-theme";
 
 const links = [
@@ -15,6 +15,7 @@ const links = [
       (p.startsWith("/admin/articles/") &&
         !p.startsWith("/admin/articles/placements") &&
         !p.startsWith("/admin/articles/content") &&
+        !p.startsWith("/admin/articles/quiz-metrics") &&
         p !== "/admin/articles/new"),
   },
   {
@@ -25,9 +26,15 @@ const links = [
   },
   {
     href: "/admin/articles/content",
-    label: "Content metrics",
-    icon: BarChart3,
+    label: "Poll metrics",
+    icon: MessageCircleQuestion,
     match: (p: string) => p.startsWith("/admin/articles/content"),
+  },
+  {
+    href: "/admin/articles/quiz-metrics",
+    label: "Quiz metrics",
+    icon: GraduationCap,
+    match: (p: string) => p.startsWith("/admin/articles/quiz-metrics"),
   },
   { href: "/admin/articles/new", label: "New", icon: Plus, match: (p: string) => p === "/admin/articles/new" },
 ];

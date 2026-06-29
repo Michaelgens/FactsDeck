@@ -2,14 +2,17 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Briefcase, Compass, Home, Shield, Sparkles, Umbrella } from "lucide-react";
+import { ArrowLeft, Briefcase, Compass, DoorOpen, Home, Layers, Shield, Sparkles, Umbrella, Zap } from "lucide-react";
 import WizardSlideShell from "../mortgage/WizardSlideShell";
-import type { EmergencyFundGoal, EmergencyFundJourneyAnswers } from "./emergency-fund-journey-types";
+import type { EmergencyFundGoal, EmergencyFundJourneyAnswers, EmergencyFundPlanMode } from "./emergency-fund-journey-types";
 import {
   EMERGENCY_FUND_JOURNEY_DEFAULTS,
   FACTS_DECK_EMERGENCY_FUND_CALCULATOR,
   FACTS_DECK_EMERGENCY_FUND_TEST,
+  recommendedTargetMonths,
 } from "./emergency-fund-journey-types";
+import { GOAL_LABEL, PLAN_MODE_LABEL } from "./compute-emergency-fund-journey-metrics";
+import { EMERGENCY_FUND_SLUG, trackToolEvent } from "../../../lib/tool-analytics-client";
 
 const TOTAL_STEPS = 6;
 
@@ -33,6 +36,14 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
     setA((prev) => ({ ...prev, [key]: value }));
   }, []);
 
+  const selectGoal = useCallback((g: EmergencyFundGoal) => {
+    setA((prev) => ({
+      ...prev,
+      goal: g,
+      targetMonths: recommendedTargetMonths(g),
+    }));
+  }, []);
+
   const canProceed = useCallback((): boolean => {
     if (step === 2) return a.monthlyEssentials >= 500 && a.monthlyEssentials <= 100_000;
     if (step === 3) return a.currentFund >= 0 && a.currentFund <= 5_000_000;
@@ -44,6 +55,9 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
   const finish = useCallback(() => onComplete({ ...a }), [a, onComplete]);
 
   const next = useCallback(() => {
+    if (step === 0) {
+      trackToolEvent(EMERGENCY_FUND_SLUG, "journey_start", undefined, true);
+    }
     if (step >= TOTAL_STEPS - 1) {
       finish();
       return;
@@ -54,10 +68,25 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
   const back = useCallback(() => setStep((s) => Math.max(0, s - 1)), []);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+    <div className="relative overflow-x-hidden overflow-y-hidden bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+
+      {/* Ambient layers */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute top-[28rem] right-[-10%] h-96 w-96 rounded-full bg-orange-100/30 blur-3xl dark:bg-cyan-950/25"
+        aria-hidden
+      />
+
       <div className="relative overflow-hidden border-b border-zinc-200 dark:border-zinc-800">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 left-1/2 h-72 w-[56rem] -translate-x-1/2 rounded-full bg-zinc-900/[0.04] blur-3xl dark:bg-white/[0.06]" />
+          <div className="absolute -top-24 left-1/2 h-72 w-[56rem] -translate-x-1/2 rounded-full bg-sky-500/[0.06] blur-3xl dark:bg-sky-400/[0.08]" />
         </div>
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4 flex items-center gap-2 sm:gap-3">
           <div className="flex-1 flex justify-start min-w-0">
@@ -81,7 +110,14 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
               onClick={onSkipToDashboard}
               className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white underline-offset-2 hover:underline text-right"
             >
-              Skip to full calculator
+              <span className="sm:hidden flex items-center gap-2">
+                <DoorOpen className="h-4 w-4 inline-block" aria-hidden />
+                Skip
+              </span>
+              <span className="hidden sm:inline flex items-center gap-1">
+                <DoorOpen className="h-4 w-4 inline-block mr-2" aria-hidden />
+                Skip to full calculator
+              </span>
             </button>
           </div>
         </div>
@@ -103,24 +139,10 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
           >
             <div className="relative text-center">
               <div className="relative mx-auto mb-8 flex h-36 w-36 items-center justify-center sm:h-44 sm:w-44">
-                <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-sky-400/30 via-cyan-400/20 to-zinc-300/25 blur-2xl dark:from-sky-500/20 dark:via-cyan-500/15 dark:to-zinc-500/15" />
-                <div className="absolute inset-2 rounded-[2.25rem] border border-dashed border-zinc-300/60 dark:border-zinc-600/50" />
-                <div className="relative flex h-full w-full flex-col items-center justify-center gap-2 rounded-[2rem] border border-zinc-200/90 bg-white/95 shadow-2xl ring-1 ring-zinc-900/5 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-950/95 dark:ring-white/10">
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-xs font-black tracking-tight text-white shadow-inner dark:bg-zinc-100 dark:text-zinc-900">
-                      FD
-                    </span>
-                    <Umbrella className="h-14 w-14 text-sky-700 dark:text-sky-400" strokeWidth={1.2} aria-hidden />
-                  </div>
-                  <div className="flex h-8 w-full items-end justify-center gap-0.5 px-5" aria-hidden>
-                    {[12, 20, 16, 24, 18].map((px, i) => (
-                      <span
-                        key={i}
-                        className="w-1.5 rounded-sm bg-gradient-to-t from-zinc-300 to-sky-500 dark:from-zinc-600 dark:to-sky-400"
-                        style={{ height: px }}
-                      />
-                    ))}
-                  </div>
+                <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-sky-400/30 via-cyan-400/20 to-teal-300/25 blur-2xl dark:from-sky-500/20 dark:via-cyan-500/15 dark:to-teal-500/15" />
+                <div className="absolute inset-2 rounded-[2.25rem] border border-dashed border-sky-300/60 dark:border-sky-600/50" />
+                <div className="relative flex h-full w-full flex-col items-center justify-center gap-2 rounded-[2rem] border border-zinc-200/90 bg-white/95 shadow-2xl ring-1 ring-sky-900/5 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-950/95 dark:ring-sky-400/10">
+                  <Umbrella className="h-16 w-16 text-sky-700 dark:text-sky-400" strokeWidth={1.2} aria-hidden />
                 </div>
               </div>
               <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-sky-800 dark:text-sky-400/90">Facts Deck</p>
@@ -129,13 +151,12 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
               </h1>
               <p className="mt-3 text-sm font-semibold text-zinc-500 dark:text-zinc-400">{FACTS_DECK_EMERGENCY_FUND_TEST}</p>
               <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-zinc-600 dark:text-zinc-300 sm:text-lg">
-                Turn monthly essentials into runway months, a clear savings target, and an estimated time to fully fund
-                it.
+                Turn monthly essentials into runway months, a resilience score, and a clear path to your target cushion.
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                <span className="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800/80">Runway</span>
-                <span className="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800/80">Target</span>
-                <span className="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800/80">Time to goal</span>
+                <span className="rounded-full bg-sky-50 px-3 py-1 dark:bg-sky-950/40">Runway</span>
+                <span className="rounded-full bg-sky-50 px-3 py-1 dark:bg-sky-950/40">Resilience</span>
+                <span className="rounded-full bg-sky-50 px-3 py-1 dark:bg-sky-950/40">Time to goal</span>
               </div>
             </div>
           </WizardSlideShell>
@@ -147,7 +168,7 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
             stepIndex={1}
             totalSteps={TOTAL_STEPS}
             title="What are you saving for?"
-            subtitle="Labels only — the math is the same."
+            subtitle={`Your focus shapes target months and starter suggestions — ${GOAL_LABEL[a.goal]}.`}
             onBack={back}
             onNext={next}
             nextDisabled={!canProceed()}
@@ -160,17 +181,19 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
                   <button
                     key={g.id}
                     type="button"
-                    onClick={() => setField("goal", g.id)}
+                    onClick={() => selectGoal(g.id)}
                     className={`text-left rounded-2xl border-2 p-5 transition-all ${
                       on
-                        ? "border-zinc-900 bg-zinc-50 shadow-md dark:border-zinc-100 dark:bg-zinc-900/60"
+                        ? "border-sky-700 bg-sky-50/80 shadow-md dark:border-sky-400 dark:bg-sky-950/40"
                         : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600"
                     }`}
                   >
                     <div className="flex items-start gap-4">
                       <span
                         className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
-                          on ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                          on
+                            ? "bg-sky-700 text-white dark:bg-sky-500"
+                            : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
                         }`}
                       >
                         <Icon className="h-6 w-6" />
@@ -178,6 +201,11 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
                       <div>
                         <p className="font-display font-bold text-lg text-zinc-900 dark:text-zinc-50">{g.title}</p>
                         <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">{g.blurb}</p>
+                        {on ? (
+                          <p className="text-xs font-semibold text-sky-800 dark:text-sky-300 mt-2">
+                            Suggested target: {recommendedTargetMonths(g.id)} months
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   </button>
@@ -193,7 +221,7 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
             stepIndex={2}
             totalSteps={TOTAL_STEPS}
             title="Monthly essential expenses"
-            subtitle="Must-pay costs if income stopped: housing, food, utilities, minimums."
+            subtitle="Must-pay costs if income stopped — or use essentials builder in the full workspace."
             onBack={back}
             onNext={next}
             nextDisabled={!canProceed()}
@@ -210,7 +238,7 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
                 step={100}
                 value={Math.min(20_000, Math.max(1_000, a.monthlyEssentials))}
                 onChange={(e) => setField("monthlyEssentials", Number(e.target.value))}
-                className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
+                className="w-full h-3 accent-sky-700 dark:accent-sky-400 rounded-full"
               />
               <input
                 type="number"
@@ -231,7 +259,7 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
             stepIndex={3}
             totalSteps={TOTAL_STEPS}
             title="Current emergency fund"
-            subtitle="Cash you’d tap in a crisis (high-yield savings, etc.)."
+            subtitle="Cash you'd tap in a crisis (high-yield savings, etc.)."
             onBack={back}
             onNext={next}
             nextDisabled={!canProceed()}
@@ -247,7 +275,7 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
                 step={500}
                 value={Math.min(200_000, a.currentFund)}
                 onChange={(e) => setField("currentFund", Number(e.target.value))}
-                className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
+                className="w-full h-3 accent-sky-700 dark:accent-sky-400 rounded-full"
               />
               <input
                 type="number"
@@ -285,7 +313,7 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
                 step={25}
                 value={Math.min(5_000, a.monthlyContribution)}
                 onChange={(e) => setField("monthlyContribution", Number(e.target.value))}
-                className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
+                className="w-full h-3 accent-sky-700 dark:accent-sky-400 rounded-full"
               />
               <input
                 type="number"
@@ -305,45 +333,88 @@ export default function EmergencyFundQuickJourney({ onComplete, onSkipToDashboar
             seriesTitle={FACTS_DECK_EMERGENCY_FUND_TEST}
             stepIndex={5}
             totalSteps={TOTAL_STEPS}
-            title="Target runway"
-            subtitle="How many months of essential spending you want banked."
+            title="Target runway & workspace style"
+            subtitle="Pick months banked and how you'll model essentials in the full calculator."
             onBack={back}
             onNext={finish}
             nextLabel="See my snapshot"
             variant="finish"
             nextDisabled={!canProceed()}
           >
-            <div className="space-y-6">
-              <div className="flex flex-wrap justify-center gap-2">
-                {[3, 6, 9, 12].map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setField("targetMonths", m)}
-                    className={`px-5 py-3 rounded-xl text-sm font-bold border-2 transition-colors ${
-                      a.targetMonths === m
-                        ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                        : "border-zinc-200 text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-200"
-                    }`}
-                  >
-                    {m} mo
-                  </button>
-                ))}
-              </div>
+            <div className="space-y-8">
               <div>
-                <div className="flex justify-between text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-2">
-                  <span>Custom (months)</span>
-                  <span className="tabular-nums">{a.targetMonths}</span>
+                <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">Target months</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {[3, 6, 9, 12].map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setField("targetMonths", m)}
+                      className={`px-5 py-3 rounded-xl text-sm font-bold border-2 transition-colors ${
+                        a.targetMonths === m
+                          ? "border-sky-700 bg-sky-700 text-white dark:border-sky-400 dark:bg-sky-500"
+                          : "border-zinc-200 text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-200"
+                      }`}
+                    >
+                      {m} mo
+                    </button>
+                  ))}
                 </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={24}
-                  step={1}
-                  value={Math.min(24, Math.max(1, a.targetMonths))}
-                  onChange={(e) => setField("targetMonths", Number(e.target.value))}
-                  className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
-                />
+                <div className="mt-4">
+                  <div className="flex justify-between text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-2">
+                    <span>Custom</span>
+                    <span className="tabular-nums">{a.targetMonths}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={24}
+                    step={1}
+                    value={Math.min(24, Math.max(1, a.targetMonths))}
+                    onChange={(e) => setField("targetMonths", Number(e.target.value))}
+                    className="w-full h-3 accent-sky-700 dark:accent-sky-400 rounded-full"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">Workspace style</p>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {(
+                    [
+                      {
+                        id: "runway_math" as EmergencyFundPlanMode,
+                        icon: Zap,
+                        title: PLAN_MODE_LABEL.runway_math,
+                        blurb: "One essentials number — fast tweaks",
+                      },
+                      {
+                        id: "essentials_builder" as EmergencyFundPlanMode,
+                        icon: Layers,
+                        title: PLAN_MODE_LABEL.essentials_builder,
+                        blurb: "Line items by category — detailed runway",
+                      },
+                    ] as const
+                  ).map(({ id, icon: Icon, title, blurb }) => {
+                    const on = a.planMode === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setField("planMode", id)}
+                        className={`text-left rounded-2xl border-2 p-4 transition-all ${
+                          on
+                            ? "border-sky-700 bg-sky-50 dark:border-sky-400 dark:bg-sky-950/40"
+                            : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-800"
+                        }`}
+                      >
+                        <Icon className={`h-5 w-5 mb-2 ${on ? "text-sky-700 dark:text-sky-400" : "text-zinc-500"}`} />
+                        <p className="font-bold text-sm">{title}</p>
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{blurb}</p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </WizardSlideShell>

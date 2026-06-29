@@ -1,12 +1,23 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { verifyAdminForAction } from "./admin-auth";
 import { createServerClient, isSupabaseConfigured } from "./supabase/server";
 import { slugify } from "./slug";
 import { postPublicPath } from "./post-url";
 import { getPostById } from "./posts";
 import type { ArticlePoll } from "./poll-types";
-import { serializePollForDb } from "./poll-types";
+import {
+  mergePollServerFields,
+  serializePollForDb,
+  validatePollForAdmin,
+} from "./poll-types";
+import type { ArticleQuiz } from "./quiz-types";
+import {
+  mergeQuizServerFields,
+  serializeQuizForDb,
+  validateQuizForAdmin,
+} from "./quiz-types";
 
 export type PostFormData = {
   title: string;
@@ -33,6 +44,7 @@ export type PostFormData = {
   trending: boolean;
   guides: boolean;
   poll?: ArticlePoll | null;
+  quiz?: ArticleQuiz | null;
 };
 
 export type PostFlags = {
@@ -41,6 +53,14 @@ export type PostFlags = {
   trending?: boolean;
   guides?: boolean;
 };
+
+function engagementValidationError(data: PostFormData): string | null {
+  const pollErrors = validatePollForAdmin(data.poll ?? null);
+  if (pollErrors.length) return pollErrors[0];
+  const quizErrors = validateQuizForAdmin(data.quiz ?? null);
+  if (quizErrors.length) return quizErrors[0];
+  return null;
+}
 
 async function ensureUniqueSlug(base: string, excludePostId?: string): Promise<string> {
   const supabase = createServerClient();
@@ -58,6 +78,9 @@ export async function updatePostFlags(
   id: string,
   flags: PostFlags
 ): Promise<{ ok: boolean; error?: string }> {
+  const auth = await verifyAdminForAction();
+  if (!auth.ok) return auth;
+
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Supabase not configured" };
   }
@@ -84,7 +107,14 @@ export async function updatePostFlags(
 export async function createPost(
   data: PostFormData
 ): Promise<{ ok: boolean; id?: string; error?: string }> {
+  const auth = await verifyAdminForAction();
+  if (!auth.ok) return auth;
+
   if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+
+  const engagementError = engagementValidationError(data);
+  if (engagementError) return { ok: false, error: engagementError };
+
   const crypto = await import("crypto");
   const id = crypto.randomUUID();
 
@@ -128,6 +158,7 @@ export async function createPost(
     trending: Boolean(data.trending),
     guides: Boolean(data.guides),
     poll: serializePollForDb(data.poll),
+    quiz: serializeQuizForDb(data.quiz),
   };
 
   const { error } = await supabase.from("posts").insert(row);
@@ -138,6 +169,8 @@ export async function createPost(
   revalidatePath("/");
   revalidatePath("/post");
   revalidatePath(postPublicPath({ id, slug }));
+  revalidatePath("/admin/articles/content");
+  revalidatePath("/admin/articles/quiz-metrics");
   return { ok: true, id };
 }
 
@@ -145,7 +178,13 @@ export async function updatePost(
   id: string,
   data: PostFormData
 ): Promise<{ ok: boolean; error?: string }> {
+  const auth = await verifyAdminForAction();
+  if (!auth.ok) return auth;
+
   if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
+
+  const engagementError = engagementValidationError(data);
+  if (engagementError) return { ok: false, error: engagementError };
 
   const contentUrl = data.contentUrl?.trim() || null;
   const body = data.bodyMarkdown?.trim() || null;
@@ -154,6 +193,12 @@ export async function updatePost(
   const slug = await ensureUniqueSlug(baseSlug, id);
 
   const supabase = createServerClient();
+  const { data: existingRow } = await supabase
+    .from("posts")
+    .select("poll, quiz")
+    .eq("id", id)
+    .maybeSingle();
+
   const categories =
     Array.isArray(data.categories) && data.categories.length > 0
       ? data.categories.map((c) => c.trim()).filter(Boolean)
@@ -181,7 +226,8 @@ export async function updatePost(
     expert_picks: Boolean(data.expertPicks),
     trending: Boolean(data.trending),
     guides: Boolean(data.guides),
-    poll: serializePollForDb(data.poll),
+    poll: mergePollServerFields(serializePollForDb(data.poll), existingRow?.poll),
+    quiz: mergeQuizServerFields(serializeQuizForDb(data.quiz), existingRow?.quiz),
   };
 
   if (contentUrl) {
@@ -201,6 +247,8 @@ export async function updatePost(
   revalidatePath("/post");
   revalidatePath(postPublicPath({ id, slug }));
   revalidatePath(`/post/${id}`);
+  revalidatePath("/admin/articles/content");
+  revalidatePath("/admin/articles/quiz-metrics");
   return { ok: true };
 }
 
@@ -208,6 +256,9 @@ export async function setPostPublished(
   id: string,
   published: boolean
 ): Promise<{ ok: boolean; error?: string }> {
+  const auth = await verifyAdminForAction();
+  if (!auth.ok) return auth;
+
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Supabase not configured" };
   }
@@ -231,6 +282,9 @@ export async function setPostPublished(
 }
 
 export async function deletePost(id: string): Promise<{ ok: boolean; error?: string }> {
+  const auth = await verifyAdminForAction();
+  if (!auth.ok) return auth;
+
   if (!isSupabaseConfigured()) return { ok: false, error: "Supabase not configured" };
   const supabase = createServerClient();
   const { error } = await supabase.from("posts").delete().eq("id", id);

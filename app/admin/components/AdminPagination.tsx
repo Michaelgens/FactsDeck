@@ -11,6 +11,10 @@ interface AdminPaginationProps {
   currentPage: number;
   limit: number;
   itemLabel?: string;
+  /** Always include these query params (e.g. tab=welcome). */
+  pinnedParams?: Record<string, string>;
+  pageParam?: string;
+  limitParam?: string;
 }
 
 export default function AdminPagination({
@@ -18,22 +22,37 @@ export default function AdminPagination({
   currentPage,
   limit,
   itemLabel = "items",
+  pinnedParams,
+  pageParam = "page",
+  limitParam = "limit",
 }: AdminPaginationProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / limit));
-  const start = (currentPage - 1) * limit + 1;
-  const end = Math.min(currentPage * limit, totalCount);
+  const pageFromUrl = Math.max(1, parseInt(searchParams.get(pageParam) ?? String(currentPage), 10) || 1);
+  const limitFromUrl = LIMIT_OPTIONS.includes(Number(searchParams.get(limitParam)) as (typeof LIMIT_OPTIONS)[number])
+    ? Number(searchParams.get(limitParam))
+    : limit;
+  const activePage = pageParam !== "page" ? pageFromUrl : currentPage;
+  const activeLimit = limitParam !== "limit" ? limitFromUrl : limit;
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / activeLimit));
+  const start = (activePage - 1) * activeLimit + 1;
+  const end = Math.min(activePage * activeLimit, totalCount);
   const hasResults = totalCount > 0;
 
-  const pageNumbers = getPageNumbers(currentPage, totalPages);
+  const pageNumbers = getPageNumbers(activePage, totalPages);
 
   const buildHref = (page: number, lim: number) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("page", String(page));
-    params.set("limit", String(lim));
+    params.set(pageParam, String(page));
+    params.set(limitParam, String(lim));
+    if (pinnedParams) {
+      for (const [key, value] of Object.entries(pinnedParams)) {
+        params.set(key, value);
+      }
+    }
     return `${pathname}?${params.toString()}`;
   };
 
@@ -57,16 +76,16 @@ export default function AdminPagination({
         <div className="flex items-center gap-1">
           <span className={`text-xs mr-2 ${admin.subtle}`}>Per page:</span>
           {LIMIT_OPTIONS.map((opt) => (
-            <LimitButton key={opt} value={opt} active={limit === opt} onClick={() => handleLimitChange(opt)} />
+            <LimitButton key={opt} value={opt} active={activeLimit === opt} onClick={() => handleLimitChange(opt)} />
           ))}
         </div>
       </div>
 
       {totalPages > 1 && (
         <nav className="flex items-center gap-1" aria-label="Pagination">
-          {currentPage > 1 ? (
+          {activePage > 1 ? (
             <a
-              href={buildHref(currentPage - 1, limit)}
+              href={buildHref(activePage - 1, activeLimit)}
               className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${admin.label} hover:bg-slate-100 dark:hover:bg-zinc-800`}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -89,7 +108,7 @@ export default function AdminPagination({
                   key={num}
                   href={buildHref(num, limit)}
                   className={`min-w-[2rem] h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-all ${
-                    num === currentPage
+                    num === activePage
                       ? "bg-purple-600 dark:bg-violet-600 text-white shadow-md"
                       : `${admin.body} hover:bg-slate-100 dark:hover:bg-zinc-800`
                   }`}
@@ -99,9 +118,9 @@ export default function AdminPagination({
               )
             )}
           </div>
-          {currentPage < totalPages ? (
+          {activePage < totalPages ? (
             <a
-              href={buildHref(currentPage + 1, limit)}
+              href={buildHref(activePage + 1, activeLimit)}
               className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${admin.label} hover:bg-slate-100 dark:hover:bg-zinc-800`}
             >
               Next

@@ -1,4 +1,4 @@
-import type { CompoundingMode, CryptoYieldJourneyAnswers } from "./crypto-yield-journey-types";
+import type { CompoundingMode, CryptoYieldGoal, CryptoYieldJourneyAnswers } from "./crypto-yield-journey-types";
 
 export function periodsPerYear(c: CompoundingMode): number {
   switch (c) {
@@ -66,6 +66,76 @@ export function computeCryptoYieldJourneyMetrics(a: CryptoYieldJourneyAnswers) {
     },
     years,
   };
+}
+
+export type CryptoYieldMetrics = ReturnType<typeof computeCryptoYieldJourneyMetrics>;
+
+export function computeCryptoYieldReadinessScore(a: CryptoYieldJourneyAnswers, m: CryptoYieldMetrics): number {
+  const apyScore = a.apyPercent >= 3 && a.apyPercent <= 15 ? 1 : a.apyPercent > 0 ? 0.6 : 0.3;
+  const horizonScore = a.months >= 12 ? 1 : a.months >= 6 ? 0.75 : 0.5;
+  const spread =
+    m.compareAtHorizon.daily.fv > 0
+      ? (m.compareAtHorizon.daily.fv - m.compareAtHorizon.annual.fv) / m.compareAtHorizon.daily.fv
+      : 0;
+  const compoundScore = a.goal === "compare" && spread > 0.001 ? 1 : a.compounding === "daily" ? 0.85 : 0.7;
+  const principalScore = a.principal >= 1000 ? 1 : a.principal >= 500 ? 0.75 : 0.55;
+  return Math.round((apyScore * 0.25 + horizonScore * 0.25 + compoundScore * 0.25 + principalScore * 0.25) * 100);
+}
+
+const GOAL_LABEL: Record<CryptoYieldGoal, string> = {
+  compounding: "Compounding",
+  compare: "Compare frequencies",
+  exploring: "Exploring",
+};
+
+const COMP_LABEL: Record<CompoundingMode, string> = {
+  daily: "Daily",
+  monthly: "Monthly",
+  annual: "Annual",
+};
+
+export function buildCryptoYieldTextSummary(a: CryptoYieldJourneyAnswers, m: CryptoYieldMetrics): string {
+  return [
+    "Facts Deck Crypto Yield Lab Test — summary",
+    `Goal: ${GOAL_LABEL[a.goal]}`,
+    `Principal: ${formatCyMoney(a.principal)} | Nominal APY: ${a.apyPercent.toFixed(2)}%`,
+    `Horizon: ${a.months} mo | Compounding: ${COMP_LABEL[a.compounding]}`,
+    `Ending balance: ${formatCyMoney(m.futureValue)}`,
+    `Interest (illustrative): ${formatCyMoney(m.interestEarned)}`,
+    `Effective APY (from path): ${m.effectiveApyPercent.toFixed(2)}%`,
+    `Same APY — daily FV: ${formatCyMoney(m.compareAtHorizon.daily.fv)} | monthly: ${formatCyMoney(m.compareAtHorizon.monthly.fv)} | annual: ${formatCyMoney(m.compareAtHorizon.annual.fv)}`,
+    `Readiness score: ${computeCryptoYieldReadinessScore(a, m)}/100`,
+    "Educational model only — not investment advice.",
+  ].join("\n");
+}
+
+export type RelatedTool = {
+  slug: string;
+  name: string;
+  reason: string;
+};
+
+export function suggestRelatedTools(goal: CryptoYieldGoal, a: CryptoYieldJourneyAnswers): RelatedTool[] {
+  const out: RelatedTool[] = [];
+  const push = (slug: string, name: string, reason: string) => {
+    if (!out.some((t) => t.slug === slug)) out.push({ slug, name, reason });
+  };
+
+  if (goal === "compounding" || goal === "compare") {
+    push("investment-calculator", "Investment Calculator", "Compare traditional compounding with fees and taxes.");
+    push("net-worth-fi-snapshot", "Net Worth & FI Snapshot", "See how yield fits your broader independence picture.");
+  }
+  if (a.apyPercent >= 8) {
+    push("emergency-fund-calculator", "Emergency Fund & Runway", "High headline yields don't replace liquid cash reserves.");
+  }
+  if (a.principal < 1000) {
+    push("budget-planner", "Budget Planner", "Find cash flow to grow principal before chasing yield.");
+  }
+  if (goal === "exploring") {
+    push("loan-calculator", "Loan Calculator", "Contrast opportunity cost of debt vs staking returns.");
+  }
+
+  return out.slice(0, 4);
 }
 
 export function formatCyMoney(n: number) {

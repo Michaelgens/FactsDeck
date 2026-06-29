@@ -3,7 +3,27 @@
  */
 
 export const tdPage =
-  "min-h-[100dvh] overflow-x-hidden antialiased bg-[linear-gradient(180deg,#f4f4f6_0%,#ffffff_42%,#fafafa_100%)] text-zinc-900 dark:bg-[linear-gradient(180deg,#08080a_0%,#0c0c0f_40%,#09090b_100%)] dark:text-zinc-100";
+  "relative min-h-[100dvh] overflow-x-hidden antialiased bg-[linear-gradient(180deg,#f4f4f6_0%,#ffffff_42%,#fafafa_100%)] text-zinc-900 dark:bg-[linear-gradient(180deg,#08080a_0%,#0c0c0f_40%,#09090b_100%)] dark:text-zinc-100";
+
+/** Dot grid + soft ambient glow behind full tool workspaces (matches journey/results pages). */
+export function ToolDashboardGridBackdrop() {
+  return (
+    <>
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/30 via-violet-100/12 to-transparent blur-3xl dark:from-emerald-950/45 dark:via-blue-950/25 dark:to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute top-[32rem] right-[-8%] h-96 w-96 rounded-full bg-orange-100/25 blur-3xl dark:bg-cyan-950/20"
+        aria-hidden
+      />
+    </>
+  );
+}
 
 export const tdHero =
   "relative overflow-hidden border-b border-zinc-200/80 bg-gradient-to-b from-white via-zinc-50/30 to-zinc-100/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9)] dark:border-zinc-800/90 dark:from-zinc-950 dark:via-zinc-950/98 dark:to-zinc-900/60 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]";

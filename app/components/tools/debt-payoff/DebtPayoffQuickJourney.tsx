@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Compass, GitCompare, Layers, Sparkles, TrendingDown } from "lucide-react";
+import { ArrowLeft, Compass, DoorOpen, GitCompare, Layers, Sparkles, TrendingDown } from "lucide-react";
 import WizardSlideShell from "../mortgage/WizardSlideShell";
 import type { DebtPayoffGoal, DebtJourneyAnswers } from "./debt-payoff-journey-types";
 import {
@@ -10,6 +10,7 @@ import {
   FACTS_DECK_DEBT_PAYOFF_PLANNER,
   FACTS_DECK_DEBT_PAYOFF_TEST,
 } from "./debt-payoff-journey-types";
+import { DEBT_PAYOFF_SLUG, trackToolEvent } from "../../../lib/tool-analytics-client";
 
 const TOTAL_STEPS = 6;
 
@@ -45,6 +46,9 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
   const finish = useCallback(() => onComplete({ ...a }), [a, onComplete]);
 
   const next = useCallback(() => {
+    if (step === 0) {
+      trackToolEvent(DEBT_PAYOFF_SLUG, "journey_start", undefined, true);
+    }
     if (step >= TOTAL_STEPS - 1) {
       finish();
       return;
@@ -55,10 +59,23 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
   const back = useCallback(() => setStep((s) => Math.max(0, s - 1)), []);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+    <div className="relative overflow-x-hidden overflow-y-hidden bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute top-[28rem] right-[-10%] h-96 w-96 rounded-full bg-orange-100/30 blur-3xl dark:bg-cyan-950/25"
+        aria-hidden
+      />
+
       <div className="relative overflow-hidden border-b border-zinc-200 dark:border-zinc-800">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 left-1/2 h-72 w-[56rem] -translate-x-1/2 rounded-full bg-emerald-500/[0.06] blur-3xl dark:bg-emerald-400/[0.07]" />
+          <div className="absolute -top-24 left-1/2 h-72 w-[56rem] -translate-x-1/2 rounded-full bg-emerald-500/[0.06] blur-3xl dark:bg-emerald-400/[0.08]" />
         </div>
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4 flex items-center gap-2 sm:gap-3">
           <div className="flex-1 flex justify-start min-w-0">
@@ -80,9 +97,16 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
             <button
               type="button"
               onClick={onSkipToDashboard}
-              className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white underline-offset-2 hover:underline text-right"
+              className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white underline-offset-2 hover:underline text-right inline-flex items-center gap-1.5"
             >
-              Skip to full planner
+              <span className="sm:hidden flex items-center gap-2">
+                <DoorOpen className="h-4 w-4 inline-block" aria-hidden />
+                Skip
+              </span>
+              <span className="hidden sm:inline flex items-center gap-1">
+                <DoorOpen className="h-4 w-4 inline-block mr-2" aria-hidden />
+                Skip to full planner
+              </span>
             </button>
           </div>
         </div>
@@ -105,23 +129,13 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
             <div className="relative text-center">
               <div className="relative mx-auto mb-8 flex h-36 w-36 items-center justify-center sm:h-44 sm:w-44">
                 <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-emerald-400/30 via-teal-400/15 to-zinc-400/20 blur-2xl dark:from-emerald-500/20 dark:via-teal-500/10" />
-                <div className="absolute inset-2 rounded-[2.25rem] border border-dashed border-zinc-300/60 dark:border-zinc-600/50" />
-                <div className="relative flex h-full w-full flex-col items-center justify-center gap-2 rounded-[2rem] border border-zinc-200/90 bg-white/95 shadow-2xl ring-1 ring-zinc-900/5 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-950/95 dark:ring-white/10">
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-xs font-black tracking-tight text-white shadow-inner dark:bg-zinc-100 dark:text-zinc-900">
-                      FD
-                    </span>
-                    <Layers className="h-14 w-14 text-emerald-700 dark:text-emerald-400" strokeWidth={1.2} aria-hidden />
-                  </div>
-                  <div className="flex gap-1" aria-hidden>
-                    <span className="h-1.5 w-8 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-                    <span className="h-1.5 w-12 rounded-full bg-emerald-500/80" />
-                    <span className="h-1.5 w-5 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-                  </div>
+                <div className="absolute inset-2 rounded-[2.25rem] border border-dashed border-emerald-300/60 dark:border-emerald-600/50" />
+                <div className="relative flex h-full w-full flex-col items-center justify-center gap-2 rounded-[2rem] border border-zinc-200/90 bg-white/95 shadow-2xl ring-1 ring-emerald-900/5 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-950/95 dark:ring-emerald-400/10">
+                  <Layers className="h-16 w-16 text-emerald-700 dark:text-emerald-400" strokeWidth={1.2} aria-hidden />
                 </div>
               </div>
               <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-emerald-800 dark:text-emerald-400/90">Facts Deck</p>
-              <h1 className="font-display text-3xl font-bold leading-[1.12] tracking-tight text-zinc-900 text-balance dark:text-zinc-50 sm:text-5xl md:text-6xl">
+              <h1 className="font-display text-2xl font-bold leading-[1.12] tracking-tight text-zinc-900 text-balance dark:text-zinc-50 sm:text-4xl md:text-5xl">
                 {FACTS_DECK_DEBT_PAYOFF_PLANNER}
               </h1>
               <p className="mt-3 text-sm font-semibold text-zinc-500 dark:text-zinc-400">{FACTS_DECK_DEBT_PAYOFF_TEST}</p>
@@ -143,7 +157,7 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
             stepIndex={1}
             totalSteps={TOTAL_STEPS}
             title="What do you want to see?"
-            subtitle="You can switch strategies anytime in the full planner."
+            subtitle="Your focus shapes labels on your snapshot — you can switch strategies anytime in the full planner."
             onBack={back}
             onNext={next}
             nextDisabled={!canProceed()}
@@ -157,7 +171,7 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
                     key={g.id}
                     type="button"
                     onClick={() => setField("goal", g.id)}
-                    className={`text-left rounded-2xl border-2 p-5 transition-all ${
+                    className={`text-left rounded-2xl border-2 p-5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 ${
                       on
                         ? "border-zinc-900 bg-zinc-50 shadow-md dark:border-zinc-100 dark:bg-zinc-900/60"
                         : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600"
@@ -195,7 +209,7 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
             nextDisabled={!canProceed()}
           >
             <div className="space-y-6">
-              <p className="text-center text-3xl sm:text-4xl font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
+              <p className="text-center text-4xl sm:text-5xl font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
                 ${a.debt1Balance.toLocaleString("en-US", { maximumFractionDigits: 0 })}
               </p>
               <input
@@ -205,11 +219,12 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
                 step={100}
                 value={Math.min(50_000, Math.max(500, a.debt1Balance))}
                 onChange={(e) => setField("debt1Balance", Number(e.target.value))}
+                aria-label="Debt 1 balance"
                 className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
               />
               <div className="grid sm:grid-cols-2 gap-4">
                 <label className="block space-y-1">
-                  <span className="text-xs font-semibold text-zinc-500">APR %</span>
+                  <span className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400">APR %</span>
                   <input
                     type="number"
                     step={0.1}
@@ -217,11 +232,12 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
                     max={36}
                     value={a.debt1Apr}
                     onChange={(e) => setField("debt1Apr", Number(e.target.value) || 0)}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 font-semibold dark:border-zinc-700 dark:bg-zinc-950"
+                    aria-label="Debt 1 APR"
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 font-semibold dark:border-zinc-700 dark:bg-zinc-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
                   />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-xs font-semibold text-zinc-500">Minimum / mo</span>
+                  <span className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400">Minimum / mo</span>
                   <input
                     type="number"
                     min={0}
@@ -229,7 +245,8 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
                     step={5}
                     value={a.debt1Min}
                     onChange={(e) => setField("debt1Min", Number(e.target.value) || 0)}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 font-semibold dark:border-zinc-700 dark:bg-zinc-950"
+                    aria-label="Debt 1 minimum payment"
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 font-semibold dark:border-zinc-700 dark:bg-zinc-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
                   />
                 </label>
               </div>
@@ -249,7 +266,7 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
             nextDisabled={!canProceed()}
           >
             <div className="space-y-6">
-              <p className="text-center text-3xl sm:text-4xl font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
+              <p className="text-center text-4xl sm:text-5xl font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
                 ${a.debt2Balance.toLocaleString("en-US", { maximumFractionDigits: 0 })}
               </p>
               <input
@@ -259,11 +276,12 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
                 step={100}
                 value={Math.min(80_000, Math.max(500, a.debt2Balance))}
                 onChange={(e) => setField("debt2Balance", Number(e.target.value))}
+                aria-label="Debt 2 balance"
                 className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
               />
               <div className="grid sm:grid-cols-2 gap-4">
                 <label className="block space-y-1">
-                  <span className="text-xs font-semibold text-zinc-500">APR %</span>
+                  <span className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400">APR %</span>
                   <input
                     type="number"
                     step={0.1}
@@ -271,11 +289,12 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
                     max={36}
                     value={a.debt2Apr}
                     onChange={(e) => setField("debt2Apr", Number(e.target.value) || 0)}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 font-semibold dark:border-zinc-700 dark:bg-zinc-950"
+                    aria-label="Debt 2 APR"
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 font-semibold dark:border-zinc-700 dark:bg-zinc-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
                   />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-xs font-semibold text-zinc-500">Minimum / mo</span>
+                  <span className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400">Minimum / mo</span>
                   <input
                     type="number"
                     min={0}
@@ -283,7 +302,8 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
                     step={5}
                     value={a.debt2Min}
                     onChange={(e) => setField("debt2Min", Number(e.target.value) || 0)}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 font-semibold dark:border-zinc-700 dark:bg-zinc-950"
+                    aria-label="Debt 2 minimum payment"
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 font-semibold dark:border-zinc-700 dark:bg-zinc-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
                   />
                 </label>
               </div>
@@ -313,17 +333,22 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
                 step={25}
                 value={Math.min(3_000, a.extraMonthly)}
                 onChange={(e) => setField("extraMonthly", Number(e.target.value))}
+                aria-label="Extra monthly payment toward debt"
                 className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
               />
-              <input
-                type="number"
-                min={0}
-                max={10_000}
-                step={25}
-                value={a.extraMonthly}
-                onChange={(e) => setField("extraMonthly", Number(e.target.value) || 0)}
-                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold dark:border-zinc-700 dark:bg-zinc-950"
-              />
+              <label className="block">
+                <span className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400">Exact amount</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={10_000}
+                  step={25}
+                  value={a.extraMonthly}
+                  onChange={(e) => setField("extraMonthly", Number(e.target.value) || 0)}
+                  aria-label="Exact extra monthly payment"
+                  className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold dark:border-zinc-700 dark:bg-zinc-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
+                />
+              </label>
             </div>
           </WizardSlideShell>
         )}
@@ -342,7 +367,7 @@ export default function DebtPayoffQuickJourney({ onComplete, onSkipToDashboard }
             nextDisabled={!canProceed()}
           >
             <p className="text-center text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
-              We’ll compare payoff months and total interest. Minimums + extra are applied the same way in both strategies—only
+              We&apos;ll compare payoff months and total interest. Minimums + extra are applied the same way in both strategies—only
               the order of attack changes.
             </p>
           </WizardSlideShell>

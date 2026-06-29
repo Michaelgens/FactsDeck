@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -13,12 +13,21 @@ import {
   Check,
   Shield,
   Zap,
-  BookOpen as TourBook,
 } from "lucide-react";
 import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
-import { FACTS_DECK_CREDIT_SCORE_SIMULATOR } from "./credit/credit-journey-types";
-import ToolDashboardTestCta from "./ToolDashboardTestCta";
 import {
+  CREDIT_JOURNEY_DEFAULTS,
+  FACTS_DECK_CREDIT_SCORE_SIMULATOR,
+  FACTS_DECK_CREDIT_TEST,
+  type CreditJourneyGoal,
+} from "./credit/credit-journey-types";
+import type { CreditJourneyAnswers } from "./credit/credit-journey-types";
+import ToolDashboardTestCta from "./ToolDashboardTestCta";
+import { computeCreditJourneyMetrics } from "./credit/compute-credit-journey-metrics";
+import { loadCreditScoreState, saveCreditScoreState } from "./credit/credit-storage";
+import { CREDIT_SCORE_SLUG, trackToolEvent } from "../../lib/tool-analytics-client";
+import {
+  ToolDashboardGridBackdrop,
   ToolDashboardHeroBackdrop,
   tdGhostBtn,
   tdHero,
@@ -28,12 +37,20 @@ import {
   tdPage,
 } from "./tool-dashboard-ui";
 
+const GOAL_LABEL: Record<CreditJourneyGoal, string> = {
+  improve: "Improve score",
+  learn: "Learn factors",
+  exploring: "Exploring",
+};
+
 export type CreditScoreSimulatorInitialValues = {
+  goal?: CreditJourneyGoal;
   utilizationPct?: number;
   onTimePct?: number;
   avgAgeYears?: number;
   hardInquiries12m?: number;
   accountTypes?: number;
+  fromJourney?: boolean;
 };
 
 type AdvancedCreditScoreSimulatorProps = {
@@ -121,20 +138,81 @@ const PRESETS = [
   { name: "Optimizer", util: 6, onTime: 100, ageY: 12, inq: 0, mix: 4 },
 ] as const;
 
+function resolveInitialState(initialValues?: CreditScoreSimulatorInitialValues) {
+  const saved = typeof window !== "undefined" ? loadCreditScoreState() : null;
+  const d = CREDIT_JOURNEY_DEFAULTS;
+
+  if (initialValues?.fromJourney) {
+    return {
+      goal: initialValues.goal ?? d.goal,
+      utilizationPct: initialValues.utilizationPct ?? d.utilizationPct,
+      onTimePct: initialValues.onTimePct ?? d.onTimePct,
+      avgAgeYears: initialValues.avgAgeYears ?? d.avgAgeYears,
+      hardInquiries12m: initialValues.hardInquiries12m ?? d.hardInquiries12m,
+      accountTypes: initialValues.accountTypes ?? d.accountTypes,
+    };
+  }
+
+  if (saved) {
+    return {
+      goal: saved.goal,
+      utilizationPct: saved.utilizationPct,
+      onTimePct: saved.onTimePct,
+      avgAgeYears: saved.avgAgeYears,
+      hardInquiries12m: saved.hardInquiries12m,
+      accountTypes: saved.accountTypes,
+    };
+  }
+
+  return {
+    goal: initialValues?.goal ?? d.goal,
+    utilizationPct: initialValues?.utilizationPct ?? d.utilizationPct,
+    onTimePct: initialValues?.onTimePct ?? d.onTimePct,
+    avgAgeYears: initialValues?.avgAgeYears ?? d.avgAgeYears,
+    hardInquiries12m: initialValues?.hardInquiries12m ?? d.hardInquiries12m,
+    accountTypes: initialValues?.accountTypes ?? d.accountTypes,
+  };
+}
+
 export default function AdvancedCreditScoreSimulator({
   initialValues,
   deferWalkthrough = false,
 }: AdvancedCreditScoreSimulatorProps = {}) {
+  const [hydrated, setHydrated] = useState(false);
+  const [goal, setGoal] = useState<CreditJourneyGoal>("learn");
   const [tourOpen, setTourOpen] = useState(false);
   const TOUR_ID = "credit-score-simulator";
 
-  const [utilizationPct, setUtilizationPct] = useState(initialValues?.utilizationPct ?? 28);
-  const [onTimePct, setOnTimePct] = useState(initialValues?.onTimePct ?? 99);
-  const [avgAgeYears, setAvgAgeYears] = useState(initialValues?.avgAgeYears ?? 7);
-  const [hardInquiries12m, setHardInquiries12m] = useState(initialValues?.hardInquiries12m ?? 1);
-  const [accountTypes, setAccountTypes] = useState(initialValues?.accountTypes ?? 3);
+  const [utilizationPct, setUtilizationPct] = useState(CREDIT_JOURNEY_DEFAULTS.utilizationPct);
+  const [onTimePct, setOnTimePct] = useState(CREDIT_JOURNEY_DEFAULTS.onTimePct);
+  const [avgAgeYears, setAvgAgeYears] = useState(CREDIT_JOURNEY_DEFAULTS.avgAgeYears);
+  const [hardInquiries12m, setHardInquiries12m] = useState(CREDIT_JOURNEY_DEFAULTS.hardInquiries12m);
+  const [accountTypes, setAccountTypes] = useState(CREDIT_JOURNEY_DEFAULTS.accountTypes);
 
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const state = resolveInitialState(initialValues);
+    setGoal(state.goal);
+    setUtilizationPct(state.utilizationPct);
+    setOnTimePct(state.onTimePct);
+    setAvgAgeYears(state.avgAgeYears);
+    setHardInquiries12m(state.hardInquiries12m);
+    setAccountTypes(state.accountTypes);
+    setHydrated(true);
+  }, [initialValues]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveCreditScoreState({
+      goal,
+      utilizationPct,
+      onTimePct,
+      avgAgeYears,
+      hardInquiries12m,
+      accountTypes,
+    });
+  }, [hydrated, goal, utilizationPct, onTimePct, avgAgeYears, hardInquiries12m, accountTypes]);
 
   const pts = useMemo(
     () =>
@@ -155,6 +233,20 @@ export default function AdvancedCreditScoreSimulator({
 
   const b = band(score);
   const needle = ((score - 300) / 550) * 100;
+
+  const journeyAnswers: CreditJourneyAnswers = useMemo(
+    () => ({
+      goal,
+      utilizationPct,
+      onTimePct,
+      avgAgeYears,
+      hardInquiries12m,
+      accountTypes,
+    }),
+    [goal, utilizationPct, onTimePct, avgAgeYears, hardInquiries12m, accountTypes]
+  );
+
+  const journeyMetrics = useMemo(() => computeCreditJourneyMetrics(journeyAnswers), [journeyAnswers]);
 
   const whatIf = useMemo(() => {
     const sumPts = (p: Record<FactorKey, number>) =>
@@ -196,18 +288,56 @@ export default function AdvancedCreditScoreSimulator({
     [utilizationPct, onTimePct, avgAgeYears, hardInquiries12m, accountTypes, pts, score, b.name, whatIf]
   );
 
-  const copyJson = async () => {
+  const copyJson = useCallback(async () => {
+    trackToolEvent(CREDIT_SCORE_SLUG, "export_json");
     await navigator.clipboard.writeText(JSON.stringify(exportPayload, null, 2));
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
-  };
+  }, [exportPayload]);
 
   useEffect(() => {
-    if (deferWalkthrough) return;
+    if (!hydrated || deferWalkthrough) return;
     if (hasCompletedWalkthrough(TOUR_ID)) return;
-    const t = window.setTimeout(() => setTourOpen(true), 450);
+    const t = window.setTimeout(() => {
+      trackToolEvent(CREDIT_SCORE_SLUG, "walkthrough_open", undefined, true);
+      setTourOpen(true);
+    }, 450);
     return () => window.clearTimeout(t);
-  }, [deferWalkthrough]);
+  }, [deferWalkthrough, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const t = window.setTimeout(() => {
+      trackToolEvent(
+        CREDIT_SCORE_SLUG,
+        "session_telemetry",
+        {
+          goal,
+          score: journeyMetrics.score,
+          utilizationPct,
+          onTimePct,
+          hardInquiries12m,
+          highUtil: utilizationPct >= 30,
+          lowScore: journeyMetrics.score < 670,
+          improveGoal: goal === "improve",
+        },
+        true
+      );
+    }, 4000);
+    return () => window.clearTimeout(t);
+  }, [
+    hydrated,
+    goal,
+    journeyMetrics.score,
+    utilizationPct,
+    onTimePct,
+    hardInquiries12m,
+  ]);
+
+  const openWalkthrough = () => {
+    trackToolEvent(CREDIT_SCORE_SLUG, "walkthrough_open", undefined, true);
+    setTourOpen(true);
+  };
 
   const walkthroughSteps: WalkthroughStep[] = useMemo(
     () => [
@@ -347,11 +477,13 @@ export default function AdvancedCreditScoreSimulator({
 
   return (
     <div className={tdPage}>
+      <ToolDashboardGridBackdrop />
       <ToolWalkthrough
         id={TOUR_ID}
         open={tourOpen}
         onClose={() => setTourOpen(false)}
         onFinish={() => {
+          trackToolEvent(CREDIT_SCORE_SLUG, "walkthrough_complete", undefined, true);
           try {
             window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
           } catch {
@@ -361,119 +493,137 @@ export default function AdvancedCreditScoreSimulator({
         steps={walkthroughSteps}
       />
       <section className={tdHero}>
-        <ToolDashboardHeroBackdrop />
+        <ToolDashboardHeroBackdrop accent="default" />
 
         <div className={tdHeroInner}>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap" data-tour="credit-top-nav">
             <Link href="/" className={tdNavLink}>
               <ArrowLeft className="h-4 w-4" />
               Back to Home
             </Link>
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                href="/post?category=Credit%20Cards&q=credit%20score"
-                className={tdNavLink}
-              >
-                <BookOpen className="h-4 w-4" />
-                Credit score guides
-                <ChevronRight className="h-4 w-4" />
-              </Link>
+            <Link href="/post?category=Credit%20Cards&q=credit%20score" className={tdNavLink}>
+              Read credit score guides
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="mt-7 sm:mt-8" data-tour="credit-hero">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className={tdIconTile}>
+                <Activity className="h-6 w-6" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight">
+                  <span className="bg-gradient-to-r from-violet-700 via-indigo-700 to-sky-700 bg-clip-text text-transparent dark:from-violet-300 dark:via-indigo-300 dark:to-sky-300">
+                    {FACTS_DECK_CREDIT_SCORE_SIMULATOR}
+                  </span>
+                </h1>
+                <p className="text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
+                  <span className="hidden sm:inline">
+                    Focus: <strong className="text-zinc-800 dark:text-zinc-200">{GOAL_LABEL[goal]}</strong> — twist the classic factor mix and see how habits might move a score band (illustrative only).
+                  </span>
+                  <span className="sm:hidden">
+                    <strong className="text-zinc-800 dark:text-zinc-200">{GOAL_LABEL[goal]}</strong> — factor dials
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => setTourOpen(true)}
-                className={`${tdGhostBtn} py-2 text-sm`}
+                onClick={openWalkthrough}
+                className={tdGhostBtn}
                 aria-label="Open credit score simulator walk-through"
               >
-                <TourBook className="h-4 w-4" />
+                <BookOpen className="h-4 w-4" />
                 Walk-through
               </button>
               <button
                 type="button"
-                onClick={copyJson}
-                className={`${tdGhostBtn} py-2 text-sm`}
                 data-tour="credit-copy-json"
+                onClick={copyJson}
+                className={`${tdGhostBtn} shrink-0 sm:ml-auto`}
               >
-                {copied ? <Check className="h-4 w-4 text-zinc-900 dark:text-zinc-100" /> : <Copy className="h-4 w-4" />}
-                {copied ? "Copied" : "Copy JSON"}
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? "Copied JSON" : "Copy JSON"}
               </button>
             </div>
+
+            <div className="mt-6">
+              <ToolDashboardTestCta
+                toolSlug="credit-score-simulator"
+                testLabel={FACTS_DECK_CREDIT_TEST}
+                blurb="Run the short interactive flow again—fresh answers, results snapshot, then land back here with the full workspace."
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14 space-y-8 sm:space-y-10">
+        <div
+          className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 flex gap-2 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200"
+          data-tour="credit-disclaimer"
+        >
+          <Shield className="h-5 w-5 shrink-0 text-zinc-900 dark:text-zinc-100" />
+          <span>
+            This is <strong>not</strong> a real FICO, VantageScore, or lender score. It&apos;s a transparent toy
+            model for learning—your actual score depends on bureau data and proprietary formulas.
+          </span>
+        </div>
+
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
+          <div className="flex-1 max-w-xl">
+            <div className="flex flex-wrap gap-2" data-tour="credit-presets">
+              {PRESETS.map((p) => (
+                <button
+                  key={p.name}
+                  type="button"
+                  onClick={() => {
+                    setUtilizationPct(p.util);
+                    setOnTimePct(p.onTime);
+                    setAvgAgeYears(p.ageY);
+                    setHardInquiries12m(p.inq);
+                    setAccountTypes(p.mix);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 transition-colors dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900/40"
+                >
+                  <Zap className="h-3.5 w-3.5" />
+                  {p.name}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="mt-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
-            <div className="flex-1 max-w-xl">
-              <div className="flex items-center gap-3">
-                <span className={tdIconTile}>
-                  <Activity className="h-6 w-6" />
-                </span>
-                <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  {FACTS_DECK_CREDIT_SCORE_SIMULATOR}
-                </h1>
-              </div>
-              <p className="mt-2 text-zinc-600 dark:text-zinc-400 sm:ml-[4rem] leading-relaxed">
-                Twist the dials on the classic factor mix—see how habits might move a score band (illustrative
-                only).
-              </p>
-
-              <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 flex gap-2 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200" data-tour="credit-disclaimer">
-                <Shield className="h-5 w-5 shrink-0 text-zinc-900 dark:text-zinc-100" />
-                <span>
-                  This is <strong>not</strong> a real FICO, VantageScore, or lender score. It’s a transparent toy
-                  model for learning—your actual score depends on bureau data and proprietary formulas.
-                </span>
-              </div>
-
-              <div className="mt-6 flex flex-wrap gap-2" data-tour="credit-presets">
-                {PRESETS.map((p) => (
-                  <button
-                    key={p.name}
-                    type="button"
-                    onClick={() => {
-                      setUtilizationPct(p.util);
-                      setOnTimePct(p.onTime);
-                      setAvgAgeYears(p.ageY);
-                      setHardInquiries12m(p.inq);
-                      setAccountTypes(p.mix);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 transition-colors dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900/40"
-                  >
-                    <Zap className="h-3.5 w-3.5" />
-                    {p.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Simulated Credit Score Design Section */}
-            <div className="w-full max-w-md mx-auto lg:mx-0">
-              <div
-                className={`rounded-3xl p-8 text-white shadow-2xl bg-gradient-to-br ${b.color} relative overflow-hidden`}
-                data-tour="credit-score-card"
-              >
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.25),transparent_50%)]" />
-                <div className="relative">
-                  <p className="text-sm font-bold uppercase tracking-wide text-white/80 flex items-center gap-2">
-                    <Gauge className="h-4 w-4" />
-                    Simulated score
-                  </p>
-                  <p className="mt-2 text-6xl font-black font-mono tabular-nums tracking-tight">{score}</p>
-                  <p className={`mt-1 text-lg font-bold ${b.dark}`}>{b.name}</p>
-                  <div className="mt-6 h-3 rounded-full bg-black/20 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-white/90 transition-all duration-500"
-                      style={{ width: `${needle}%` }}
-                    />
-                  </div>
-                  <p className="mt-3 text-xs text-white/85">
-                    300 ············································································· 850
-                  </p>
+          <div className="w-full max-w-md mx-auto lg:mx-0 shrink-0">
+            <div
+              className={`rounded-3xl p-8 text-white shadow-2xl bg-gradient-to-br ${b.color} relative overflow-hidden`}
+              data-tour="credit-score-card"
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.25),transparent_50%)]" />
+              <div className="relative">
+                <p className="text-sm font-bold uppercase tracking-wide text-white/80 flex items-center gap-2">
+                  <Gauge className="h-4 w-4" />
+                  Simulated score
+                </p>
+                <p className="mt-2 text-6xl font-black font-mono tabular-nums tracking-tight">{score}</p>
+                <p className={`mt-1 text-lg font-bold ${b.dark}`}>{b.name}</p>
+                <div className="mt-6 h-3 rounded-full bg-black/20 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-white/90 transition-all duration-500"
+                    style={{ width: `${needle}%` }}
+                  />
                 </div>
+                <p className="mt-3 text-xs text-white/85">
+                  300 ············································································· 850
+                </p>
               </div>
             </div>
           </div>
+        </div>
 
-          <ToolDashboardTestCta toolSlug="credit-score-simulator" testLabel={FACTS_DECK_CREDIT_SCORE_SIMULATOR} />
-
-          <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm space-y-6 dark:border-zinc-800 dark:bg-zinc-900/40" data-tour="credit-inputs">
               <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-zinc-700 dark:text-zinc-300" />
@@ -598,25 +748,27 @@ export default function AdvancedCreditScoreSimulator({
                 <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4">
                   If you only lowered utilization (everything else unchanged):
                 </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl bg-zinc-50 border border-zinc-200 p-4 dark:bg-zinc-950 dark:border-zinc-800">
-                    <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">−15% utilization</p>
-                    <p className="mt-1 text-2xl font-extrabold font-mono text-zinc-900 dark:text-zinc-100">
-                      {whatIf.payDown15}
-                    </p>
+                <div className="-mx-2 px-2 sm:mx-0 sm:px-0">
+                  <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:gap-3 sm:overflow-visible sm:pb-0">
+                    <div className="min-w-[10rem] sm:min-w-0 shrink-0 rounded-2xl bg-zinc-50 border border-zinc-200 p-4 dark:bg-zinc-950 dark:border-zinc-800">
+                      <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">−15% utilization</p>
+                      <p className="mt-1 text-2xl font-extrabold font-mono text-zinc-900 dark:text-zinc-100">
+                        {whatIf.payDown15}
+                      </p>
+                    </div>
+                    <div className="min-w-[10rem] sm:min-w-0 shrink-0 rounded-2xl bg-zinc-50 border border-zinc-200 p-4 dark:bg-zinc-950 dark:border-zinc-800">
+                      <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">−30% utilization</p>
+                      <p className="mt-1 text-2xl font-extrabold font-mono text-zinc-900 dark:text-zinc-100">
+                        {whatIf.payDown30}
+                      </p>
+                    </div>
                   </div>
-                  <div className="rounded-2xl bg-zinc-50 border border-zinc-200 p-4 dark:bg-zinc-950 dark:border-zinc-800">
-                    <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">−30% utilization</p>
-                    <p className="mt-1 text-2xl font-extrabold font-mono text-zinc-900 dark:text-zinc-100">
-                      {whatIf.payDown30}
-                    </p>
-                  </div>
+                  <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 sm:hidden">Swipe to compare scenarios</p>
                 </div>
               </div>
-            </div>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

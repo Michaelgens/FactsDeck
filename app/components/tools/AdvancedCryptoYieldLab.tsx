@@ -2,21 +2,26 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, Check, ChevronRight, Coins, Copy, Sparkles } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, ChevronRight, Coins, Copy } from "lucide-react";
 import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
 import {
   CRYPTO_YIELD_JOURNEY_DEFAULTS,
   FACTS_DECK_CRYPTO_YIELD_LAB,
+  FACTS_DECK_CRYPTO_YIELD_TEST,
 } from "./crypto-yield/crypto-yield-journey-types";
-import type { CompoundingMode, CryptoYieldJourneyAnswers } from "./crypto-yield/crypto-yield-journey-types";
+import type { CompoundingMode, CryptoYieldGoal, CryptoYieldJourneyAnswers } from "./crypto-yield/crypto-yield-journey-types";
 import ToolDashboardTestCta from "./ToolDashboardTestCta";
 import {
   apyFromApr,
   computeCryptoYieldJourneyMetrics,
+  computeCryptoYieldReadinessScore,
   formatCyMoney,
   periodsPerYear,
 } from "./crypto-yield/compute-crypto-yield-metrics";
+import { loadCryptoYieldState, saveCryptoYieldState } from "./crypto-yield/crypto-yield-storage";
+import { CRYPTO_YIELD_SLUG, trackToolEvent } from "../../lib/tool-analytics-client";
 import {
+  ToolDashboardGridBackdrop,
   ToolDashboardHeroBackdrop,
   tdGhostBtn,
   tdHero,
@@ -26,23 +31,96 @@ import {
   tdPage,
 } from "./tool-dashboard-ui";
 
+const GOAL_LABEL: Record<CryptoYieldGoal, string> = {
+  compounding: "Compounding",
+  compare: "Compare frequencies",
+  exploring: "Exploring",
+};
+
 export type CryptoYieldLabInitialValues = Partial<
-  Pick<CryptoYieldJourneyAnswers, "principal" | "apyPercent" | "months" | "compounding">
->;
+  Pick<CryptoYieldJourneyAnswers, "goal" | "principal" | "apyPercent" | "months" | "compounding">
+> & {
+  fromJourney?: true;
+};
 
 type Props = {
   initialValues?: CryptoYieldLabInitialValues;
   deferWalkthrough?: boolean;
 };
 
-export default function AdvancedCryptoYieldLab({ initialValues, deferWalkthrough = false }: Props = {}) {
+function resolveInitialState(initialValues?: CryptoYieldLabInitialValues) {
+  const saved = typeof window !== "undefined" ? loadCryptoYieldState() : null;
   const d = CRYPTO_YIELD_JOURNEY_DEFAULTS;
-  const [principal, setPrincipal] = useState(initialValues?.principal ?? d.principal);
-  const [apyPercent, setApyPercent] = useState(initialValues?.apyPercent ?? d.apyPercent);
-  const [months, setMonths] = useState(initialValues?.months ?? d.months);
-  const [compounding, setCompounding] = useState<CompoundingMode>(initialValues?.compounding ?? d.compounding);
+
+  if (initialValues?.fromJourney) {
+    return {
+      goal: initialValues.goal ?? d.goal,
+      principal: initialValues.principal ?? d.principal,
+      apyPercent: initialValues.apyPercent ?? d.apyPercent,
+      months: initialValues.months ?? d.months,
+      compounding: initialValues.compounding ?? d.compounding,
+      aprForConvert: initialValues.apyPercent ?? d.apyPercent,
+      aprCompoundMode: initialValues.compounding ?? d.compounding,
+    };
+  }
+
+  if (saved) {
+    return {
+      goal: saved.goal,
+      principal: saved.principal,
+      apyPercent: saved.apyPercent,
+      months: saved.months,
+      compounding: saved.compounding,
+      aprForConvert: saved.aprForConvert,
+      aprCompoundMode: saved.aprCompoundMode,
+    };
+  }
+
+  return {
+    goal: initialValues?.goal ?? d.goal,
+    principal: initialValues?.principal ?? d.principal,
+    apyPercent: initialValues?.apyPercent ?? d.apyPercent,
+    months: initialValues?.months ?? d.months,
+    compounding: initialValues?.compounding ?? d.compounding,
+    aprForConvert: initialValues?.apyPercent ?? d.apyPercent,
+    aprCompoundMode: initialValues?.compounding ?? d.compounding,
+  };
+}
+
+export default function AdvancedCryptoYieldLab({ initialValues, deferWalkthrough = false }: Props = {}) {
+  const [hydrated, setHydrated] = useState(false);
+  const [goal, setGoal] = useState<CryptoYieldGoal>("compare");
+  const [principal, setPrincipal] = useState(CRYPTO_YIELD_JOURNEY_DEFAULTS.principal);
+  const [apyPercent, setApyPercent] = useState(CRYPTO_YIELD_JOURNEY_DEFAULTS.apyPercent);
+  const [months, setMonths] = useState(CRYPTO_YIELD_JOURNEY_DEFAULTS.months);
+  const [compounding, setCompounding] = useState<CompoundingMode>(CRYPTO_YIELD_JOURNEY_DEFAULTS.compounding);
   const [aprForConvert, setAprForConvert] = useState(4.2);
   const [aprCompoundMode, setAprCompoundMode] = useState<CompoundingMode>("monthly");
+
+  useEffect(() => {
+    const state = resolveInitialState(initialValues);
+    setGoal(state.goal);
+    setPrincipal(state.principal);
+    setApyPercent(state.apyPercent);
+    setMonths(state.months);
+    setCompounding(state.compounding);
+    setAprForConvert(state.aprForConvert);
+    setAprCompoundMode(state.aprCompoundMode);
+    setHydrated(true);
+  }, [initialValues]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveCryptoYieldState({
+      goal,
+      principal,
+      apyPercent,
+      months,
+      compounding,
+      aprForConvert,
+      aprCompoundMode,
+    });
+  }, [hydrated, goal, principal, apyPercent, months, compounding, aprForConvert, aprCompoundMode]);
 
   const [copied, setCopied] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
@@ -50,16 +128,17 @@ export default function AdvancedCryptoYieldLab({ initialValues, deferWalkthrough
 
   const answers: CryptoYieldJourneyAnswers = useMemo(
     () => ({
-      goal: "exploring",
+      goal,
       principal,
       apyPercent,
       months,
       compounding,
     }),
-    [principal, apyPercent, months, compounding]
+    [goal, principal, apyPercent, months, compounding]
   );
 
   const m = useMemo(() => computeCryptoYieldJourneyMetrics(answers), [answers]);
+  const readinessScore = useMemo(() => computeCryptoYieldReadinessScore(answers, m), [answers, m]);
   const convertedApyFromApr = useMemo(
     () => apyFromApr(aprForConvert, periodsPerYear(aprCompoundMode)),
     [aprForConvert, aprCompoundMode]
@@ -93,16 +172,63 @@ export default function AdvancedCryptoYieldLab({ initialValues, deferWalkthrough
 
   const copyJson = async () => {
     await navigator.clipboard.writeText(JSON.stringify(exportPayload, null, 2));
+    trackToolEvent(CRYPTO_YIELD_SLUG, "export_json");
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
   };
 
   useEffect(() => {
-    if (deferWalkthrough) return;
+    if (!hydrated || deferWalkthrough) return;
     if (hasCompletedWalkthrough(TOUR_ID)) return;
-    const t = window.setTimeout(() => setTourOpen(true), 450);
+    const t = window.setTimeout(() => {
+      trackToolEvent(CRYPTO_YIELD_SLUG, "walkthrough_open", undefined, true);
+      setTourOpen(true);
+    }, 450);
     return () => window.clearTimeout(t);
-  }, [deferWalkthrough]);
+  }, [deferWalkthrough, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const t = window.setTimeout(() => {
+      trackToolEvent(
+        CRYPTO_YIELD_SLUG,
+        "session_telemetry",
+        {
+          goal,
+          score: readinessScore,
+          principal: Math.round(principal * 100) / 100,
+          apyPercent: Math.round(apyPercent * 1000) / 1000,
+          months,
+          compounding,
+          futureValue: Math.round(m.futureValue * 100) / 100,
+          interestEarned: Math.round(m.interestEarned * 100) / 100,
+          effectiveApyPercent: Math.round(m.effectiveApyPercent * 1000) / 1000,
+          compareGoal: goal === "compare",
+          highApy: apyPercent >= 8,
+          dailyCompound: compounding === "daily",
+          longHorizon: months >= 24,
+        },
+        true
+      );
+    }, 4000);
+    return () => window.clearTimeout(t);
+  }, [
+    hydrated,
+    goal,
+    readinessScore,
+    principal,
+    apyPercent,
+    months,
+    compounding,
+    m.futureValue,
+    m.interestEarned,
+    m.effectiveApyPercent,
+  ]);
+
+  const openWalkthrough = () => {
+    trackToolEvent(CRYPTO_YIELD_SLUG, "walkthrough_open", undefined, true);
+    setTourOpen(true);
+  };
 
   const walkthroughSteps: WalkthroughStep[] = useMemo(
     () => [
@@ -162,11 +288,13 @@ export default function AdvancedCryptoYieldLab({ initialValues, deferWalkthrough
 
   return (
     <div className={tdPage}>
+      <ToolDashboardGridBackdrop />
       <ToolWalkthrough
         id={TOUR_ID}
         open={tourOpen}
         onClose={() => setTourOpen(false)}
         onFinish={() => {
+          trackToolEvent(CRYPTO_YIELD_SLUG, "walkthrough_complete", undefined, true);
           try {
             window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
           } catch {
@@ -177,83 +305,98 @@ export default function AdvancedCryptoYieldLab({ initialValues, deferWalkthrough
       />
 
       <section className={tdHero}>
-        <ToolDashboardHeroBackdrop />
+        <ToolDashboardHeroBackdrop accent="default" />
 
         <div className={tdHeroInner}>
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap" data-tour="cy-top-nav">
             <Link href="/" className={tdNavLink}>
               <ArrowLeft className="h-4 w-4" />
               Back to Home
             </Link>
-            <Link href="/tools" className={tdNavLink}>
-              All tools
+            <Link href="/post?category=Personal%20Finance&q=crypto%20staking" className={tdNavLink}>
+              Read staking & yield guides
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
 
-          <div className="mt-8 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-            <div className="flex items-start gap-4">
+          <div className="mt-7 sm:mt-8" data-tour="cy-hero">
+            <div className="flex items-center gap-3 min-w-0">
               <span className={tdIconTile}>
-                <Coins className="h-7 w-7" />
+                <Coins className="h-6 w-6" />
               </span>
-              <div>
-                <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  {FACTS_DECK_CRYPTO_YIELD_LAB}
-                </h1>
-                <p className="mt-2 text-zinc-600 dark:text-zinc-400 max-w-2xl leading-relaxed">
-                  Compound a headline rate on a schedule—compare daily, monthly, annual. APR helper for sites that quote APR.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setTourOpen(true)}
-                    className={tdGhostBtn}
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    Walk-through
-                  </button>
-                  <span className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Education only
+              <div className="min-w-0">
+                <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight">
+                  <span className="bg-gradient-to-r from-amber-700 via-orange-700 to-emerald-700 bg-clip-text text-transparent dark:from-amber-300 dark:via-orange-300 dark:to-emerald-300">
+                    {FACTS_DECK_CRYPTO_YIELD_LAB}
                   </span>
-                </div>
+                </h1>
+                <p className="text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
+                  <span className="hidden sm:inline">
+                    Focus: <strong className="text-zinc-800 dark:text-zinc-200">{GOAL_LABEL[goal]}</strong> — compound a headline rate, compare frequencies, and convert APR ↔ APY. Autosaved in this browser.
+                  </span>
+                  <span className="sm:hidden">
+                    <strong className="text-zinc-800 dark:text-zinc-200">{GOAL_LABEL[goal]}</strong> — staking & yield
+                  </span>
+                </p>
               </div>
             </div>
-            <button
-              type="button"
-              data-tour="cy-copy"
-              onClick={copyJson}
-              className={`${tdGhostBtn} px-5`}
-            >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {copied ? "Copied" : "Copy JSON"}
-            </button>
-          </div>
 
-          <ToolDashboardTestCta toolSlug="crypto-yield-lab" testLabel={FACTS_DECK_CRYPTO_YIELD_LAB} />
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={openWalkthrough}
+                className={tdGhostBtn}
+                aria-label="Open crypto yield lab walk-through"
+              >
+                <BookOpen className="h-4 w-4" />
+                Walk-through
+              </button>
+              <button
+                type="button"
+                data-tour="cy-copy"
+                onClick={copyJson}
+                className={`${tdGhostBtn} shrink-0 sm:ml-auto`}
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? "Copied JSON" : "Copy JSON"}
+              </button>
+            </div>
+
+            <div className="mt-6">
+              <ToolDashboardTestCta
+                toolSlug="crypto-yield-lab"
+                testLabel={FACTS_DECK_CRYPTO_YIELD_TEST}
+                blurb="Run the short interactive flow again—fresh answers, results snapshot, then land back here with the full lab."
+              />
+            </div>
+          </div>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14 space-y-10">
-        <div data-tour="cy-results" className="grid gap-4 lg:grid-cols-4">
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 lg:col-span-2 dark:border-zinc-800 dark:bg-zinc-900/40">
-            <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Ending balance</p>
-            <p className="mt-1 text-3xl font-extrabold tabular-nums">{formatCyMoney(m.futureValue)}</p>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Interest ≈ {formatCyMoney(m.interestEarned)}</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14 space-y-8 sm:space-y-12">
+        <div data-tour="cy-results" className="min-w-0">
+          <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible lg:pb-0">
+            <div className="min-w-[14rem] lg:min-w-0 shrink-0 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 lg:col-span-2 dark:border-zinc-800 dark:bg-zinc-900/40">
+              <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Ending balance</p>
+              <p className="mt-1 text-2xl sm:text-3xl font-extrabold tabular-nums">{formatCyMoney(m.futureValue)}</p>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Interest ≈ {formatCyMoney(m.interestEarned)}</p>
+            </div>
+            <div className="min-w-[12rem] lg:min-w-0 shrink-0 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+              <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Effective APY</p>
+              <p className="mt-1 text-2xl font-extrabold tabular-nums">{m.effectiveApyPercent.toFixed(2)}%</p>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">From path, {months} mo</p>
+            </div>
+            <div className="min-w-[12rem] lg:min-w-0 shrink-0 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+              <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Headline (nominal)</p>
+              <p className="mt-1 text-2xl font-extrabold tabular-nums">{apyPercent.toFixed(2)}%</p>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{compounding} compounding</p>
+            </div>
           </div>
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
-            <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Effective APY</p>
-            <p className="mt-1 text-2xl font-extrabold tabular-nums">{m.effectiveApyPercent.toFixed(2)}%</p>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">From path, {months} mo</p>
-          </div>
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
-            <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Headline (nominal)</p>
-            <p className="mt-1 text-2xl font-extrabold tabular-nums">{apyPercent.toFixed(2)}%</p>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{compounding} compounding</p>
-          </div>
+          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 lg:hidden">Swipe to see all metrics</p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="min-w-0">
+          <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-3 sm:gap-3 sm:overflow-visible sm:pb-0">
           {(
             [
               ["Daily", m.compareAtHorizon.daily.fv],
@@ -261,11 +404,13 @@ export default function AdvancedCryptoYieldLab({ initialValues, deferWalkthrough
               ["Annual", m.compareAtHorizon.annual.fv],
             ] as const
           ).map(([label, fv]) => (
-            <div key={label} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+            <div key={label} className="min-w-[12rem] sm:min-w-0 shrink-0 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
               <p className="text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400">Same APY · {label}</p>
               <p className="mt-2 text-xl font-bold tabular-nums">{formatCyMoney(fv)}</p>
             </div>
           ))}
+          </div>
+          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 sm:hidden">Swipe to compare frequencies</p>
         </div>
 
         <div data-tour="cy-inputs" className="rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8 dark:border-zinc-800 dark:bg-zinc-950/50">

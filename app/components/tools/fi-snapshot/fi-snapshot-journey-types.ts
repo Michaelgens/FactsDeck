@@ -2,7 +2,7 @@
 
 export const FACTS_DECK_FI_SNAPSHOT_TEST = "Facts Deck Freedom Snapshot";
 
-export const FACTS_DECK_FI_SNAPSHOT_TOOL = "Facts Deck Net Worth & Financial Independence Snapshot";
+export const FACTS_DECK_FI_SNAPSHOT_TOOL = "Net Worth & Financial Independence Snapshot";
 
 export type FiSnapshotGoal = "freedom" | "clarity" | "milestone" | "exploring";
 

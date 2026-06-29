@@ -6,15 +6,13 @@ import {
   monthlyPmiFromLoan,
   pmiCancellationBalance,
 } from "../../../lib/mortgage-math";
-import type { MortgageSummaryPayload } from "../../../lib/mortgage-summary-email";
-import type { MortgageJourneyAnswers } from "./mortgage-journey-types";
+import type { MortgageJourneyAnswers, BuyerGoal } from "./mortgage-journey-types";
 
 /** Escrow assumptions for the quick journey (full calculator lets users edit). */
 const DEFAULT_TAX_PCT = 1.15;
 const INSURANCE_RATIO_OF_HOME = 0.0035;
 
 export type JourneyMetrics = {
-  summary: MortgageSummaryPayload;
   pi: number;
   pitiFirstMonth: number;
   loanAmount: number;
@@ -100,27 +98,7 @@ export function computeJourneyMetrics(a: MortgageJourneyAnswers): JourneyMetrics
     dtiMessage = "Housing ratio is high vs typical guidelines — review with the full affordability tab.";
   }
 
-  const summary: MortgageSummaryPayload = {
-    homePrice,
-    downPercent,
-    loanAmount,
-    rate,
-    termYears: Math.round(a.termYears),
-    monthlyPI: pi,
-    pitiFirstMonth,
-    totalInterest: schedule.totalInterest,
-    totalPmi: schedule.totalPmi,
-    payoffMonths: schedule.monthsToPayoff,
-    ltv,
-    extraMonthly: Math.max(0, a.extraMonthly),
-    propertyTaxPercent: DEFAULT_TAX_PCT,
-    insuranceYearly: escrowInsMonthly * 12,
-    hoaMonthly: 0,
-    generatedAt: new Date().toISOString(),
-  };
-
   return {
-    summary,
     pi,
     pitiFirstMonth,
     loanAmount,
@@ -143,4 +121,69 @@ export function computeJourneyMetrics(a: MortgageJourneyAnswers): JourneyMetrics
 
 export function formatMoney(n: number): string {
   return formatCurrency(n);
+}
+
+export type RelatedTool = {
+  slug: string;
+  name: string;
+  reason: string;
+};
+
+export function computeMortgageReadinessFromBands(
+  housingDtiPct: number,
+  downPercent: number,
+  ltv: number
+): number {
+  const dtiScore =
+    housingDtiPct <= 28 ? 1 : housingDtiPct <= 36 ? 0.75 : housingDtiPct <= 43 ? 0.45 : 0.2;
+  const downScore = downPercent >= 20 ? 1 : downPercent >= 10 ? 0.7 : downPercent >= 5 ? 0.45 : 0.25;
+  const ltvScore = ltv <= 80 ? 1 : ltv <= 90 ? 0.65 : ltv <= 95 ? 0.4 : 0.2;
+  return Math.round((dtiScore * 0.45 + downScore * 0.3 + ltvScore * 0.25) * 100);
+}
+
+export function computeMortgageReadinessScore(m: JourneyMetrics, answers: MortgageJourneyAnswers): number {
+  return computeMortgageReadinessFromBands(m.housingDtiPct, answers.downPercent, m.ltv);
+}
+
+export function buildMortgageTextSummary(answers: MortgageJourneyAnswers, m: JourneyMetrics): string {
+  const goalLabel =
+    answers.goal === "buying" ? "Buying" : answers.goal === "refinancing" ? "Refinancing" : "Exploring";
+  return [
+    "Facts Deck Mortgage Test — summary",
+    `Goal: ${goalLabel}`,
+    `Home price: ${formatMoney(answers.homePrice)}`,
+    `Down payment: ${answers.downPercent}%`,
+    `Rate: ${answers.rate}% · ${answers.termYears} yr`,
+    `Est. PITI (mo 1): ${formatMoney(m.pitiFirstMonth)}`,
+    `Loan: ${formatMoney(m.loanAmount)} · LTV ${m.ltv.toFixed(1)}%`,
+    `Housing / income: ${m.housingDtiPct.toFixed(1)}%`,
+    `Readiness score: ${computeMortgageReadinessScore(m, answers)}/100`,
+    m.dtiMessage,
+  ].join("\n");
+}
+
+export function suggestRelatedTools(goal: BuyerGoal, m: JourneyMetrics): RelatedTool[] {
+  const out: RelatedTool[] = [];
+  const push = (slug: string, name: string, reason: string) => {
+    if (!out.some((t) => t.slug === slug)) out.push({ slug, name, reason });
+  };
+
+  if (goal === "refinancing" || m.housingDtiPct > 36) {
+    push("debt-payoff-planner", "Debt Payoff Planner", "Free up cash flow before or after a refi.");
+  }
+  if (goal === "buying" || m.needsPmi) {
+    push("emergency-fund-calculator", "Emergency Fund & Runway", "Build a cushion for closing costs and new-home surprises.");
+  }
+  if (m.housingDtiPct > 28) {
+    push("budget-planner", "Budget Planner", "Stress-test housing against the rest of your monthly plan.");
+  }
+  if (goal === "buying") {
+    push("loan-calculator", "Loan Calculator", "Compare other borrowing scenarios side by side.");
+  }
+  if (goal === "exploring") {
+    push("net-worth-fi-snapshot", "Net Worth & FI Snapshot", "See how a mortgage fits your bigger financial picture.");
+  }
+  push("subscription-spend-audit", "Subscription Audit", "Trim recurring costs to widen your housing budget.");
+
+  return out.slice(0, 4);
 }

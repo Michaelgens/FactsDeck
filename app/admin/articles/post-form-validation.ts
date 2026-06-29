@@ -1,7 +1,8 @@
 import type { PostFormData } from "../../lib/admin-actions";
 import { validatePollForAdmin } from "../../lib/poll-types";
+import { validateQuizForAdmin } from "../../lib/quiz-types";
 
-export type ArticleFormTab = "content" | "author" | "seo" | "placement" | "poll";
+export type ArticleFormTab = "content" | "author" | "seo" | "placement" | "poll" | "quiz";
 
 export function validateContentTab(form: PostFormData): string[] {
   const errors: string[] = [];
@@ -40,6 +41,10 @@ export function validatePollTab(form: PostFormData): string[] {
   return validatePollForAdmin(form.poll ?? null);
 }
 
+export function validateQuizTab(form: PostFormData): string[] {
+  return validateQuizForAdmin(form.quiz ?? null);
+}
+
 export function getTabValidation(
   form: PostFormData,
   visitedTabs: Set<ArticleFormTab>
@@ -50,6 +55,7 @@ export function getTabValidation(
     seo: validateSeoTab(form),
     placement: validatePlacementTab(visitedTabs.has("placement")),
     poll: validatePollTab(form),
+    quiz: validateQuizTab(form),
   };
 }
 
@@ -61,7 +67,7 @@ export function isCreateFormComplete(
   return (["content", "author", "seo", "placement"] as const).every((t) => v[t].length === 0);
 }
 
-/** Poll errors block save when enabled but misconfigured */
+/** Poll or quiz errors block save when enabled but misconfigured */
 export function pollBlocksSave(form: PostFormData): boolean {
-  return validatePollTab(form).length > 0;
+  return validatePollTab(form).length > 0 || validateQuizTab(form).length > 0;
 }

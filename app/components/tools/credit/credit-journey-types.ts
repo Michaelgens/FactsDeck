@@ -2,7 +2,7 @@
 
 export const FACTS_DECK_CREDIT_TEST = "Facts Deck Credit Test";
 
-export const FACTS_DECK_CREDIT_SCORE_SIMULATOR = "Facts Deck Credit Score Simulator";
+export const FACTS_DECK_CREDIT_SCORE_SIMULATOR = "Credit Score Simulator";
 
 export type CreditJourneyGoal = "improve" | "learn" | "exploring";
 

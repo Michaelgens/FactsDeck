@@ -6,6 +6,7 @@ import AdvancedEmergencyFundCalculator from "./AdvancedEmergencyFundCalculator";
 import EmergencyFundQuickJourney from "./emergency-fund/EmergencyFundQuickJourney";
 import EmergencyFundJourneyResults from "./emergency-fund/EmergencyFundJourneyResults";
 import type { EmergencyFundJourneyAnswers } from "./emergency-fund/emergency-fund-journey-types";
+import { EMERGENCY_FUND_SLUG, trackToolEvent } from "../../lib/tool-analytics-client";
 
 type Phase = "journey" | "results" | "dashboard";
 
@@ -35,7 +36,24 @@ function EmergencyFundCalculatorEntryInner() {
     }
   }, [retakeTest, dashboardParam]);
 
+  useEffect(() => {
+    trackToolEvent(EMERGENCY_FUND_SLUG, "page_view", undefined, true);
+  }, []);
+
+  useEffect(() => {
+    if (phase === "results") {
+      trackToolEvent(EMERGENCY_FUND_SLUG, "results_view", undefined, true);
+    }
+  }, [phase]);
+
   const handleJourneyComplete = useCallback((a: EmergencyFundJourneyAnswers) => {
+    trackToolEvent(EMERGENCY_FUND_SLUG, "journey_complete", {
+      goal: a.goal,
+      planMode: a.planMode,
+      monthlyEssentials: a.monthlyEssentials,
+      targetMonths: a.targetMonths,
+      currentFund: a.currentFund,
+    });
     setAnswers(a);
     setPhase("results");
     try {
@@ -46,15 +64,19 @@ function EmergencyFundCalculatorEntryInner() {
   }, []);
 
   const handleSkip = useCallback(() => {
+    trackToolEvent(EMERGENCY_FUND_SLUG, "journey_skip", undefined, true);
+    trackToolEvent(EMERGENCY_FUND_SLUG, "dashboard_open", { source: "journey_skip" }, true);
     setPhase("dashboard");
     setAnswers(null);
   }, []);
 
   const handleOpenDashboard = useCallback(() => {
+    trackToolEvent(EMERGENCY_FUND_SLUG, "dashboard_open", { source: "results" }, true);
     setPhase("dashboard");
   }, []);
 
   const handleStartOver = useCallback(() => {
+    trackToolEvent(EMERGENCY_FUND_SLUG, "retake_click");
     setAnswers(null);
     setPhase("journey");
   }, []);
@@ -63,10 +85,13 @@ function EmergencyFundCalculatorEntryInner() {
     () =>
       answers
         ? {
+            goal: answers.goal,
+            planMode: answers.planMode,
             monthlyEssentials: answers.monthlyEssentials,
             currentFund: answers.currentFund,
             monthlyContribution: answers.monthlyContribution,
             targetMonths: answers.targetMonths,
+            fromJourney: true as const,
           }
         : undefined,
     [answers]
@@ -78,7 +103,11 @@ function EmergencyFundCalculatorEntryInner() {
 
   if (phase === "results" && answers) {
     return (
-      <EmergencyFundJourneyResults answers={answers} onOpenDashboard={handleOpenDashboard} onStartOver={handleStartOver} />
+      <EmergencyFundJourneyResults
+        answers={answers}
+        onOpenDashboard={handleOpenDashboard}
+        onStartOver={handleStartOver}
+      />
     );
   }
 

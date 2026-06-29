@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, PieChart, PiggyBank, Sparkles, Target, Wallet, Compass, ArrowRight, DoorOpen } from "lucide-react";
+import { ArrowLeft, PieChart, PiggyBank, Sparkles, Target, Wallet, Compass, DoorOpen } from "lucide-react";
 import WizardSlideShell from "../mortgage/WizardSlideShell";
 import type { BudgetGoal, BudgetJourneyAnswers } from "./budget-journey-types";
 import {
@@ -10,6 +10,7 @@ import {
   FACTS_DECK_BUDGET_PLANNER,
   FACTS_DECK_BUDGET_TEST,
 } from "./budget-journey-types";
+import { BUDGET_PLANNER_SLUG, trackToolEvent } from "../../../lib/tool-analytics-client";
 
 const TOTAL_STEPS = 6;
 
@@ -33,6 +34,11 @@ export default function BudgetQuickJourney({ onComplete, onSkipToDashboard }: Pr
     setA((prev) => ({ ...prev, [key]: value }));
   }, []);
 
+  function clampNumber(n: number, lo: number, hi: number) {
+    if (!Number.isFinite(n)) return lo;
+    return Math.min(hi, Math.max(lo, n));
+  }
+
   const canProceed = useCallback((): boolean => {
     if (step === 2) return a.incomeMonthly >= 500 && a.incomeMonthly <= 500_000;
     if (step === 4) return a.bufferPct >= 0 && a.bufferPct <= 0.25;
@@ -40,6 +46,10 @@ export default function BudgetQuickJourney({ onComplete, onSkipToDashboard }: Pr
   }, [step, a]);
 
   const finish = useCallback(() => onComplete({ ...a }), [a, onComplete]);
+
+  useEffect(() => {
+    trackToolEvent(BUDGET_PLANNER_SLUG, "journey_start", undefined, true);
+  }, []);
 
   const next = useCallback(() => {
     if (step >= TOTAL_STEPS - 1) {
@@ -97,7 +107,7 @@ export default function BudgetQuickJourney({ onComplete, onSkipToDashboard }: Pr
                 Skip
               </span>
               <span className="hidden sm:inline flex items-center gap-1">
-                <DoorOpen className="h-4 w-4 inline-block" aria-hidden />
+                <DoorOpen className="h-4 w-4 inline-block mr-2" aria-hidden />
                 Skip to full planner
               </span>
             </button>
@@ -189,11 +199,11 @@ export default function BudgetQuickJourney({ onComplete, onSkipToDashboard }: Pr
                     key={g.id}
                     type="button"
                     onClick={() => setField("goal", g.id)}
-                    className={`text-left rounded-2xl border-2 p-5 transition-all ${
-                      on
-                        ? "border-zinc-900 bg-zinc-50 shadow-md dark:border-zinc-100 dark:bg-zinc-900/60"
-                        : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600"
-                    }`}
+                    className={`text-left rounded-2xl border-2 p-5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 ${
+                          on
+                            ? "border-zinc-900 bg-zinc-50 shadow-md dark:border-zinc-100 dark:bg-zinc-900/60"
+                            : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600"
+                        }`}
                   >
                     <div className="flex items-start gap-4">
                       <span
@@ -232,11 +242,13 @@ export default function BudgetQuickJourney({ onComplete, onSkipToDashboard }: Pr
               </p>
               <input
                 type="range"
-                min={1_000}
-                max={30_000}
-                step={100}
-                value={Math.min(30_000, Math.max(1_000, a.incomeMonthly))}
+                min={500}
+                max={500_000}
+                step={50}
+                value={clampNumber(a.incomeMonthly, 500, 500_000)}
                 onChange={(e) => setField("incomeMonthly", Number(e.target.value))}
+                aria-label="Monthly take-home income"
+                aria-valuetext={`$${Number(a.incomeMonthly).toLocaleString()}`}
                 className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
               />
               <label className="block">
@@ -247,8 +259,9 @@ export default function BudgetQuickJourney({ onComplete, onSkipToDashboard }: Pr
                   max={500_000}
                   step={50}
                   value={a.incomeMonthly}
-                  onChange={(e) => setField("incomeMonthly", Number(e.target.value) || 0)}
-                  className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                  onChange={(e) => setField("incomeMonthly", clampNumber(Number(e.target.value) || 0, 500, 500_000))}
+                  aria-label="Exact monthly take-home income"
+                  className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
                 />
               </label>
             </div>
@@ -287,11 +300,11 @@ export default function BudgetQuickJourney({ onComplete, onSkipToDashboard }: Pr
                     key={opt.id}
                     type="button"
                     onClick={() => setField("mode", opt.id)}
-                    className={`text-left rounded-2xl border-2 p-5 transition-all ${
-                      on
-                        ? "border-zinc-900 bg-zinc-50 shadow-md dark:border-zinc-100 dark:bg-zinc-900/60"
-                        : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600"
-                    }`}
+                    className={`text-left rounded-2xl border-2 p-5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 ${
+                          on
+                            ? "border-zinc-900 bg-zinc-50 shadow-md dark:border-zinc-100 dark:bg-zinc-900/60"
+                            : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600"
+                        }`}
                   >
                     <p className="font-display font-bold text-lg text-zinc-900 dark:text-zinc-50">{opt.title}</p>
                     <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">{opt.blurb}</p>
@@ -323,10 +336,12 @@ export default function BudgetQuickJourney({ onComplete, onSkipToDashboard }: Pr
               <input
                 type="range"
                 min={0}
-                max={0.2}
+                max={0.25}
                 step={0.005}
-                value={a.bufferPct}
+                value={clampNumber(a.bufferPct, 0, 0.25)}
                 onChange={(e) => setField("bufferPct", Number(e.target.value))}
+                aria-label="Buffer percentage for surprises"
+                aria-valuetext={`${(Number(a.bufferPct) * 100).toFixed(1)}%`}
                 className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
               />
             </div>

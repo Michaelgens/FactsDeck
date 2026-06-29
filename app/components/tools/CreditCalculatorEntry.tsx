@@ -6,6 +6,9 @@ import AdvancedCreditScoreSimulator from "./AdvancedCreditScoreSimulator";
 import CreditQuickJourney from "./credit/CreditQuickJourney";
 import CreditJourneyResults from "./credit/CreditJourneyResults";
 import type { CreditJourneyAnswers } from "./credit/credit-journey-types";
+import { computeCreditJourneyMetrics } from "./credit/compute-credit-journey-metrics";
+import { journeyToPersistSeed, saveCreditScoreState } from "./credit/credit-storage";
+import { CREDIT_SCORE_SLUG, trackToolEvent } from "../../lib/tool-analytics-client";
 
 type Phase = "journey" | "results" | "dashboard";
 
@@ -35,7 +38,25 @@ function CreditCalculatorEntryInner() {
     }
   }, [retakeTest, dashboardParam]);
 
+  useEffect(() => {
+    trackToolEvent(CREDIT_SCORE_SLUG, "page_view", undefined, true);
+  }, []);
+
+  useEffect(() => {
+    if (phase === "results") {
+      trackToolEvent(CREDIT_SCORE_SLUG, "results_view", undefined, true);
+    }
+  }, [phase]);
+
   const handleJourneyComplete = useCallback((a: CreditJourneyAnswers) => {
+    const m = computeCreditJourneyMetrics(a);
+    trackToolEvent(CREDIT_SCORE_SLUG, "journey_complete", {
+      goal: a.goal,
+      score: m.score,
+      utilizationPct: a.utilizationPct,
+      onTimePct: a.onTimePct,
+    });
+    saveCreditScoreState(journeyToPersistSeed(a));
     setAnswers(a);
     setPhase("results");
     try {
@@ -46,32 +67,35 @@ function CreditCalculatorEntryInner() {
   }, []);
 
   const handleSkip = useCallback(() => {
+    trackToolEvent(CREDIT_SCORE_SLUG, "journey_skip", undefined, true);
+    trackToolEvent(CREDIT_SCORE_SLUG, "dashboard_open", { source: "journey_skip" }, true);
     setPhase("dashboard");
     setAnswers(null);
   }, []);
 
   const handleOpenDashboard = useCallback(() => {
+    trackToolEvent(CREDIT_SCORE_SLUG, "dashboard_open", { source: "results" }, true);
     setPhase("dashboard");
   }, []);
 
   const handleStartOver = useCallback(() => {
+    trackToolEvent(CREDIT_SCORE_SLUG, "retake_click");
     setAnswers(null);
     setPhase("journey");
   }, []);
 
-  const calculatorInitial = useMemo(
-    () =>
-      answers
-        ? {
-            utilizationPct: answers.utilizationPct,
-            onTimePct: answers.onTimePct,
-            avgAgeYears: answers.avgAgeYears,
-            hardInquiries12m: answers.hardInquiries12m,
-            accountTypes: answers.accountTypes,
-          }
-        : undefined,
-    [answers]
-  );
+  const calculatorInitial = useMemo(() => {
+    if (!answers) return undefined;
+    return {
+      goal: answers.goal,
+      utilizationPct: answers.utilizationPct,
+      onTimePct: answers.onTimePct,
+      avgAgeYears: answers.avgAgeYears,
+      hardInquiries12m: answers.hardInquiries12m,
+      accountTypes: answers.accountTypes,
+      fromJourney: true as const,
+    };
+  }, [answers]);
 
   if (phase === "journey") {
     return <CreditQuickJourney onComplete={handleJourneyComplete} onSkipToDashboard={handleSkip} />;
@@ -83,9 +107,7 @@ function CreditCalculatorEntryInner() {
     );
   }
 
-  return (
-    <AdvancedCreditScoreSimulator initialValues={calculatorInitial} deferWalkthrough={Boolean(answers)} />
-  );
+  return <AdvancedCreditScoreSimulator initialValues={calculatorInitial} deferWalkthrough={Boolean(answers)} />;
 }
 
 export default function CreditCalculatorEntry() {

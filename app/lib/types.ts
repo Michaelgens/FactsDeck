@@ -1,4 +1,5 @@
 import type { ArticlePoll } from "./poll-types";
+import type { ArticleQuiz } from "./quiz-types";
 
 /** Standard post data structure - all posts use this shape */
 export interface Post {
@@ -33,8 +34,10 @@ export interface Post {
   trending: boolean;
   guides: boolean;
   createdAt: string;
-  /** Reader engagement poll (5 questions); null when disabled */
+  /** Reader engagement poll (1 question); null when disabled */
   poll: ArticlePoll | null;
+  /** Graded knowledge quiz (1–5 questions); null when disabled */
+  quiz: ArticleQuiz | null;
 }
 
 export type PostSummary = Pick<

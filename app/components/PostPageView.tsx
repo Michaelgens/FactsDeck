@@ -45,8 +45,9 @@ import {
 import EmptyState from "./EmptyState";
 import PostEngagementBarClient from "./PostEngagementBarClient";
 import { isPollActive, POLL_QUESTION_COUNT } from "../lib/poll-types";
-import ArticlePollCta, { PollOpenLink } from "./posts/ArticlePollCta";
-import PostArticlePollMount from "./posts/PostArticlePollMount";
+import { isQuizActive, QUIZ_QUESTION_COUNT } from "../lib/quiz-types";
+import { ArticleEngagementCta, PollOpenLink, QuizOpenLink } from "./posts/ArticlePollCta";
+import PostArticleEngagementMount from "./posts/PostArticlePollMount";
 
 const linkAccent =
   "font-semibold text-blue-800 transition-colors hover:text-blue-900 dark:text-cyan-300 dark:hover:text-cyan-200";
@@ -193,6 +194,9 @@ export default function PostPageView({
   const tags = article.tags ?? [];
   const pollEnabled = isPollActive(article.poll);
   const activePoll = pollEnabled && article.poll ? article.poll : null;
+  const quizEnabled = isQuizActive(article.quiz);
+  const activeQuiz = quizEnabled && article.quiz ? article.quiz : null;
+  const hasEngagement = Boolean(activePoll || activeQuiz);
 
   return (
     <div className="relative min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
@@ -298,8 +302,12 @@ export default function PostPageView({
                 <p className="mt-4 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
                   {article.excerpt}
                 </p>
-                {activePoll ? (
-                  <ArticlePollCta poll={activePoll} postId={article.id} />
+                {hasEngagement ? (
+                  <ArticleEngagementCta
+                    poll={activePoll}
+                    quiz={activeQuiz}
+                    postId={article.id}
+                  />
                 ) : null}
                 <div className="mt-5 flex flex-wrap items-center gap-2">
                   <CategoryPills
@@ -393,6 +401,12 @@ export default function PostPageView({
                   <ChevronRight className="ml-0.5 inline h-4 w-4 align-text-bottom" aria-hidden />
                 </PollOpenLink>
               ) : null}
+              {activeQuiz ? (
+                <QuizOpenLink postId={article.id} className={`text-sm font-semibold ${linkAccent}`}>
+                  Take the quiz
+                  <ChevronRight className="ml-0.5 inline h-4 w-4 align-text-bottom" aria-hidden />
+                </QuizOpenLink>
+              ) : null}
               <Link
                 href="#article-body"
                 className={`text-sm font-semibold ${linkAccent}`}
@@ -417,6 +431,11 @@ export default function PostPageView({
               poll={
                 activePoll
                   ? { questionCount: activePoll.questions.length || POLL_QUESTION_COUNT }
+                  : undefined
+              }
+              quiz={
+                activeQuiz
+                  ? { questionCount: activeQuiz.questions.length || QUIZ_QUESTION_COUNT }
                   : undefined
               }
             />
@@ -460,8 +479,13 @@ export default function PostPageView({
               </div>
             </article>
 
-            {activePoll ? (
-              <ArticlePollCta poll={activePoll} postId={article.id} variant="end" />
+            {hasEngagement ? (
+              <ArticleEngagementCta
+                poll={activePoll}
+                quiz={activeQuiz}
+                postId={article.id}
+                variant="end"
+              />
             ) : null}
 
             {tags.length > 0 && (
@@ -642,7 +666,9 @@ export default function PostPageView({
         </section>
       </div>
 
-      {activePoll ? <PostArticlePollMount poll={activePoll} postId={article.id} /> : null}
+      {hasEngagement ? (
+        <PostArticleEngagementMount poll={activePoll} quiz={activeQuiz} postId={article.id} />
+      ) : null}
     </div>
   );
 }

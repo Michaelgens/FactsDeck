@@ -21,8 +21,9 @@ import {
   ChevronDown,
   ChevronUp,
   MessageCircleQuestion,
+  Trophy,
 } from "lucide-react";
-import { requestOpenArticlePoll } from "../lib/poll-open-event";
+import { requestOpenArticlePoll, requestOpenArticleQuiz } from "../lib/poll-open-event";
 
 type Props = {
   articleId: string;
@@ -32,6 +33,8 @@ type Props = {
   title: string;
   /** When set, show poll button in the sticky engagement bar */
   poll?: { questionCount: number };
+  /** When set, show quiz button in the sticky engagement bar */
+  quiz?: { questionCount: number };
 };
 
 export default function PostEngagementBarClient({
@@ -41,6 +44,7 @@ export default function PostEngagementBarClient({
   initialViews,
   title,
   poll,
+  quiz,
 }: Props) {
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -246,12 +250,29 @@ export default function PostEngagementBarClient({
               <button
                 type="button"
                 onClick={() => requestOpenArticlePoll(articleId)}
-                className="flex items-center space-x-1 md:space-x-2 px-3 md:px-4 py-2 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base bg-violet-100 text-violet-800 hover:bg-violet-200/80 dark:bg-violet-950/50 dark:text-violet-200 dark:hover:bg-violet-900/50"
+                className="engagement-shimmer-btn engagement-glow-poll engagement-attention-wiggle flex items-center space-x-1 md:space-x-2 px-3 md:px-4 py-2 rounded-xl font-semibold text-sm md:text-base bg-violet-100 text-violet-800 hover:bg-violet-200/80 dark:bg-violet-950/50 dark:text-violet-200 dark:hover:bg-violet-900/50 transition-colors"
                 aria-label={`Open ${poll.questionCount}-question reader poll`}
               >
-                <MessageCircleQuestion className="h-4 w-4 md:h-5 md:w-5 shrink-0" />
+                <span className="engagement-icon-poll shrink-0">
+                  <MessageCircleQuestion className="h-4 w-4 md:h-5 md:w-5" />
+                </span>
                 <span className="hidden sm:inline">Poll</span>
                 <span className="sm:hidden tabular-nums">{poll.questionCount}</span>
+              </button>
+            ) : null}
+
+            {quiz ? (
+              <button
+                type="button"
+                onClick={() => requestOpenArticleQuiz(articleId)}
+                className="engagement-shimmer-btn engagement-glow-quiz engagement-shimmer-delay engagement-attention-wiggle flex items-center space-x-1 md:space-x-2 px-3 md:px-4 py-2 rounded-xl font-semibold text-sm md:text-base bg-amber-100 text-amber-900 hover:bg-amber-200/80 dark:bg-amber-950/50 dark:text-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                aria-label={`Open ${quiz.questionCount}-question knowledge quiz`}
+              >
+                <span className="engagement-icon-quiz shrink-0">
+                  <Trophy className="h-4 w-4 md:h-5 md:w-5" />
+                </span>
+                <span className="hidden sm:inline">Quiz</span>
+                <span className="sm:hidden tabular-nums">{quiz.questionCount}</span>
               </button>
             ) : null}
           </div>
@@ -259,11 +280,13 @@ export default function PostEngagementBarClient({
           {/* Share button and mobile show/hide button grouped together */}
           <div className="flex items-center space-x-2 relative">
             <button
+              type="button"
               onClick={() => setShowShareMenu(!showShareMenu)}
-              className="flex items-center space-x-1 md:space-x-2 px-3 md:px-4 py-2 rounded-xl font-semibold bg-zinc-900 text-white hover:bg-zinc-800 transition-all duration-300 text-sm md:text-base"
+              className="flex items-center justify-center gap-1 md:gap-2 px-3 md:px-4 py-2 rounded-xl font-semibold bg-zinc-900 text-white hover:bg-zinc-800 transition-all duration-300 text-sm md:text-base"
+              aria-label="Share article"
             >
-              <Share2 className="h-4 w-4 md:h-5 md:w-5" />
-              <span>Share</span>
+              <Share2 className="h-4 w-4 md:h-5 md:w-5 shrink-0" />
+              <span className="hidden md:inline">Share</span>
             </button>
             {showShareMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 py-2 z-50">
@@ -309,12 +332,10 @@ export default function PostEngagementBarClient({
             <button
               type="button"
               onClick={collapseMobileBar}
-              className="flex h-9 w-auto items-center justify-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-600 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 md:hidden"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 text-zinc-600 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 md:hidden"
               aria-label="Hide article actions"
-              style={{ marginLeft: '0.5rem' }} // small spacing to right of share
             >
               <ChevronDown className="h-5 w-5" aria-hidden />
-              <span className="text-sm font-medium">Hide</span>
             </button>
           </div>
         </div>

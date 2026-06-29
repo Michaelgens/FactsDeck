@@ -18,9 +18,12 @@ import {
   CheckCircle2,
   Circle,
   MessageCircleQuestion,
+  Trophy,
 } from "lucide-react";
 import { createEmptyPoll } from "../../lib/poll-types";
+import { createEmptyQuiz } from "../../lib/quiz-types";
 import PostPollEditor from "./PostPollEditor";
+import PostQuizEditor from "./PostQuizEditor";
 import { createPost, updatePost, type PostFormData } from "../../lib/admin-actions";
 import { categories } from "../../lib/site-config";
 import type { Post } from "../../lib/types";
@@ -30,6 +33,7 @@ import {
   isCreateFormComplete,
   pollBlocksSave,
   validatePollTab,
+  validateQuizTab,
 } from "./post-form-validation";
 import { admin } from "../components/admin-theme";
 
@@ -57,6 +61,7 @@ const emptyCreateForm: PostFormData = {
   trending: false,
   guides: false,
   poll: createEmptyPoll(),
+  quiz: createEmptyQuiz(),
 };
 
 type PostFormProps = {
@@ -72,7 +77,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
   const [activeTab, setActiveTab] = useState<ArticleFormTab>("content");
   const [visitedTabs, setVisitedTabs] = useState<Set<ArticleFormTab>>(() =>
     mode === "edit"
-      ? new Set(["content", "author", "seo", "placement", "poll"])
+      ? new Set(["content", "author", "seo", "placement", "poll", "quiz"])
       : new Set(["content"])
   );
 
@@ -81,6 +86,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
     { id: "author", label: "Author", icon: User },
     { id: "seo", label: "SEO & metadata", icon: Search },
     { id: "poll", label: "Reader poll", icon: MessageCircleQuestion },
+    { id: "quiz", label: "Knowledge quiz", icon: Trophy },
     { id: "placement", label: "Placement", icon: LayoutGrid },
   ];
 
@@ -113,16 +119,17 @@ export default function PostForm({ mode, post }: PostFormProps) {
           trending: post.trending,
           guides: post.guides,
           poll: post.poll ?? createEmptyPoll(),
+          quiz: post.quiz ?? createEmptyQuiz(),
         }
       : emptyCreateForm
   );
 
   const tabValidation = useMemo(
-    () => (mode === "create" ? getTabValidation(form, visitedTabs) : null),
-    [mode, form, visitedTabs]
+    () => getTabValidation(form, visitedTabs),
+    [form, visitedTabs]
   );
 
-  const createFormComplete = mode === "create" && tabValidation
+  const createFormComplete = mode === "create"
     ? isCreateFormComplete(form, visitedTabs)
     : true;
 
@@ -173,7 +180,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (mode === "create" && tabValidation) {
+    if (mode === "create") {
       const order: ArticleFormTab[] = ["content", "author", "seo", "placement"];
       const firstIncomplete = order.find((t) => tabValidation[t].length > 0);
       if (firstIncomplete) {
@@ -186,8 +193,15 @@ export default function PostForm({ mode, post }: PostFormProps) {
     }
 
     if (pollBlocksSave(form)) {
-      selectTab("poll");
-      setError(`Fix the reader poll: ${validatePollTab(form).join(" · ")}`);
+      const pollErrors = validatePollTab(form);
+      const quizErrors = validateQuizTab(form);
+      if (pollErrors.length) {
+        selectTab("poll");
+        setError(`Fix the reader poll: ${pollErrors.join(" · ")}`);
+      } else {
+        selectTab("quiz");
+        setError(`Fix the knowledge quiz: ${quizErrors.join(" · ")}`);
+      }
       return;
     }
 
@@ -259,7 +273,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
           </div>
         )}
 
-        {mode === "create" && tabValidation ? (
+        {mode === "create" ? (
           <p className="text-sm text-slate-600 dark:text-zinc-400 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/80 px-4 py-3">
             Complete all four tabs before you can save. Each tab shows a checkmark when its required fields are filled.
           </p>
@@ -267,7 +281,9 @@ export default function PostForm({ mode, post }: PostFormProps) {
 
         <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-800 sticky top-0 z-10 backdrop-blur-sm">
           {tabs.map(({ id, label, icon: Icon }) => {
-            const complete = mode !== "create" || !tabValidation || tabValidation[id].length === 0;
+            const complete = mode !== "create" || tabValidation[id].length === 0;
+            const showEditWarning =
+              mode === "edit" && (id === "poll" || id === "quiz") && tabValidation[id].length > 0;
             return (
               <button
                 key={id}
@@ -287,13 +303,15 @@ export default function PostForm({ mode, post }: PostFormProps) {
                   ) : (
                     <Circle className="h-4 w-4 text-amber-500" aria-label="Incomplete" />
                   )
+                ) : showEditWarning ? (
+                  <Circle className="h-4 w-4 text-amber-500" aria-label="Needs fixes" />
                 ) : null}
               </button>
             );
           })}
         </div>
 
-        {mode === "create" && tabValidation && tabValidation[activeTab].length > 0 ? (
+        {tabValidation[activeTab].length > 0 ? (
           <ul className="text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-xl px-4 py-3 list-disc pl-8 space-y-1">
             {tabValidation[activeTab].map((msg) => (
               <li key={msg}>{msg}</li>
@@ -723,6 +741,20 @@ export default function PostForm({ mode, post }: PostFormProps) {
         </section>
         )}
 
+        {activeTab === "quiz" && (
+        <section className={`rounded-2xl ${admin.card} p-6 space-y-4`}>
+          <h2 className="font-display font-bold text-lg text-slate-900 dark:text-zinc-100">
+            Knowledge quiz
+          </h2>
+          <PostQuizEditor
+            quiz={form.quiz}
+            articleTitle={form.title}
+            category={form.categories[0]}
+            onChange={(quiz) => setForm((prev) => ({ ...prev, quiz }))}
+          />
+        </section>
+        )}
+
         {activeTab === "placement" && (
         <section className={`rounded-2xl ${admin.card} p-6 space-y-4`}>
           <h2 className="font-display font-bold text-lg text-slate-900 dark:text-zinc-100">
@@ -784,7 +816,7 @@ export default function PostForm({ mode, post }: PostFormProps) {
               mode === "create" && !createFormComplete
                 ? "Complete all four tabs first"
                 : pollBlocksSave(form)
-                  ? "Fix reader poll settings"
+                  ? "Fix poll or quiz settings"
                   : undefined
             }
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-accent-600 text-white font-bold hover:from-purple-700 hover:to-accent-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all"

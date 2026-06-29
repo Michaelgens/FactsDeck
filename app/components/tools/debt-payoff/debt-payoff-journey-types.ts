@@ -2,7 +2,7 @@
 
 export const FACTS_DECK_DEBT_PAYOFF_TEST = "Facts Deck Debt Payoff Test";
 
-export const FACTS_DECK_DEBT_PAYOFF_PLANNER = "Facts Deck Debt Payoff Planner";
+export const FACTS_DECK_DEBT_PAYOFF_PLANNER = "Debt Payoff Planner";
 
 export type DebtPayoffGoal = "snowball" | "avalanche" | "compare" | "exploring";
 

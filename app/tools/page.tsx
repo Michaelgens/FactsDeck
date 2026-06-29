@@ -23,8 +23,8 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import type { SiteTool } from "../lib/site-config";
 import { siteTools, siteToolsByDisplayOrder } from "../lib/site-config";
+import { TOOL_GROUPS, toolBySlug } from "../lib/tools-directory";
 import { SITE_URL, absoluteUrl } from "../lib/seo";
 import { proxiedImageSrc } from "../lib/image-proxy";
 
@@ -48,38 +48,6 @@ const iconByKey: Record<string, ComponentType<{ className?: string }>> = {
   Coins,
   Repeat,
 };
-
-/** Curated groups for navigation + scanability (every slug appears once). */
-const TOOL_GROUPS: { id: string; label: string; blurb: string; slugs: string[] }[] = [
-  {
-    id: "plan",
-    label: "Plan & cash flow",
-    blurb: "Budgets, buffers, and where your money goes.",
-    slugs: ["budget-planner", "emergency-fund-calculator", "subscription-spend-audit"],
-  },
-  {
-    id: "borrow",
-    label: "Borrow & credit",
-    blurb: "Loans, payoff strategies, and credit literacy.",
-    slugs: ["mortgage-calculator", "loan-calculator", "debt-payoff-planner", "student-loan-snapshot", "credit-score-simulator"],
-  },
-  {
-    id: "grow",
-    label: "Invest & retire",
-    blurb: "Long-term wealth, independence, and drawdown thinking.",
-    slugs: ["investment-calculator", "retirement-calculator", "net-worth-fi-snapshot"],
-  },
-  {
-    id: "markets",
-    label: "Markets & specialized",
-    blurb: "Targeted scenarios and niche planning utilities.",
-    slugs: ["crypto-yield-lab"],
-  },
-];
-
-function toolBySlug(slug: string): SiteTool | undefined {
-  return siteTools.find((t) => t.slug === slug);
-}
 
 /** Used when the featured tool has no `spotlightImage` */
 const SPOTLIGHT_FALLBACK_IMAGE =
@@ -344,7 +312,7 @@ export default function ToolsIndexPage() {
                     <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                     What we ship
                   </div>
-                  Transparent assumptions, clear outputs, and exports where it helps—built for learning, not personalized advice.
+                  Not personalized advice.
                 </div>
               </div>
             </aside>

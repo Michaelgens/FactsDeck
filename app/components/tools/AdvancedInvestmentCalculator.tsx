@@ -13,27 +13,46 @@ import {
   LineChart,
   PiggyBank,
   Scale,
-  Sparkles,
   Target,
   TrendingUp,
   Zap,
 } from "lucide-react";
 import { formatCurrency } from "../../lib/mortgage-math";
 import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
-import { FACTS_DECK_INVESTMENT_TEST } from "./investment/investment-journey-types";
+import {
+  INVESTMENT_JOURNEY_DEFAULTS,
+  FACTS_DECK_INVESTMENT_CALCULATOR,
+  FACTS_DECK_INVESTMENT_TEST,
+  type InvestmentGoal,
+} from "./investment/investment-journey-types";
 import ToolDashboardTestCta from "./ToolDashboardTestCta";
 import {
+  computeInvestmentJourneyMetrics,
+  computeInvestmentReadinessScore,
+} from "./investment/compute-investment-journey-metrics";
+import type { InvestmentJourneyAnswers } from "./investment/investment-journey-types";
+import { loadInvestmentState, saveInvestmentState } from "./investment/investment-storage";
+import { INVESTMENT_SLUG, trackToolEvent } from "../../lib/tool-analytics-client";
+import {
+  ToolDashboardGridBackdrop,
   ToolDashboardHeroBackdrop,
   tdGhostBtn,
   tdHero,
   tdHeroInnerNarrow,
+  tdIconTile,
   tdNavLink,
   tdPage,
   tdPanel,
-  tdProductPill,
 } from "./tool-dashboard-ui";
 
+const GOAL_LABEL: Record<InvestmentGoal, string> = {
+  wealth: "Build wealth",
+  fire: "FIRE / retirement",
+  exploring: "Exploring",
+};
+
 export type InvestmentCalculatorInitialValues = {
+  goal?: InvestmentGoal;
   initial?: number;
   monthly?: number;
   years?: number;
@@ -43,6 +62,7 @@ export type InvestmentCalculatorInitialValues = {
   taxOnGains?: number;
   annualSpend?: number;
   swr?: number;
+  fromJourney?: boolean;
 };
 
 type AdvancedInvestmentCalculatorProps = {
@@ -105,25 +125,105 @@ function Sparkline({ values }: { values: number[] }) {
   );
 }
 
+function resolveInitialState(initialValues?: InvestmentCalculatorInitialValues) {
+  const saved = typeof window !== "undefined" ? loadInvestmentState() : null;
+  const d = INVESTMENT_JOURNEY_DEFAULTS;
+
+  if (initialValues?.fromJourney) {
+    return {
+      goal: initialValues.goal ?? d.goal,
+      initial: initialValues.initial ?? d.initial,
+      monthly: initialValues.monthly ?? d.monthly,
+      years: initialValues.years ?? d.years,
+      nominal: initialValues.nominal ?? d.nominal,
+      expenseRatio: initialValues.expenseRatio ?? 0.08,
+      inflation: initialValues.inflation ?? d.inflation,
+      taxOnGains: initialValues.taxOnGains ?? 15,
+      annualSpend: initialValues.annualSpend ?? d.annualSpend,
+      swr: initialValues.swr ?? d.swr,
+    };
+  }
+
+  if (saved) {
+    return {
+      goal: saved.goal,
+      initial: saved.initial,
+      monthly: saved.monthly,
+      years: saved.years,
+      nominal: saved.nominal,
+      expenseRatio: saved.expenseRatio,
+      inflation: saved.inflation,
+      taxOnGains: saved.taxOnGains,
+      annualSpend: saved.annualSpend,
+      swr: saved.swr,
+    };
+  }
+
+  return {
+    goal: initialValues?.goal ?? d.goal,
+    initial: initialValues?.initial ?? d.initial,
+    monthly: initialValues?.monthly ?? d.monthly,
+    years: initialValues?.years ?? d.years,
+    nominal: initialValues?.nominal ?? d.nominal,
+    expenseRatio: initialValues?.expenseRatio ?? 0.08,
+    inflation: initialValues?.inflation ?? d.inflation,
+    taxOnGains: initialValues?.taxOnGains ?? 15,
+    annualSpend: initialValues?.annualSpend ?? d.annualSpend,
+    swr: initialValues?.swr ?? d.swr,
+  };
+}
+
 export default function AdvancedInvestmentCalculator({
   initialValues,
   deferWalkthrough = false,
 }: AdvancedInvestmentCalculatorProps = {}) {
+  const [hydrated, setHydrated] = useState(false);
+  const [goal, setGoal] = useState<InvestmentGoal>("wealth");
   const [tab, setTab] = useState<Tab>("overview");
   const [tourOpen, setTourOpen] = useState(false);
 
   const TOUR_ID = "investment-calculator";
 
-  const [initial, setInitial] = useState(() => initialValues?.initial ?? 25_000);
-  const [monthly, setMonthly] = useState(() => initialValues?.monthly ?? 800);
-  const [years, setYears] = useState(() => initialValues?.years ?? 25);
-  const [nominal, setNominal] = useState(() => initialValues?.nominal ?? 7);
-  const [expenseRatio, setExpenseRatio] = useState(() => initialValues?.expenseRatio ?? 0.08);
-  const [inflation, setInflation] = useState(() => initialValues?.inflation ?? 2.5);
-  const [taxOnGains, setTaxOnGains] = useState(() => initialValues?.taxOnGains ?? 15);
+  const [initial, setInitial] = useState(INVESTMENT_JOURNEY_DEFAULTS.initial);
+  const [monthly, setMonthly] = useState(INVESTMENT_JOURNEY_DEFAULTS.monthly);
+  const [years, setYears] = useState(INVESTMENT_JOURNEY_DEFAULTS.years);
+  const [nominal, setNominal] = useState(INVESTMENT_JOURNEY_DEFAULTS.nominal);
+  const [expenseRatio, setExpenseRatio] = useState(0.08);
+  const [inflation, setInflation] = useState(INVESTMENT_JOURNEY_DEFAULTS.inflation);
+  const [taxOnGains, setTaxOnGains] = useState(15);
+  const [annualSpend, setAnnualSpend] = useState(INVESTMENT_JOURNEY_DEFAULTS.annualSpend);
+  const [swr, setSwr] = useState(INVESTMENT_JOURNEY_DEFAULTS.swr);
 
-  const [annualSpend, setAnnualSpend] = useState(() => initialValues?.annualSpend ?? 60_000);
-  const [swr, setSwr] = useState(() => initialValues?.swr ?? 4);
+  useEffect(() => {
+    const state = resolveInitialState(initialValues);
+    setGoal(state.goal);
+    setInitial(state.initial);
+    setMonthly(state.monthly);
+    setYears(state.years);
+    setNominal(state.nominal);
+    setExpenseRatio(state.expenseRatio);
+    setInflation(state.inflation);
+    setTaxOnGains(state.taxOnGains);
+    setAnnualSpend(state.annualSpend);
+    setSwr(state.swr);
+    setHydrated(true);
+  }, [initialValues]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveInvestmentState({
+      goal,
+      initial,
+      monthly,
+      years,
+      nominal,
+      expenseRatio,
+      inflation,
+      taxOnGains,
+      annualSpend,
+      swr,
+    });
+  }, [hydrated, goal, initial, monthly, years, nominal, expenseRatio, inflation, taxOnGains, annualSpend, swr]);
 
   const [seqSpread, setSeqSpread] = useState(6);
   const [lumpBudget, setLumpBudget] = useState(24_000);
@@ -228,6 +328,7 @@ export default function AdvancedInvestmentCalculator({
   );
 
   const exportCsv = useCallback(() => {
+    trackToolEvent(INVESTMENT_SLUG, "export_text");
     const header = "Year,Balance_Nominal,Contributed,Real_Balance\n";
     const lines = projection.series
       .map(
@@ -242,14 +343,75 @@ export default function AdvancedInvestmentCalculator({
     a.click();
   }, [projection.series]);
 
+  const journeyAnswers: InvestmentJourneyAnswers = useMemo(
+    () => ({
+      goal,
+      initial,
+      monthly,
+      years,
+      nominal,
+      inflation,
+      annualSpend,
+      swr,
+    }),
+    [goal, initial, monthly, years, nominal, inflation, annualSpend, swr]
+  );
+
+  const journeyMetrics = useMemo(() => computeInvestmentJourneyMetrics(journeyAnswers), [journeyAnswers]);
+  const readinessScore = useMemo(
+    () => computeInvestmentReadinessScore(journeyAnswers, journeyMetrics),
+    [journeyAnswers, journeyMetrics]
+  );
+
   const realFinal = projection.series[projection.series.length - 1]?.realBalance ?? 0;
 
   useEffect(() => {
-    if (deferWalkthrough) return;
+    if (!hydrated || deferWalkthrough) return;
     if (hasCompletedWalkthrough(TOUR_ID)) return;
-    const t = window.setTimeout(() => setTourOpen(true), 450);
+    const t = window.setTimeout(() => {
+      trackToolEvent(INVESTMENT_SLUG, "walkthrough_open", undefined, true);
+      setTourOpen(true);
+    }, 450);
     return () => window.clearTimeout(t);
-  }, [deferWalkthrough]);
+  }, [deferWalkthrough, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const t = window.setTimeout(() => {
+      trackToolEvent(
+        INVESTMENT_SLUG,
+        "session_telemetry",
+        {
+          goal,
+          score: readinessScore,
+          initial: Math.round(initial),
+          monthly: Math.round(monthly),
+          years,
+          finalNominal: Math.round(projection.finalNominal),
+          yearsToFire,
+          fireGoal: goal === "fire",
+          highContribution: monthly >= 1000,
+          longHorizon: years >= 25,
+        },
+        true
+      );
+    }, 4000);
+    return () => window.clearTimeout(t);
+  }, [
+    hydrated,
+    goal,
+    readinessScore,
+    initial,
+    monthly,
+    years,
+    projection.finalNominal,
+    yearsToFire,
+  ]);
+
+  const openWalkthrough = () => {
+    trackToolEvent(INVESTMENT_SLUG, "walkthrough_open", undefined, true);
+    setTourOpen(true);
+  };
 
   const walkthroughSteps: WalkthroughStep[] = useMemo(
     () => [
@@ -451,11 +613,13 @@ export default function AdvancedInvestmentCalculator({
 
   return (
     <div className={tdPage}>
+      <ToolDashboardGridBackdrop />
       <ToolWalkthrough
         id={TOUR_ID}
         open={tourOpen}
         onClose={() => setTourOpen(false)}
         onFinish={() => {
+          trackToolEvent(INVESTMENT_SLUG, "walkthrough_complete", undefined, true);
           setTab("overview");
           try {
             window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
@@ -465,40 +629,62 @@ export default function AdvancedInvestmentCalculator({
         }}
         steps={walkthroughSteps}
       />
-      <div className={tdHero}>
-        <ToolDashboardHeroBackdrop />
+      <section className={tdHero}>
+        <ToolDashboardHeroBackdrop accent="default" />
 
         <div className={tdHeroInnerNarrow}>
-          <div className="mb-8">
+          <div className="flex items-center justify-between gap-3 flex-wrap" data-tour="invest-top-nav">
             <Link href="/" className={tdNavLink}>
               <ArrowLeft className="h-4 w-4" />
               Back to Home
             </Link>
+            <Link href="/post?category=Investing&q=ETF" className={tdNavLink}>
+              Read investing guides
+              <ChevronRight className="h-4 w-4" />
+            </Link>
           </div>
 
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10" data-tour="invest-hero">
-            <div>
-              <div className={`${tdProductPill} mb-4`}>
-                <Sparkles className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
-                Pro workspace
+          <div className="mt-7 sm:mt-8" data-tour="invest-hero">
+            <div className="flex items-center gap-3">
+              <span className={tdIconTile}>
+                <BarChart3 className="h-6 w-6" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight">
+                  <span className="bg-gradient-to-r from-violet-700 via-fuchsia-700 to-amber-600 bg-clip-text text-transparent dark:from-violet-300 dark:via-fuchsia-300 dark:to-amber-300">
+                    {FACTS_DECK_INVESTMENT_CALCULATOR}
+                  </span>
+                </h1>
+                <p className="text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
+                  <span className="hidden sm:inline">
+                    Focus: <strong className="text-zinc-800 dark:text-zinc-200">{GOAL_LABEL[goal]}</strong> — compound growth, FIRE targets, sequence-of-returns paths, and Monte Carlo.
+                  </span>
+                  <span className="sm:hidden">
+                    <strong className="text-zinc-800 dark:text-zinc-200">{GOAL_LABEL[goal]}</strong> — growth & FIRE
+                  </span>
+                </p>
               </div>
-              <h1 className="font-display text-3xl md:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-3">
-                Investment Calculator
-              </h1>
-              <p className="text-zinc-600 dark:text-zinc-400 max-w-2xl text-base md:text-lg leading-relaxed">
-                Compound growth with expense-ratio drag, inflation-adjusted wealth, FIRE targets,
-                sequence-of-returns paths, lump-sum vs DCA, and a Monte Carlo fan — in one workspace.
-              </p>
             </div>
-            <div className="flex flex-wrap gap-2" data-tour="invest-tabs">
-              <button
-                type="button"
-                onClick={() => setTourOpen(true)}
-                className={tdGhostBtn}
-              >
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button type="button" onClick={openWalkthrough} className={tdGhostBtn}>
                 <BookOpen className="h-4 w-4" />
                 Walk-through
               </button>
+            </div>
+
+            <div className="mt-6">
+              <ToolDashboardTestCta
+                toolSlug="investment-calculator"
+                testLabel={FACTS_DECK_INVESTMENT_TEST}
+                blurb="Run the short interactive flow again—fresh answers, results snapshot, then land back here with the full workspace."
+              />
+            </div>
+
+            <div
+              className="mt-5 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0"
+              data-tour="invest-tabs"
+            >
               {TABS.map((t) => {
                 const Icon = t.icon;
                 const active = tab === t.id;
@@ -507,7 +693,7 @@ export default function AdvancedInvestmentCalculator({
                     key={t.id}
                     type="button"
                     onClick={() => setTab(t.id)}
-                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    className={`inline-flex shrink-0 items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       active
                         ? "bg-zinc-900 text-white shadow-md shadow-zinc-900/15 ring-1 ring-zinc-900/10 dark:bg-zinc-100 dark:text-zinc-900 dark:shadow-lg dark:ring-white/20"
                         : "bg-zinc-100/90 text-zinc-700 hover:bg-zinc-200/90 dark:bg-zinc-900/80 dark:text-zinc-200 dark:hover:bg-zinc-800"
@@ -521,13 +707,7 @@ export default function AdvancedInvestmentCalculator({
             </div>
           </div>
 
-          <ToolDashboardTestCta
-            toolSlug="investment-calculator"
-            testLabel={FACTS_DECK_INVESTMENT_TEST}
-            blurb="Retake the 5-step interactive flow for a fresh snapshot—goals, contributions, and a simple FIRE band."
-          />
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="mt-7 sm:mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-4 space-y-6">
               <div
                 className={tdPanel}
@@ -639,8 +819,9 @@ export default function AdvancedInvestmentCalculator({
             <div className="lg:col-span-8 space-y-6">
               {tab === "overview" && (
                 <div className="space-y-6">
-                  <div className="grid sm:grid-cols-2 gap-4" data-tour="invest-overview-cards">
-                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 p-6">
+                  <div className="-mx-4 px-4 sm:mx-0 sm:px-0" data-tour="invest-overview-cards">
+                    <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:pb-0">
+                    <div className="min-w-[14rem] sm:min-w-0 shrink-0 rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 p-6">
                       <p className="text-xs uppercase font-bold text-zinc-600 dark:text-zinc-300">
                         Ending balance (nominal)
                       </p>
@@ -654,7 +835,7 @@ export default function AdvancedInvestmentCalculator({
                         </strong>
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 p-6">
+                    <div className="min-w-[14rem] sm:min-w-0 shrink-0 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 p-6">
                       <p className="text-xs uppercase font-bold text-zinc-500 dark:text-zinc-400">
                         Purchasing power (today&apos;s dollars)
                       </p>
@@ -668,6 +849,8 @@ export default function AdvancedInvestmentCalculator({
                         </strong>
                       </p>
                     </div>
+                    </div>
+                    <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 sm:hidden">Swipe to see all metrics</p>
                   </div>
 
                   <div
@@ -1003,7 +1186,7 @@ export default function AdvancedInvestmentCalculator({
             events.
           </p>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

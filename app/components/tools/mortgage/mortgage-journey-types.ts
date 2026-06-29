@@ -4,7 +4,7 @@
 export const FACTS_DECK_MORTGAGE_TEST = "Facts Deck Mortgage Test";
 
 /** Full product name on the welcome slide. */
-export const FACTS_DECK_MORTGAGE_CALCULATOR = "Facts Deck Mortgage Calculator";
+export const FACTS_DECK_MORTGAGE_CALCULATOR = "Mortgage Calculator";
 
 export type BuyerGoal = "buying" | "refinancing" | "exploring";
 

@@ -3,6 +3,7 @@ import { createServerClient, isSupabaseConfigured } from "./supabase/server";
 import { logSupabaseReadError, readErrorMessage } from "./supabase-read-errors";
 import type { Post, PostSummary } from "./types";
 import { normalizePoll, parsePollForAdmin } from "./poll-types";
+import { parseQuizForAdmin } from "./quiz-types";
 import { isUuid } from "./slug";
 
 function decodeSlugParam(slug: string): string {
@@ -61,6 +62,7 @@ function rowToPost(row: Record<string, unknown>): Post {
     guides: Boolean(row.guides),
     createdAt: String(row.created_at),
     poll: row.poll != null ? parsePollForAdmin(row.poll) : null,
+    quiz: row.quiz != null ? parseQuizForAdmin(row.quiz) : null,
   };
 }
 

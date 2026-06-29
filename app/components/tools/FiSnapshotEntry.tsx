@@ -6,6 +6,9 @@ import AdvancedFiSnapshot from "./AdvancedFiSnapshot";
 import FiSnapshotQuickJourney from "./fi-snapshot/FiSnapshotQuickJourney";
 import FiSnapshotJourneyResults from "./fi-snapshot/FiSnapshotJourneyResults";
 import type { FiSnapshotJourneyAnswers } from "./fi-snapshot/fi-snapshot-journey-types";
+import { computeFiSnapshotMetrics } from "./fi-snapshot/compute-fi-snapshot-metrics";
+import { journeyToPersistSeed, saveFiSnapshotState } from "./fi-snapshot/fi-snapshot-storage";
+import { FI_SNAPSHOT_SLUG, trackToolEvent } from "../../lib/tool-analytics-client";
 
 type Phase = "journey" | "results" | "dashboard";
 
@@ -36,7 +39,31 @@ function FiSnapshotEntryInner() {
     }
   }, [retakeTest, dashboardParam]);
 
+  useEffect(() => {
+    trackToolEvent(FI_SNAPSHOT_SLUG, "page_view", undefined, true);
+  }, []);
+
+  useEffect(() => {
+    if (phase === "results") {
+      trackToolEvent(FI_SNAPSHOT_SLUG, "results_view", undefined, true);
+    }
+  }, [phase]);
+
   const handleJourneyComplete = useCallback((a: FiSnapshotJourneyAnswers) => {
+    const m = computeFiSnapshotMetrics(a, { withdrawalRatePct: 4, investmentReturnAnnual: 0.07 });
+    trackToolEvent(FI_SNAPSHOT_SLUG, "journey_complete", {
+      goal: a.goal,
+      netWorth: Math.round(m.netWorth),
+      totalAssets: Math.round(m.totalAssets),
+      liabilities: Math.round(a.liabilities),
+      monthlyExpenses: Math.round(a.monthlyExpenses),
+      monthlyInvesting: Math.round(a.monthlyInvesting),
+      fiNumber: Math.round(m.fiNumber),
+      fiProgressPct: Math.round(m.fiProgressPct * 10) / 10,
+      freedomBand: m.band,
+      yearsToFi: m.yearsToFi,
+    });
+    saveFiSnapshotState(journeyToPersistSeed(a));
     setAnswers(a);
     setPhase("results");
     try {
@@ -47,15 +74,19 @@ function FiSnapshotEntryInner() {
   }, []);
 
   const handleSkip = useCallback(() => {
+    trackToolEvent(FI_SNAPSHOT_SLUG, "journey_skip", undefined, true);
+    trackToolEvent(FI_SNAPSHOT_SLUG, "dashboard_open", { source: "journey_skip" }, true);
     setPhase("dashboard");
     setAnswers(null);
   }, []);
 
   const handleOpenDashboard = useCallback(() => {
+    trackToolEvent(FI_SNAPSHOT_SLUG, "dashboard_open", { source: "results" }, true);
     setPhase("dashboard");
   }, []);
 
   const handleStartOver = useCallback(() => {
+    trackToolEvent(FI_SNAPSHOT_SLUG, "retake_click");
     setAnswers(null);
     setPhase("journey");
   }, []);
@@ -63,12 +94,14 @@ function FiSnapshotEntryInner() {
   const initialWorkspace = useMemo(() => {
     if (!answers) return undefined;
     return {
+      goal: answers.goal,
       liquidCash: answers.liquidCash,
       invested: answers.invested,
       otherAssets: answers.otherAssets,
       liabilities: answers.liabilities,
       monthlyExpenses: answers.monthlyExpenses,
       monthlyInvesting: answers.monthlyInvesting,
+      fromJourney: true as const,
     };
   }, [answers]);
 
@@ -87,7 +120,7 @@ export default function FiSnapshotEntry() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-[50vh] flex items-center justify-center bg-zinc-950 text-violet-200/80 text-sm font-medium">
+        <div className="min-h-[50vh] flex items-center justify-center bg-white dark:bg-zinc-950 text-zinc-500 text-sm font-medium">
           Loading snapshot…
         </div>
       }

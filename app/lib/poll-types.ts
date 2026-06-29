@@ -1,4 +1,4 @@
-/** FactsDeck article poll — 5 sequential questions per article (stored as JSON on `posts.poll`). */
+/** FactsDeck article poll — one community question per article (stored as JSON on `posts.poll`). */
 
 export type PollQuestionKind = "knowledge" | "opinion" | "experience" | "confidence";
 
@@ -36,11 +36,13 @@ export type ArticlePoll = {
   subtitle: string;
   questions: PollQuestion[];
   analytics?: PollAnalytics;
+  /** Server-only vote dedup keys: `${questionId}:${voterHash}` */
+  voteFingerprints?: string[];
 };
 
 export type PollEventType = "impression" | "start" | "complete" | "skip";
 
-export const POLL_QUESTION_COUNT = 5;
+export const POLL_QUESTION_COUNT = 1;
 
 const KIND_LABELS: Record<PollQuestionKind, string> = {
   knowledge: "Knowledge check",
@@ -80,7 +82,7 @@ export function createEmptyPoll(): ArticlePoll {
   return {
     enabled: false,
     title: "FactsDeck Quick Check",
-    subtitle: "Five quick questions — test what you learned and share your perspective.",
+    subtitle: "One quick question — share your take and see how readers voted.",
     questions: [],
     analytics: emptyPollAnalytics(),
   };
@@ -141,6 +143,15 @@ function parseQuestionsFromRaw(o: Record<string, unknown>): PollQuestion[] {
   return questions;
 }
 
+function parseVoteFingerprints(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const fps = raw
+    .filter((x) => typeof x === "string")
+    .map((x) => String(x).trim())
+    .filter(Boolean);
+  return fps.length ? fps : undefined;
+}
+
 /** Full poll payload for admin / DB round-trip (includes disabled polls + analytics). */
 export function parsePollForAdmin(raw: unknown): ArticlePoll | null {
   if (!raw || typeof raw !== "object") return null;
@@ -152,6 +163,7 @@ export function parsePollForAdmin(raw: unknown): ArticlePoll | null {
     subtitle: String(o.subtitle ?? "").trim(),
     questions,
     analytics: parsePollAnalytics(o.analytics),
+    voteFingerprints: parseVoteFingerprints(o.voteFingerprints),
   };
 }
 
@@ -178,7 +190,7 @@ export function pollRates(analytics: PollAnalytics) {
   };
 }
 
-/** Default 5-question mix for new articles (edit prompts in admin). */
+/** Default single-question poll for new articles (edit prompt in admin). */
 export function createFactsDeckPollTemplate(articleTitle: string, category = "money"): ArticlePoll {
   const topic = articleTitle.trim() || "this topic";
   const cat = category.toLowerCase();
@@ -186,80 +198,40 @@ export function createFactsDeckPollTemplate(articleTitle: string, category = "mo
   const questions: PollQuestion[] = [
     {
       id: newId("q"),
-      kind: "knowledge",
-      prompt: `Before reading, how familiar are you with the core ideas in “${topic}”?`,
-      helpText: "No wrong answer — we use this to personalize your results.",
-      options: [
-        { id: newId("opt"), label: "Just getting started", votes: 0 },
-        { id: newId("opt"), label: "I know the basics", votes: 0 },
-        { id: newId("opt"), label: "Pretty confident", votes: 0 },
-        { id: newId("opt"), label: "I could teach it", votes: 0 },
-      ],
-      correctOptionId: undefined,
-    },
-    {
-      id: newId("q"),
       kind: "opinion",
-      prompt: `What matters most to you when learning about ${cat}?`,
+      prompt: `After reading “${topic}”, what's your biggest takeaway about ${cat}?`,
+      helpText: "Pick the option that best matches your view — results update live for all readers.",
       options: [
-        { id: newId("opt"), label: "Clear, simple explanations", votes: 0 },
-        { id: newId("opt"), label: "Real numbers & examples", votes: 0 },
-        { id: newId("opt"), label: "Action steps I can use today", votes: 0 },
-        { id: newId("opt"), label: "Big-picture strategy", votes: 0 },
-      ],
-    },
-    {
-      id: newId("q"),
-      kind: "knowledge",
-      prompt: `Which statement best matches a key takeaway from “${topic}”?`,
-      helpText: "Pick the answer that fits what the article emphasizes.",
-      options: [
-        { id: newId("opt"), label: "Option A — edit to match your article", votes: 0 },
-        { id: newId("opt"), label: "Option B — edit to match your article", votes: 0 },
-        { id: newId("opt"), label: "Option C — edit to match your article", votes: 0 },
-        { id: newId("opt"), label: "I'm not sure yet", votes: 0 },
-      ],
-      correctOptionId: undefined,
-    },
-    {
-      id: newId("q"),
-      kind: "experience",
-      prompt: "Have you applied ideas like these to your own finances in the last 90 days?",
-      options: [
-        { id: newId("opt"), label: "Not yet — still learning", votes: 0 },
-        { id: newId("opt"), label: "I've started small steps", votes: 0 },
-        { id: newId("opt"), label: "Yes, with mixed results", votes: 0 },
-        { id: newId("opt"), label: "Yes, and it's working", votes: 0 },
-      ],
-    },
-    {
-      id: newId("q"),
-      kind: "confidence",
-      prompt: "After reading, how confident do you feel making a decision on this topic?",
-      options: [
-        { id: newId("opt"), label: "1 — Need more research", votes: 0 },
-        { id: newId("opt"), label: "2 — Somewhat unsure", votes: 0 },
-        { id: newId("opt"), label: "3 — Neutral", votes: 0 },
-        { id: newId("opt"), label: "4 — Fairly confident", votes: 0 },
-        { id: newId("opt"), label: "5 — Ready to act", votes: 0 },
+        { id: newId("opt"), label: "Edit option A to match your article", votes: 0 },
+        { id: newId("opt"), label: "Edit option B to match your article", votes: 0 },
+        { id: newId("opt"), label: "Edit option C to match your article", votes: 0 },
+        { id: newId("opt"), label: "Still forming my opinion", votes: 0 },
       ],
     },
   ];
 
   return {
     enabled: true,
-    title: "FactsDeck Quick Check",
-    subtitle: `Five questions on “${topic}” — see how you stack up and compare with other readers.`,
+    title: "Community Poll",
+    subtitle: `One question on “${topic}” — vote and see how other readers responded.`,
     questions,
     analytics: emptyPollAnalytics(),
   };
 }
 
-/** Active poll for the public article page */
+/** Active poll for the public article page (uses first question when legacy data has more). */
 export function normalizePoll(raw: unknown): ArticlePoll | null {
   const parsed = parsePollForAdmin(raw);
-  if (!parsed?.enabled || parsed.questions.length === 0) return null;
-  return parsed;
+  if (!parsed?.enabled || parsed.questions.length < 1) return null;
+  const questions = parsed.questions.slice(0, POLL_QUESTION_COUNT);
+  if (questions.length !== POLL_QUESTION_COUNT) return null;
+  return sanitizePollForClient({ ...parsed, questions });
+}
+
+/** Strip server-only fields before sending poll data to the client. */
+export function sanitizePollForClient(poll: ArticlePoll): ArticlePoll {
+  const { voteFingerprints: _fp, ...rest } = poll;
+  return rest;
 }
 
 function normalizeQuestionsForSave(questions: PollQuestion[]): PollQuestion[] {
@@ -297,13 +269,17 @@ export function serializePollForDb(poll: ArticlePoll | null | undefined): Articl
 
   if (questions.length === 0) return null;
 
-  return {
+  const base: ArticlePoll = {
     enabled: true,
     title: poll.title.trim() || "FactsDeck Quick Check",
     subtitle: poll.subtitle.trim(),
     questions,
     analytics,
   };
+  if (poll.voteFingerprints?.length) {
+    base.voteFingerprints = poll.voteFingerprints;
+  }
+  return base;
 }
 
 export function bumpPollAnalytics(
@@ -321,11 +297,12 @@ export function bumpPollAnalytics(
 export function validatePollForAdmin(poll: ArticlePoll | null | undefined): string[] {
   if (!poll?.enabled) return [];
   const errors: string[] = [];
+  const questions = poll.questions.slice(0, POLL_QUESTION_COUNT);
   if (!poll.title.trim()) errors.push("Poll title is required when the poll is enabled");
-  if (poll.questions.length !== POLL_QUESTION_COUNT) {
-    errors.push(`Add exactly ${POLL_QUESTION_COUNT} questions (currently ${poll.questions.length})`);
+  if (questions.length !== POLL_QUESTION_COUNT) {
+    errors.push(`Poll must have exactly ${POLL_QUESTION_COUNT} question (currently ${poll.questions.length})`);
   }
-  poll.questions.forEach((q, i) => {
+  questions.forEach((q, i) => {
     const n = i + 1;
     if (!q.prompt.trim()) errors.push(`Question ${n}: prompt is required`);
     const filled = q.options.filter((o) => o.label.trim());
@@ -340,5 +317,16 @@ export function validatePollForAdmin(poll: ArticlePoll | null | undefined): stri
 }
 
 export function isPollActive(poll: ArticlePoll | null | undefined): poll is ArticlePoll {
-  return Boolean(poll?.enabled && poll.questions.length > 0);
+  return Boolean(poll?.enabled && poll.questions.length >= POLL_QUESTION_COUNT);
+}
+
+/** Preserve server-managed poll fields when an admin saves from the editor. */
+export function mergePollServerFields(
+  saved: ArticlePoll | null,
+  existingRaw: unknown
+): ArticlePoll | null {
+  if (!saved) return null;
+  const existing = parsePollForAdmin(existingRaw);
+  if (!existing?.voteFingerprints?.length) return saved;
+  return { ...saved, voteFingerprints: existing.voteFingerprints };
 }

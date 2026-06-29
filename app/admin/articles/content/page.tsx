@@ -8,7 +8,7 @@ import {
   Trophy,
   UserX,
 } from "lucide-react";
-import { getContentMetricsInsights, formatRate } from "../../../lib/poll-insights";
+import { getPollMetricsInsights, formatRate } from "../../../lib/poll-insights";
 import { AdminPageHeader, AdminPanel, KpiCard, AdminAlert } from "../../components/admin-ui";
 import { admin } from "../../components/admin-theme";
 import ArticlesSubnav from "../../components/ArticlesSubnav";
@@ -16,7 +16,7 @@ import AdminContentMetricsTable from "./AdminContentMetricsTable";
 import { getAllPostsWithLoadError } from "../../../lib/posts";
 
 export default async function AdminArticleContentPage() {
-  const data = await getContentMetricsInsights();
+  const data = await getPollMetricsInsights();
   const { totals, rows, topByCompletion, needsAttention, postsLoadError } = data;
 
   const { posts } = await getAllPostsWithLoadError();
@@ -38,8 +38,8 @@ export default async function AdminArticleContentPage() {
   return (
     <div>
       <AdminPageHeader
-        title="Content metrics"
-        description="Article performance and reader poll funnels — impressions, starts, completions, skips, and per-question votes."
+        title="Poll metrics"
+        description="Community poll funnels — impressions, starts, completions, skips, and per-question vote breakdowns."
       >
         <Link
           href="/admin/articles"
@@ -102,7 +102,7 @@ export default async function AdminArticleContentPage() {
             <strong>Starts</strong> — reader clicked “Start challenge” or opened the poll from a CTA.
           </li>
           <li>
-            <strong>Done</strong> — all five questions answered.
+            <strong>Done</strong> — the reader voted on the community poll.
           </li>
           <li>
             <strong>Skipped</strong> — “Not now” on the intro screen.
@@ -164,6 +164,13 @@ export default async function AdminArticleContentPage() {
       </div>
 
       <AdminContentMetricsTable rows={rows} posts={tablePosts} />
+
+      <p className={`mt-8 text-sm ${admin.subtle}`}>
+        Looking for graded quiz funnels?{" "}
+        <Link href="/admin/articles/quiz-metrics" className={`font-semibold ${admin.link} hover:underline`}>
+          Open Quiz metrics →
+        </Link>
+      </p>
     </div>
   );
 }

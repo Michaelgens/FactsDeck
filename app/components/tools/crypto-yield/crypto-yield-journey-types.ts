@@ -2,7 +2,7 @@
 
 export const FACTS_DECK_CRYPTO_YIELD_TEST = "Facts Deck Crypto Yield Lab Test";
 
-export const FACTS_DECK_CRYPTO_YIELD_LAB = "Facts Deck Crypto Staking & Yield Lab";
+export const FACTS_DECK_CRYPTO_YIELD_LAB = "Crypto Staking & Yield Lab";
 
 export type CryptoYieldGoal = "compounding" | "compare" | "exploring";
 

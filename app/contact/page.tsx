@@ -15,6 +15,8 @@ import {
   MessageCircle,
   HelpCircle,
 } from "lucide-react";
+import { submitContactForm } from "../lib/support-actions";
+import { SUPPORT_DEPARTMENTS } from "../lib/support-types";
 
 const LAST_UPDATED = "March 9, 2026";
 
@@ -45,14 +47,7 @@ const contactMethods = [
   },
 ];
 
-const departments = [
-  { name: "General Inquiries", email: "hello@factsdeck.com" },
-  { name: "Editorial Team", email: "editorial@factsdeck.com" },
-  { name: "Technical Support", email: "tech@factsdeck.com" },
-  { name: "Business Partnerships", email: "partnerships@factsdeck.com" },
-  { name: "Press & Media", email: "press@factsdeck.com" },
-  { name: "Careers", email: "careers@factsdeck.com" },
-];
+const departments = [...SUPPORT_DEPARTMENTS];
 
 const faqs = [
   {
@@ -126,12 +121,31 @@ export default function ContactPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [ticketNumber, setTicketNumber] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 2000));
+    setSubmitError(null);
+
+    const result = await submitContactForm({
+      name: formData.name,
+      email: formData.email,
+      subject: formData.subject,
+      department: formData.department,
+      message: formData.message,
+      priority: formData.priority as "low" | "normal" | "high" | "urgent",
+    });
+
     setIsSubmitting(false);
+
+    if (!result.ok) {
+      setSubmitError(result.error ?? "Something went wrong. Please try again.");
+      return;
+    }
+
+    setTicketNumber(result.ticketNumber ?? null);
     setIsSubmitted(true);
   };
 
@@ -302,11 +316,29 @@ export default function ContactPage() {
                     </div>
                     <h3 className="font-display text-xl font-bold text-zinc-900 dark:text-zinc-100">Message sent</h3>
                     <p className="mx-auto mt-2 max-w-md text-zinc-600 dark:text-zinc-300">
-                      Thanks for reaching out. We&apos;ll get back to you as soon as we can.
+                      Thanks for reaching out. We&apos;ve logged your request
+                      {ticketNumber ? (
+                        <>
+                          {" "}
+                          as ticket <strong className="font-mono text-blue-800 dark:text-emerald-300">{ticketNumber}</strong>
+                        </>
+                      ) : null}
+                      . Check your inbox — we&apos;ve sent a confirmation email and our team will respond soon.
                     </p>
                     <button
                       type="button"
-                      onClick={() => setIsSubmitted(false)}
+                      onClick={() => {
+                        setIsSubmitted(false);
+                        setTicketNumber(null);
+                        setFormData({
+                          name: "",
+                          email: "",
+                          subject: "",
+                          department: "General Inquiries",
+                          message: "",
+                          priority: "normal",
+                        });
+                      }}
                       className="mt-8 inline-flex items-center justify-center rounded-xl bg-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
                     >
                       Send another message
@@ -314,6 +346,11 @@ export default function ContactPage() {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-6">
+                    {submitError ? (
+                      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200" role="alert">
+                        {submitError}
+                      </div>
+                    ) : null}
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                       <div>
                         <label className="mb-2 block text-sm font-semibold text-zinc-700 dark:text-zinc-200">

@@ -2,7 +2,7 @@
 
 export const FACTS_DECK_RETIREMENT_TEST = "Facts Deck Retirement Test";
 
-export const FACTS_DECK_RETIREMENT_CALCULATOR = "Facts Deck Retirement Calculator";
+export const FACTS_DECK_RETIREMENT_CALCULATOR = "Retirement Calculator";
 
 export type RetirementGoal = "retire" | "fire" | "exploring";
 

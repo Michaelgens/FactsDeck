@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -16,9 +16,18 @@ import {
   Sparkles,
 } from "lucide-react";
 import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
-import { FACTS_DECK_LOAN_CALCULATOR } from "./loan/loan-journey-types";
-import ToolDashboardTestCta from "./ToolDashboardTestCta";
 import {
+  FACTS_DECK_LOAN_CALCULATOR,
+  FACTS_DECK_LOAN_TEST,
+  LOAN_JOURNEY_DEFAULTS,
+  type LoanGoal,
+} from "./loan/loan-journey-types";
+import { computeLoanReadinessFromBands } from "./loan/compute-loan-journey-metrics";
+import { loadLoanState, saveLoanState } from "./loan/loan-storage";
+import ToolDashboardTestCta from "./ToolDashboardTestCta";
+import { LOAN_SLUG, trackToolEvent } from "../../lib/tool-analytics-client";
+import {
+  ToolDashboardGridBackdrop,
   ToolDashboardHeroBackdrop,
   tdGhostBtn,
   tdHero,
@@ -29,12 +38,21 @@ import {
   tdPanelLg,
 } from "./tool-dashboard-ui";
 
+const GOAL_LABEL: Record<LoanGoal, string> = {
+  auto: "Auto loan",
+  personal: "Personal loan",
+  refinance: "Refinance",
+  exploring: "Exploring",
+};
+
 export type LoanCalculatorInitialValues = {
+  goal?: LoanGoal;
   principal?: number;
   apr?: number;
   termYears?: number;
   extraMonthly?: number;
   feePct?: number;
+  fromJourney?: boolean;
 };
 
 type AdvancedLoanCalculatorProps = {
@@ -92,18 +110,68 @@ function buildAmortization(
   return { rows, totalInterest, actualMonths: month };
 }
 
+function resolveInitialState(initialValues?: LoanCalculatorInitialValues) {
+  const saved = typeof window !== "undefined" ? loadLoanState() : null;
+  const d = LOAN_JOURNEY_DEFAULTS;
+
+  if (initialValues?.fromJourney) {
+    const seed = {
+      goal: initialValues.goal ?? d.goal,
+      principal: initialValues.principal ?? d.principal,
+      apr: initialValues.apr ?? d.apr,
+      termYears: initialValues.termYears ?? d.termYears,
+      extraMonthly: initialValues.extraMonthly ?? d.extraMonthly,
+      feePct: initialValues.feePct ?? d.feePct,
+    };
+    return {
+      ...seed,
+      bPrincipal: seed.principal,
+      bApr: Math.max(0.5, seed.apr - 1.5),
+      bYears: Math.max(0.5, seed.termYears - 1),
+    };
+  }
+
+  if (saved) {
+    return {
+      goal: saved.goal,
+      principal: saved.principal,
+      apr: saved.apr,
+      termYears: saved.termYears,
+      extraMonthly: saved.extraMonthly,
+      feePct: saved.feePct,
+      bPrincipal: saved.bPrincipal,
+      bApr: saved.bApr,
+      bYears: saved.bYears,
+    };
+  }
+
+  return {
+    goal: initialValues?.goal ?? d.goal,
+    principal: initialValues?.principal ?? d.principal,
+    apr: initialValues?.apr ?? d.apr,
+    termYears: initialValues?.termYears ?? d.termYears,
+    extraMonthly: initialValues?.extraMonthly ?? d.extraMonthly,
+    feePct: initialValues?.feePct ?? d.feePct,
+    bPrincipal: 28_000,
+    bApr: 6.99,
+    bYears: 4,
+  };
+}
+
 export default function AdvancedLoanCalculator({
   initialValues,
   deferWalkthrough = false,
 }: AdvancedLoanCalculatorProps = {}) {
+  const [hydrated, setHydrated] = useState(false);
+  const [goal, setGoal] = useState<LoanGoal>("auto");
   const [tourOpen, setTourOpen] = useState(false);
   const TOUR_ID = "loan-calculator";
 
-  const [principal, setPrincipal] = useState(initialValues?.principal ?? 28_000);
-  const [apr, setApr] = useState(initialValues?.apr ?? 8.49);
-  const [termYears, setTermYears] = useState(initialValues?.termYears ?? 5);
-  const [extraMonthly, setExtraMonthly] = useState(initialValues?.extraMonthly ?? 0);
-  const [feePct, setFeePct] = useState(initialValues?.feePct ?? 0);
+  const [principal, setPrincipal] = useState(28_000);
+  const [apr, setApr] = useState(8.49);
+  const [termYears, setTermYears] = useState(5);
+  const [extraMonthly, setExtraMonthly] = useState(0);
+  const [feePct, setFeePct] = useState(0);
 
   const [bPrincipal, setBPrincipal] = useState(28_000);
   const [bApr, setBApr] = useState(6.99);
@@ -111,6 +179,35 @@ export default function AdvancedLoanCalculator({
 
   const [copied, setCopied] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+
+  useEffect(() => {
+    const state = resolveInitialState(initialValues);
+    setGoal(state.goal);
+    setPrincipal(state.principal);
+    setApr(state.apr);
+    setTermYears(state.termYears);
+    setExtraMonthly(state.extraMonthly);
+    setFeePct(state.feePct);
+    setBPrincipal(state.bPrincipal);
+    setBApr(state.bApr);
+    setBYears(state.bYears);
+    setHydrated(true);
+  }, [initialValues]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveLoanState({
+      goal,
+      principal,
+      apr,
+      termYears,
+      extraMonthly,
+      feePct,
+      bPrincipal,
+      bApr,
+      bYears,
+    });
+  }, [hydrated, goal, principal, apr, termYears, extraMonthly, feePct, bPrincipal, bApr, bYears]);
 
   const termMonths = Math.max(1, Math.round(termYears * 12));
   const feeAmount = principal * clamp(feePct / 100, 0, 0.1);
@@ -144,6 +241,14 @@ export default function AdvancedLoanCalculator({
     };
   }, [base.pmt, base.totalInterest, scenarioB.pmt, scenarioB.totalInterest]);
 
+  const readinessScore = useMemo(
+    () => computeLoanReadinessFromBands(apr, extraMonthly, feePct),
+    [apr, extraMonthly, feePct]
+  );
+
+  const compareBActive =
+    bPrincipal !== principal || Math.abs(bApr - apr) > 0.01 || Math.abs(bYears - termYears) > 0.01;
+
   const exportPayload = useMemo(
     () => ({
       tool: "Advanced Loan Calculator",
@@ -160,20 +265,64 @@ export default function AdvancedLoanCalculator({
     [principal, apr, termYears, extraMonthly, feePct, feeAmount, base, bPrincipal, bApr, bYears, scenarioB]
   );
 
-  const copyJson = async () => {
+  const copyJson = useCallback(async () => {
+    trackToolEvent(LOAN_SLUG, "export_json");
     await navigator.clipboard.writeText(JSON.stringify(exportPayload, null, 2));
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
-  };
+  }, [exportPayload]);
 
   const previewRows = showSchedule ? base.rows.slice(0, 24) : base.rows.slice(0, 6);
 
   useEffect(() => {
-    if (deferWalkthrough) return;
+    if (!hydrated || deferWalkthrough) return;
     if (hasCompletedWalkthrough(TOUR_ID)) return;
-    const t = window.setTimeout(() => setTourOpen(true), 450);
+    const t = window.setTimeout(() => {
+      trackToolEvent(LOAN_SLUG, "walkthrough_open", undefined, true);
+      setTourOpen(true);
+    }, 450);
     return () => window.clearTimeout(t);
-  }, [deferWalkthrough]);
+  }, [deferWalkthrough, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const t = window.setTimeout(() => {
+      trackToolEvent(
+        LOAN_SLUG,
+        "session_telemetry",
+        {
+          goal,
+          score: readinessScore,
+          principal: Math.round(principal),
+          apr,
+          termYears,
+          monthlyPayment: Math.round(base.pmt),
+          totalInterest: Math.round(base.totalInterest),
+          highApr: apr >= 12,
+          extraPay: extraMonthly > 0,
+          compareBActive,
+        },
+        true
+      );
+    }, 4000);
+    return () => window.clearTimeout(t);
+  }, [
+    hydrated,
+    goal,
+    readinessScore,
+    principal,
+    apr,
+    termYears,
+    base.pmt,
+    base.totalInterest,
+    extraMonthly,
+    compareBActive,
+  ]);
+
+  const openWalkthrough = () => {
+    trackToolEvent(LOAN_SLUG, "walkthrough_open", undefined, true);
+    setTourOpen(true);
+  };
 
   const walkthroughSteps: WalkthroughStep[] = useMemo(
     () => [
@@ -287,13 +436,23 @@ export default function AdvancedLoanCalculator({
     []
   );
 
+  if (!hydrated) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center bg-white dark:bg-zinc-950 text-zinc-500 text-sm font-medium">
+        Loading calculator…
+      </div>
+    );
+  }
+
   return (
     <div className={tdPage}>
+      <ToolDashboardGridBackdrop />
       <ToolWalkthrough
         id={TOUR_ID}
         open={tourOpen}
         onClose={() => setTourOpen(false)}
         onFinish={() => {
+          trackToolEvent(LOAN_SLUG, "walkthrough_complete", undefined, true);
           try {
             window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
           } catch {
@@ -303,10 +462,10 @@ export default function AdvancedLoanCalculator({
         steps={walkthroughSteps}
       />
       <section className={tdHero}>
-        <ToolDashboardHeroBackdrop />
+        <ToolDashboardHeroBackdrop accent="emerald" />
 
         <div className={tdHeroInner}>
-          <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center justify-between gap-3 flex-wrap" data-tour="loan-top-nav">
             <Link href="/" className={tdNavLink}>
               <ArrowLeft className="h-4 w-4" />
               Back to Home
@@ -317,48 +476,59 @@ export default function AdvancedLoanCalculator({
             </Link>
           </div>
 
-          <div className="mt-8 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-3">
-                <span className={tdIconTile}>
-                  <DollarSign className="h-6 w-6" />
-                </span>
-                <div>
-                  <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <div className="mt-7 sm:mt-8" data-tour="loan-hero">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className={tdIconTile}>
+                <DollarSign className="h-6 w-6" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight">
+                  <span className="bg-gradient-to-r from-amber-700 via-orange-700 to-zinc-800 bg-clip-text text-transparent dark:from-amber-300 dark:via-orange-300 dark:to-zinc-300">
                     {FACTS_DECK_LOAN_CALCULATOR}
-                  </h1>
-                  <p className="text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
-                    Fixed-rate amortization, turbo payments, origination fees, and a side-by-side scenario lab—so you
-                    can see the real cost of borrowing.
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4">
-                <button
-                  type="button"
-                  onClick={() => setTourOpen(true)}
-                  className={tdGhostBtn}
-                  aria-label="Open loan calculator walk-through"
-                >
-                  <BookOpen className="h-4 w-4" />
-                  Walk-through
-                </button>
+                  </span>
+                </h1>
+                <p className="text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
+                  <span className="hidden sm:inline">
+                    Focus: <strong className="text-zinc-800 dark:text-zinc-200">{GOAL_LABEL[goal]}</strong> — amortization, extra payments, fees, and compare scenarios.
+                  </span>
+                  <span className="sm:hidden">
+                    Focus: <strong className="text-zinc-800 dark:text-zinc-200">{GOAL_LABEL[goal]}</strong> — pay & compare
+                  </span>
+                </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={copyJson}
-              className={`${tdGhostBtn} shrink-0 px-5`}
-              data-tour="loan-copy-json"
-            >
-              {copied ? <Check className="h-4 w-4 text-zinc-900 dark:text-zinc-100" /> : <Copy className="h-4 w-4" />}
-              {copied ? "Copied JSON" : "Copy results JSON"}
-            </button>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={openWalkthrough}
+                className={tdGhostBtn}
+                aria-label="Open loan calculator walk-through"
+              >
+                <BookOpen className="h-4 w-4" />
+                Walk-through
+              </button>
+              <button
+                type="button"
+                onClick={copyJson}
+                className={`${tdGhostBtn} shrink-0 sm:ml-auto`}
+                data-tour="loan-copy-json"
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? "Copied JSON" : "Copy results JSON"}
+              </button>
+            </div>
+
+            <div className="mt-6">
+              <ToolDashboardTestCta
+                toolSlug="loan-calculator"
+                testLabel={FACTS_DECK_LOAN_TEST}
+                blurb="Run the short interactive flow again—fresh answers, results snapshot, then land back here with the full workspace."
+              />
+            </div>
           </div>
 
-          <ToolDashboardTestCta toolSlug="loan-calculator" testLabel={FACTS_DECK_LOAN_CALCULATOR} />
-
-          <div className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="mt-7 sm:mt-8 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
             <div className="lg:col-span-5 space-y-6">
               <div className={tdPanelLg} data-tour="loan-your-loan">
                 <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
@@ -452,8 +622,8 @@ export default function AdvancedLoanCalculator({
                 <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
                   Shop a refi or a competing offer: different rate, term, or amount.
                 </p>
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  <label className="block col-span-3 sm:col-span-1">
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <label className="block sm:col-span-1">
                     <span className="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-400">Principal</span>
                     <input
                       type="number"

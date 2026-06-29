@@ -18,9 +18,18 @@ import {
   Trash2,
 } from "lucide-react";
 import ToolWalkthrough, { hasCompletedWalkthrough, type WalkthroughStep } from "../ToolWalkthrough";
-import { FACTS_DECK_RETIREMENT_CALCULATOR } from "./retirement/retirement-journey-types";
+import { FACTS_DECK_RETIREMENT_CALCULATOR, FACTS_DECK_RETIREMENT_TEST } from "./retirement/retirement-journey-types";
+import type { RetirementGoal, RetirementJourneyAnswers } from "./retirement/retirement-journey-types";
+import { RETIREMENT_JOURNEY_DEFAULTS } from "./retirement/retirement-journey-types";
+import {
+  computeRetirementJourneyMetrics,
+  computeRetirementReadinessScore,
+} from "./retirement/compute-retirement-journey-metrics";
+import { loadRetirementState, saveRetirementState } from "./retirement/retirement-storage";
+import { RETIREMENT_SLUG, trackToolEvent } from "../../lib/tool-analytics-client";
 import ToolDashboardTestCta from "./ToolDashboardTestCta";
 import {
+  ToolDashboardGridBackdrop,
   ToolDashboardHeroBackdrop,
   tdGhostBtn,
   tdHero,
@@ -31,6 +40,12 @@ import {
   tdPanelLg,
   tdStatCard,
 } from "./tool-dashboard-ui";
+
+const GOAL_LABEL: Record<RetirementGoal, string> = {
+  retire: "Traditional retirement",
+  fire: "FIRE / work optional",
+  exploring: "Exploring",
+};
 
 export type RetirementCalculatorAccount = {
   id: string;
@@ -43,6 +58,7 @@ export type RetirementCalculatorAccount = {
 type Account = RetirementCalculatorAccount;
 
 export type RetirementCalculatorInitialValues = {
+  goal?: RetirementGoal;
   currentAge?: number;
   retireAge?: number;
   lifeExpectancy?: number;
@@ -53,6 +69,7 @@ export type RetirementCalculatorInitialValues = {
   socialSecurityAnnualAtRetire?: number;
   oneTimeAtRetire?: number;
   accounts?: RetirementCalculatorAccount[];
+  fromJourney?: true;
 };
 
 type AdvancedRetirementCalculatorProps = {
@@ -93,30 +110,131 @@ function defaultRetirementAccounts(): Account[] {
   ];
 }
 
+function resolveInitialState(initialValues?: RetirementCalculatorInitialValues) {
+  const saved = typeof window !== "undefined" ? loadRetirementState() : null;
+  const d = RETIREMENT_JOURNEY_DEFAULTS;
+
+  if (initialValues?.fromJourney) {
+    return {
+      goal: initialValues.goal ?? d.goal,
+      currentAge: initialValues.currentAge ?? d.currentAge,
+      retireAge: initialValues.retireAge ?? d.retireAge,
+      lifeExpectancy: initialValues.lifeExpectancy ?? 92,
+      inflation: initialValues.inflation ?? d.inflation / 100,
+      returnNominal: initialValues.returnNominal ?? d.returnNominal / 100,
+      withdrawalRate: initialValues.withdrawalRate ?? d.withdrawalRate / 100,
+      annualSpendingToday: initialValues.annualSpendingToday ?? d.annualSpendingToday,
+      socialSecurityAnnualAtRetire: initialValues.socialSecurityAnnualAtRetire ?? 0,
+      oneTimeAtRetire: initialValues.oneTimeAtRetire ?? 0,
+      accounts:
+        initialValues.accounts && initialValues.accounts.length > 0
+          ? initialValues.accounts
+          : defaultRetirementAccounts(),
+    };
+  }
+
+  if (saved) {
+    return {
+      goal: saved.goal,
+      currentAge: saved.currentAge,
+      retireAge: saved.retireAge,
+      lifeExpectancy: saved.lifeExpectancy,
+      inflation: saved.inflation,
+      returnNominal: saved.returnNominal,
+      withdrawalRate: saved.withdrawalRate,
+      annualSpendingToday: saved.annualSpendingToday,
+      socialSecurityAnnualAtRetire: saved.socialSecurityAnnualAtRetire,
+      oneTimeAtRetire: saved.oneTimeAtRetire,
+      accounts: saved.accounts.length > 0 ? saved.accounts : defaultRetirementAccounts(),
+    };
+  }
+
+  return {
+    goal: initialValues?.goal ?? d.goal,
+    currentAge: initialValues?.currentAge ?? 32,
+    retireAge: initialValues?.retireAge ?? 60,
+    lifeExpectancy: initialValues?.lifeExpectancy ?? 92,
+    inflation: initialValues?.inflation ?? 0.025,
+    returnNominal: initialValues?.returnNominal ?? 0.07,
+    withdrawalRate: initialValues?.withdrawalRate ?? 0.04,
+    annualSpendingToday: initialValues?.annualSpendingToday ?? 72000,
+    socialSecurityAnnualAtRetire: initialValues?.socialSecurityAnnualAtRetire ?? 24000,
+    oneTimeAtRetire: initialValues?.oneTimeAtRetire ?? 0,
+    accounts:
+      initialValues?.accounts && initialValues.accounts.length > 0
+        ? initialValues.accounts
+        : defaultRetirementAccounts(),
+  };
+}
+
 export default function AdvancedRetirementCalculator({
   initialValues,
   deferWalkthrough = false,
 }: AdvancedRetirementCalculatorProps = {}) {
+  const [hydrated, setHydrated] = useState(false);
+  const [goal, setGoal] = useState<RetirementGoal>("retire");
   const [tourOpen, setTourOpen] = useState(false);
   const TOUR_ID = "retirement-calculator";
 
-  const [currentAge, setCurrentAge] = useState(initialValues?.currentAge ?? 32);
-  const [retireAge, setRetireAge] = useState(initialValues?.retireAge ?? 60);
-  const [lifeExpectancy, setLifeExpectancy] = useState(initialValues?.lifeExpectancy ?? 92);
+  const [currentAge, setCurrentAge] = useState(32);
+  const [retireAge, setRetireAge] = useState(60);
+  const [lifeExpectancy, setLifeExpectancy] = useState(92);
 
-  const [inflation, setInflation] = useState(initialValues?.inflation ?? 0.025);
-  const [returnNominal, setReturnNominal] = useState(initialValues?.returnNominal ?? 0.07);
-  const [withdrawalRate, setWithdrawalRate] = useState(initialValues?.withdrawalRate ?? 0.04);
+  const [inflation, setInflation] = useState(0.025);
+  const [returnNominal, setReturnNominal] = useState(0.07);
+  const [withdrawalRate, setWithdrawalRate] = useState(0.04);
 
-  const [annualSpendingToday, setAnnualSpendingToday] = useState(initialValues?.annualSpendingToday ?? 72000);
-  const [socialSecurityAnnualAtRetire, setSocialSecurityAnnualAtRetire] = useState(
-    initialValues?.socialSecurityAnnualAtRetire ?? 24000
-  );
-  const [oneTimeAtRetire, setOneTimeAtRetire] = useState(initialValues?.oneTimeAtRetire ?? 0);
+  const [annualSpendingToday, setAnnualSpendingToday] = useState(72000);
+  const [socialSecurityAnnualAtRetire, setSocialSecurityAnnualAtRetire] = useState(24000);
+  const [oneTimeAtRetire, setOneTimeAtRetire] = useState(0);
 
-  const [accounts, setAccounts] = useState<Account[]>(() =>
-    initialValues?.accounts && initialValues.accounts.length > 0 ? initialValues.accounts : defaultRetirementAccounts()
-  );
+  const [accounts, setAccounts] = useState<Account[]>(defaultRetirementAccounts);
+
+  useEffect(() => {
+    const state = resolveInitialState(initialValues);
+    setGoal(state.goal);
+    setCurrentAge(state.currentAge);
+    setRetireAge(state.retireAge);
+    setLifeExpectancy(state.lifeExpectancy);
+    setInflation(state.inflation);
+    setReturnNominal(state.returnNominal);
+    setWithdrawalRate(state.withdrawalRate);
+    setAnnualSpendingToday(state.annualSpendingToday);
+    setSocialSecurityAnnualAtRetire(state.socialSecurityAnnualAtRetire);
+    setOneTimeAtRetire(state.oneTimeAtRetire);
+    setAccounts(state.accounts);
+    setHydrated(true);
+  }, [initialValues]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveRetirementState({
+      goal,
+      currentAge,
+      retireAge,
+      lifeExpectancy,
+      inflation,
+      returnNominal,
+      withdrawalRate,
+      annualSpendingToday,
+      socialSecurityAnnualAtRetire,
+      oneTimeAtRetire,
+      accounts,
+    });
+  }, [
+    hydrated,
+    goal,
+    currentAge,
+    retireAge,
+    lifeExpectancy,
+    inflation,
+    returnNominal,
+    withdrawalRate,
+    annualSpendingToday,
+    socialSecurityAnnualAtRetire,
+    oneTimeAtRetire,
+    accounts,
+  ]);
 
   const [copied, setCopied] = useState(false);
 
@@ -177,6 +295,38 @@ export default function AdvancedRetirementCalculator({
   const balanceAtRetire = projection.length ? projection[projection.length - 1].balanceNominal : totals.startBalance;
 
   const isOnTrack = balanceAtRetire >= fiNumberAtRetire;
+
+  const journeyAnswers = useMemo(
+    (): RetirementJourneyAnswers => ({
+      goal,
+      currentAge,
+      retireAge,
+      annualSpendingToday,
+      totalBalance: totals.startBalance,
+      contributionMonthly: totals.contribMonthly + totals.matchMonthly,
+      inflation: inflation * 100,
+      returnNominal: returnNominal * 100,
+      withdrawalRate: withdrawalRate * 100,
+    }),
+    [
+      goal,
+      currentAge,
+      retireAge,
+      annualSpendingToday,
+      totals.startBalance,
+      totals.contribMonthly,
+      totals.matchMonthly,
+      inflation,
+      returnNominal,
+      withdrawalRate,
+    ]
+  );
+
+  const journeyMetrics = useMemo(() => computeRetirementJourneyMetrics(journeyAnswers), [journeyAnswers]);
+  const readinessScore = useMemo(
+    () => computeRetirementReadinessScore(journeyAnswers, journeyMetrics),
+    [journeyAnswers, journeyMetrics]
+  );
 
   const suggestedRetireAge = useMemo(() => {
     // Find first age where projected balance >= FI number
@@ -273,16 +423,70 @@ export default function AdvancedRetirementCalculator({
 
   const copyJson = async () => {
     await navigator.clipboard.writeText(JSON.stringify(exportPayload, null, 2));
+    trackToolEvent(RETIREMENT_SLUG, "export_json");
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
   };
 
   useEffect(() => {
-    if (deferWalkthrough) return;
+    if (!hydrated || deferWalkthrough) return;
     if (hasCompletedWalkthrough(TOUR_ID)) return;
-    const t = window.setTimeout(() => setTourOpen(true), 450);
+    const t = window.setTimeout(() => {
+      trackToolEvent(RETIREMENT_SLUG, "walkthrough_open", undefined, true);
+      setTourOpen(true);
+    }, 450);
     return () => window.clearTimeout(t);
-  }, [deferWalkthrough]);
+  }, [deferWalkthrough, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const t = window.setTimeout(() => {
+      trackToolEvent(
+        RETIREMENT_SLUG,
+        "session_telemetry",
+        {
+          goal,
+          score: readinessScore,
+          currentAge,
+          retireAge,
+          yearsToRetire: yearsToRetire,
+          totalBalance: Math.round(totals.startBalance),
+          monthly: Math.round(totals.contribMonthly + totals.matchMonthly),
+          annualSpending: Math.round(annualSpendingToday),
+          fiNumber: Math.round(fiNumberAtRetire),
+          balanceAtRetire: Math.round(balanceAtRetire),
+          onTrack: isOnTrack,
+          fireGoal: goal === "fire",
+          offTrack: !isOnTrack,
+          highContribution: totals.contribMonthly + totals.matchMonthly >= 1000,
+          longTimeline: yearsToRetire >= 25,
+          hasSocialSecurity: socialSecurityAnnualAtRetire > 0,
+        },
+        true
+      );
+    }, 4000);
+    return () => window.clearTimeout(t);
+  }, [
+    hydrated,
+    goal,
+    readinessScore,
+    currentAge,
+    retireAge,
+    yearsToRetire,
+    totals.startBalance,
+    totals.contribMonthly,
+    totals.matchMonthly,
+    annualSpendingToday,
+    fiNumberAtRetire,
+    balanceAtRetire,
+    isOnTrack,
+    socialSecurityAnnualAtRetire,
+  ]);
+
+  const openWalkthrough = () => {
+    trackToolEvent(RETIREMENT_SLUG, "walkthrough_open", undefined, true);
+    setTourOpen(true);
+  };
 
   const walkthroughSteps: WalkthroughStep[] = useMemo(
     () => [
@@ -460,11 +664,13 @@ export default function AdvancedRetirementCalculator({
 
   return (
     <div className={tdPage}>
+      <ToolDashboardGridBackdrop />
       <ToolWalkthrough
         id={TOUR_ID}
         open={tourOpen}
         onClose={() => setTourOpen(false)}
         onFinish={() => {
+          trackToolEvent(RETIREMENT_SLUG, "walkthrough_complete", undefined, true);
           try {
             window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
           } catch {
@@ -474,10 +680,10 @@ export default function AdvancedRetirementCalculator({
         steps={walkthroughSteps}
       />
       <section className={tdHero}>
-        <ToolDashboardHeroBackdrop />
+        <ToolDashboardHeroBackdrop accent="default" />
 
         <div className={tdHeroInner}>
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap" data-tour="retire-top-nav">
             <Link href="/" className={tdNavLink}>
               <ArrowLeft className="h-4 w-4" />
               Back to Home
@@ -488,36 +694,60 @@ export default function AdvancedRetirementCalculator({
             </Link>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            <div className="lg:col-span-2">
-              <div className="flex items-center gap-3">
-                <span className={tdIconTile}>
-                  <Target className="h-6 w-6" />
-                </span>
-                <div>
-                  <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <div className="mt-7 sm:mt-8" data-tour="retire-hero">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className={tdIconTile}>
+                <Target className="h-6 w-6" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight">
+                  <span className="bg-gradient-to-r from-amber-700 via-orange-700 to-rose-700 bg-clip-text text-transparent dark:from-amber-300 dark:via-orange-300 dark:to-rose-300">
                     {FACTS_DECK_RETIREMENT_CALCULATOR}
-                  </h1>
-                  <p className="text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
-                    Plan your “work optional” date with a clear FI number, realistic inflation, and employer match.
-                  </p>
-                </div>
+                  </span>
+                </h1>
+                <p className="text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl leading-relaxed">
+                  <span className="hidden sm:inline">
+                    Focus: <strong className="text-zinc-800 dark:text-zinc-200">{GOAL_LABEL[goal]}</strong> — FI number, inflation, employer match, and Social Security in one workspace.
+                  </span>
+                  <span className="sm:hidden">
+                    <strong className="text-zinc-800 dark:text-zinc-200">{GOAL_LABEL[goal]}</strong> — FI & timeline
+                  </span>
+                </p>
               </div>
+            </div>
 
-              <div className="mt-4">
-                <button
-                  type="button"
-                  onClick={() => setTourOpen(true)}
-                  className={tdGhostBtn}
-                  aria-label="Open retirement calculator walk-through"
-                >
-                  <BookOpen className="h-4 w-4" />
-                  Walk-through
-                </button>
-              </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={openWalkthrough}
+                className={tdGhostBtn}
+                aria-label="Open retirement calculator walk-through"
+              >
+                <BookOpen className="h-4 w-4" />
+                Walk-through
+              </button>
+              <button
+                type="button"
+                onClick={copyJson}
+                className={`${tdGhostBtn} shrink-0 sm:ml-auto`}
+                data-tour="retire-copy-json"
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied ? "Copied JSON" : "Copy JSON"}
+              </button>
+            </div>
 
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3" data-tour="retire-top-cards">
-                <div className={tdStatCard}>
+            <div className="mt-6">
+              <ToolDashboardTestCta
+                toolSlug="retirement-calculator"
+                testLabel={FACTS_DECK_RETIREMENT_TEST}
+                blurb="Run the short interactive flow again—fresh answers, results snapshot, then land back here with the full workspace."
+              />
+            </div>
+
+            <div className="mt-6 -mx-4 px-4 sm:mx-0 sm:px-0" data-tour="retire-top-cards">
+              <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-3 lg:gap-3 lg:overflow-visible lg:pb-0">
+                <div className={`${tdStatCard} min-w-[14rem] shrink-0 lg:min-w-0`}>
                   <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     FI number at retire
                   </p>
@@ -528,7 +758,7 @@ export default function AdvancedRetirementCalculator({
                     Net need {money(netSpendingNeedAtRetire)}/yr @ {pct(withdrawalRate)}
                   </p>
                 </div>
-                <div className={tdStatCard}>
+                <div className={`${tdStatCard} min-w-[14rem] shrink-0 lg:min-w-0`}>
                   <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                     Projected at {retireAge}
                   </p>
@@ -539,10 +769,8 @@ export default function AdvancedRetirementCalculator({
                     Starting {money(totals.startBalance)} + {money((totals.contribMonthly + totals.matchMonthly) * 12)}/yr
                   </p>
                 </div>
-                <div className={tdStatCard}>
-                  <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                    Status
-                  </p>
+                <div className={`${tdStatCard} min-w-[14rem] shrink-0 lg:min-w-0`}>
+                  <p className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Status</p>
                   <div className="mt-2 flex items-center gap-2">
                     {pill(isOnTrack, "On track", "Gap")}
                     {suggestedRetireAge ? (
@@ -558,8 +786,11 @@ export default function AdvancedRetirementCalculator({
                   </p>
                 </div>
               </div>
+              <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 lg:hidden">Swipe to see all metrics</p>
             </div>
+          </div>
 
+          <div className="mt-8 max-w-xl lg:max-w-none lg:ml-auto lg:w-[min(100%,24rem)]">
             <div className={tdPanelLg} data-tour="retire-assumptions">
               <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-zinc-900 dark:text-zinc-100" />
@@ -690,20 +921,8 @@ export default function AdvancedRetirementCalculator({
                   />
                 </label>
               </div>
-
-              <button
-                type="button"
-                onClick={copyJson}
-                className={`${tdGhostBtn} mt-5 w-full`}
-                data-tour="retire-copy-json"
-              >
-                {copied ? <Check className="h-4 w-4 text-zinc-900 dark:text-zinc-100" /> : <Copy className="h-4 w-4" />}
-                {copied ? "Copied JSON" : "Copy JSON"}
-              </button>
             </div>
           </div>
-
-          <ToolDashboardTestCta toolSlug="retirement-calculator" testLabel={FACTS_DECK_RETIREMENT_CALCULATOR} />
 
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <section

@@ -2,7 +2,7 @@
 
 export const FACTS_DECK_BUDGET_TEST = "Facts Deck Budget Test";
 
-export const FACTS_DECK_BUDGET_PLANNER = "Facts Deck Budget Planner";
+export const FACTS_DECK_BUDGET_PLANNER = "Budget Planner";
 
 export type BudgetGoal = "organize" | "debt" | "save" | "exploring";
 

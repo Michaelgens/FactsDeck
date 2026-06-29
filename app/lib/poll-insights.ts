@@ -91,7 +91,12 @@ function avgRate(rows: ArticleContentRow[], pick: (r: ArticleContentRow) => numb
   return vals.reduce((a, b) => a + b, 0) / vals.length;
 }
 
+/** @deprecated use getPollMetricsInsights */
 export async function getContentMetricsInsights(): Promise<ContentMetricsInsights> {
+  return getPollMetricsInsights();
+}
+
+export async function getPollMetricsInsights(): Promise<ContentMetricsInsights> {
   const { posts, loadError: postsLoadError } = await getAllPostsWithLoadError();
   const rows = posts.map(rowFromPost).sort((a, b) => b.views - a.views);
 

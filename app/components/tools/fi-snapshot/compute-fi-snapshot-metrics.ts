@@ -1,4 +1,4 @@
-import type { FiSnapshotJourneyAnswers } from "./fi-snapshot-journey-types";
+import type { FiSnapshotGoal, FiSnapshotJourneyAnswers } from "./fi-snapshot-journey-types";
 
 export function formatFiMoney(n: number) {
   if (!Number.isFinite(n)) return "—";
@@ -149,4 +149,77 @@ export function computeFiSnapshotMetrics(
     leanFiNumber,
     fatFiNumber,
   };
+}
+
+export type FiSnapshotMetrics = ReturnType<typeof computeFiSnapshotMetrics>;
+
+export function computeFiSnapshotReadinessScore(
+  a: FiSnapshotJourneyAnswers,
+  m: FiSnapshotMetrics
+): number {
+  const investingScore =
+    a.monthlyInvesting >= 2000 ? 1 : a.monthlyInvesting >= 1000 ? 0.85 : a.monthlyInvesting >= 500 ? 0.65 : 0.45;
+  const progressScore =
+    m.fiProgressPct >= 100 ? 1 : m.fiProgressPct >= 75 ? 0.85 : m.fiProgressPct >= 40 ? 0.65 : m.fiProgressPct >= 15 ? 0.5 : 0.35;
+  const runwayScore =
+    m.monthsOfExpenses >= 12 ? 1 : m.monthsOfExpenses >= 6 ? 0.75 : m.monthsOfExpenses >= 3 ? 0.55 : 0.35;
+  const netWorthScore = m.netWorth > 0 ? 1 : m.netWorth === 0 ? 0.4 : 0.2;
+  const goalScore = a.goal === "freedom" && m.fiProgressPct >= 50 ? 1 : a.goal === "freedom" ? 0.5 : 0.75;
+  return Math.round(
+    (investingScore * 0.25 + progressScore * 0.3 + runwayScore * 0.2 + netWorthScore * 0.15 + goalScore * 0.1) * 100
+  );
+}
+
+const GOAL_LABEL: Record<FiSnapshotGoal, string> = {
+  freedom: "Freedom runway",
+  clarity: "Clarity",
+  milestone: "Milestone check",
+  exploring: "Exploring",
+};
+
+export function buildFiSnapshotTextSummary(a: FiSnapshotJourneyAnswers, m: FiSnapshotMetrics): string {
+  const band = FREEDOM_BAND_COPY[m.band];
+  return [
+    "Facts Deck Freedom Snapshot — summary",
+    `Mindset: ${GOAL_LABEL[a.goal]}`,
+    `Assets — Cash ${formatFiMoney(a.liquidCash)}, Invested ${formatFiMoney(a.invested)}, Other ${formatFiMoney(a.otherAssets)}`,
+    `Liabilities: ${formatFiMoney(a.liabilities)}`,
+    `Monthly expenses: ${formatFiMoney(a.monthlyExpenses)} | Investing: ${formatFiMoney(a.monthlyInvesting)}/mo`,
+    `Net worth: ${formatFiMoney(m.netWorth)}`,
+    `FI number (~${m.withdrawalRatePct}% rule): ${formatFiMoney(m.fiNumber)}`,
+    `FI progress: ${m.fiProgressPct.toFixed(1)}%`,
+    `Freedom band: ${band.title}`,
+    m.yearsToFi != null
+      ? `Illustrative years to FI (${Math.round(m.investmentReturnAnnual * 1000) / 10}% nominal): ~${m.yearsToFi} yr`
+      : "Years to FI: add monthly investing to estimate",
+    `Readiness score: ${computeFiSnapshotReadinessScore(a, m)}/100`,
+  ].join("\n");
+}
+
+export type RelatedTool = {
+  slug: string;
+  name: string;
+  reason: string;
+};
+
+export function suggestRelatedTools(goal: FiSnapshotGoal, a: FiSnapshotJourneyAnswers): RelatedTool[] {
+  const out: RelatedTool[] = [];
+  const push = (slug: string, name: string, reason: string) => {
+    if (!out.some((t) => t.slug === slug)) out.push({ slug, name, reason });
+  };
+
+  if (goal === "freedom" || a.monthlyInvesting >= 1000) {
+    push("investment-calculator", "Investment Calculator", "Model growth, fees, and Monte Carlo on your investing rate.");
+    push("retirement-calculator", "Retirement Calculator", "Layer accounts, Social Security, and drawdown timing.");
+  }
+  if (a.liabilities > a.liquidCash + a.invested * 0.1) {
+    push("debt-payoff-planner", "Debt Payoff Planner", "Compare avalanche vs snowball to lift net worth faster.");
+  }
+  if (a.monthlyExpenses >= 4000) {
+    push("budget-planner", "Budget Planner", "Find spend you can redirect into investing.");
+    push("subscription-spend-audit", "Subscription Audit", "Trim recurring burn to widen your FI gap.");
+  }
+  push("emergency-fund-calculator", "Emergency Fund & Runway", "Strengthen cash before chasing higher FI progress.");
+
+  return out.slice(0, 4);
 }

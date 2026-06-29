@@ -2,14 +2,17 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Compass, Repeat, Scissors, Sparkles, Target } from "lucide-react";
+import { ArrowLeft, Compass, DoorOpen, Layers, Repeat, Scissors, Sparkles, Target, Zap } from "lucide-react";
 import WizardSlideShell from "../mortgage/WizardSlideShell";
-import type { SubscriptionAuditGoal, SubscriptionJourneyAnswers } from "./subscription-audit-journey-types";
+import type { SubscriptionAuditGoal, SubscriptionAuditMode, SubscriptionJourneyAnswers } from "./subscription-audit-journey-types";
 import {
   SUBSCRIPTION_AUDIT_JOURNEY_DEFAULTS,
   FACTS_DECK_SUBSCRIPTION_AUDIT_TOOL,
   FACTS_DECK_SUBSCRIPTION_AUDIT_TEST,
+  recommendedTrimPercent,
 } from "./subscription-audit-journey-types";
+import { GOAL_LABEL, MODE_LABEL } from "./compute-subscription-audit-metrics";
+import { SUBSCRIPTION_AUDIT_SLUG, trackToolEvent } from "../../../lib/tool-analytics-client";
 
 const TOTAL_STEPS = 5;
 
@@ -32,6 +35,14 @@ export default function SubscriptionAuditQuickJourney({ onComplete, onSkipToDash
     setA((prev) => ({ ...prev, [key]: value }));
   }, []);
 
+  const selectGoal = useCallback((g: SubscriptionAuditGoal) => {
+    setA((prev) => ({
+      ...prev,
+      goal: g,
+      targetTrimPercent: recommendedTrimPercent(g),
+    }));
+  }, []);
+
   const canProceed = useCallback((): boolean => {
     if (step === 2) return a.estimatedMonthlyRecurring >= 0 && a.estimatedMonthlyRecurring <= 5_000;
     if (step === 3) return a.subscriptionCount >= 1 && a.subscriptionCount <= 40;
@@ -41,6 +52,9 @@ export default function SubscriptionAuditQuickJourney({ onComplete, onSkipToDash
   const finish = useCallback(() => onComplete({ ...a }), [a, onComplete]);
 
   const next = useCallback(() => {
+    if (step === 0) {
+      trackToolEvent(SUBSCRIPTION_AUDIT_SLUG, "journey_start", undefined, true);
+    }
     if (step >= TOTAL_STEPS - 1) {
       finish();
       return;
@@ -51,10 +65,23 @@ export default function SubscriptionAuditQuickJourney({ onComplete, onSkipToDash
   const back = useCallback(() => setStep((s) => Math.max(0, s - 1)), []);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+    <div className="relative overflow-x-hidden overflow-y-hidden bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-size-[4rem_4rem] dark:bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -top-32 left-1/2 h-[42rem] w-[min(90rem,200%)] -translate-x-1/2 rounded-full bg-gradient-to-b from-blue-200/35 via-orange-100/15 to-transparent blur-3xl dark:from-emerald-950/50 dark:via-blue-950/30 dark:to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute top-[28rem] right-[-10%] h-96 w-96 rounded-full bg-orange-100/30 blur-3xl dark:bg-cyan-950/25"
+        aria-hidden
+      />
+
       <div className="relative overflow-hidden border-b border-zinc-200 dark:border-zinc-800">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 left-1/2 h-72 w-[56rem] -translate-x-1/2 rounded-full bg-zinc-900/[0.04] blur-3xl dark:bg-white/[0.06]" />
+          <div className="absolute -top-24 left-1/2 h-72 w-[56rem] -translate-x-1/2 rounded-full bg-violet-500/[0.06] blur-3xl dark:bg-violet-400/[0.08]" />
         </div>
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4 flex items-center gap-2 sm:gap-3">
           <div className="flex-1 flex justify-start min-w-0">
@@ -76,9 +103,16 @@ export default function SubscriptionAuditQuickJourney({ onComplete, onSkipToDash
             <button
               type="button"
               onClick={onSkipToDashboard}
-              className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white underline-offset-2 hover:underline text-right"
+              className="text-sm font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white underline-offset-2 hover:underline text-right inline-flex items-center gap-1.5"
             >
-              Skip to full audit
+              <span className="sm:hidden flex items-center gap-2">
+                <DoorOpen className="h-4 w-4 inline-block" aria-hidden />
+                Skip
+              </span>
+              <span className="hidden sm:inline flex items-center gap-1">
+                <DoorOpen className="h-4 w-4 inline-block mr-2" aria-hidden />
+                Skip to full audit
+              </span>
             </button>
           </div>
         </div>
@@ -94,40 +128,30 @@ export default function SubscriptionAuditQuickJourney({ onComplete, onSkipToDash
             title=""
             showBack={false}
             onNext={next}
-            nextLabel="Start audit"
-            secondaryLabel="Skip to workspace"
+            nextLabel="Begin the test"
+            secondaryLabel="Skip to Dashboard"
             onSecondary={onSkipToDashboard}
           >
             <div className="relative text-center">
               <div className="relative mx-auto mb-8 flex h-36 w-36 items-center justify-center sm:h-44 sm:w-44">
-                <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-emerald-400/35 via-sky-400/20 to-amber-300/25 blur-2xl dark:from-emerald-500/25 dark:via-sky-500/15 dark:to-amber-400/20" />
-                <div className="absolute inset-2 rounded-[2.25rem] border border-dashed border-zinc-300/60 dark:border-zinc-600/50" />
-                <div className="relative flex h-full w-full flex-col items-center justify-center gap-2 rounded-[2rem] border border-zinc-200/90 bg-white/95 shadow-2xl ring-1 ring-zinc-900/5 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-950/95 dark:ring-white/10">
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-xs font-black tracking-tight text-white shadow-inner dark:bg-zinc-100 dark:text-zinc-900">
-                      FD
-                    </span>
-                    <Repeat className="h-14 w-14 text-rose-700 dark:text-rose-400" strokeWidth={1.2} aria-hidden />
-                  </div>
-                  <div className="flex gap-1" aria-hidden>
-                    <span className="h-1.5 w-8 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-                    <span className="h-1.5 w-12 rounded-full bg-rose-500/80" />
-                    <span className="h-1.5 w-5 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-                  </div>
+                <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-violet-400/30 via-rose-400/20 to-fuchsia-300/25 blur-2xl dark:from-violet-500/20 dark:via-rose-500/15 dark:to-fuchsia-500/15" />
+                <div className="absolute inset-2 rounded-[2.25rem] border border-dashed border-violet-300/60 dark:border-violet-600/50" />
+                <div className="relative flex h-full w-full flex-col items-center justify-center gap-2 rounded-[2rem] border border-zinc-200/90 bg-white/95 shadow-2xl ring-1 ring-violet-900/5 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-950/95 dark:ring-violet-400/10">
+                  <Repeat className="h-16 w-16 text-violet-700 dark:text-violet-400" strokeWidth={1.2} aria-hidden />
                 </div>
               </div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-rose-800 dark:text-rose-400/90">Facts Deck</p>
-              <h1 className="font-display text-3xl font-bold leading-[1.12] tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl md:text-6xl">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-violet-800 dark:text-violet-400/90">Facts Deck</p>
+              <h1 className="font-display text-2xl font-bold leading-[1.12] tracking-tight text-zinc-900 text-balance dark:text-zinc-50 sm:text-4xl md:text-5xl">
                 {FACTS_DECK_SUBSCRIPTION_AUDIT_TOOL}
               </h1>
               <p className="mt-3 text-sm font-semibold text-zinc-500 dark:text-zinc-400">{FACTS_DECK_SUBSCRIPTION_AUDIT_TEST}</p>
               <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-zinc-600 dark:text-zinc-300 sm:text-lg">
-                Autopay is quiet—annualize it, compare cuts, then build a real line-by-line list in the full audit.
+                Autopay is quiet — annualize it, set a trim target, then build a real line-by-line list with an awareness score.
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                <span className="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800/80">Monthly → yearly</span>
-                <span className="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800/80">Cut scenarios</span>
-                <span className="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800/80">JSON export</span>
+                <span className="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800/80">Annualize</span>
+                <span className="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800/80">Trim target</span>
+                <span className="rounded-full bg-zinc-100 px-3 py-1 dark:bg-zinc-800/80">Line items</span>
               </div>
             </div>
           </WizardSlideShell>
@@ -138,8 +162,8 @@ export default function SubscriptionAuditQuickJourney({ onComplete, onSkipToDash
             seriesTitle={FACTS_DECK_SUBSCRIPTION_AUDIT_TEST}
             stepIndex={1}
             totalSteps={TOTAL_STEPS}
-            title="What’s the mission?"
-            subtitle="You can change everything later."
+            title="What's the mission?"
+            subtitle={`Your focus shapes trim targets and starter suggestions — ${GOAL_LABEL[a.goal]}.`}
             onBack={back}
             onNext={next}
             nextDisabled={!canProceed()}
@@ -152,17 +176,19 @@ export default function SubscriptionAuditQuickJourney({ onComplete, onSkipToDash
                   <button
                     key={g.id}
                     type="button"
-                    onClick={() => setField("goal", g.id)}
-                    className={`text-left rounded-2xl border-2 p-5 transition-all ${
+                    onClick={() => selectGoal(g.id)}
+                    className={`text-left rounded-2xl border-2 p-5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 ${
                       on
-                        ? "border-zinc-900 bg-zinc-50 shadow-md dark:border-zinc-100 dark:bg-zinc-900/60"
+                        ? "border-violet-700 bg-violet-50/80 shadow-md dark:border-violet-400 dark:bg-violet-950/40"
                         : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600"
                     }`}
                   >
                     <div className="flex items-start gap-4">
                       <span
                         className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
-                          on ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                          on
+                            ? "bg-violet-700 text-white dark:bg-violet-500"
+                            : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
                         }`}
                       >
                         <Icon className="h-6 w-6" />
@@ -170,6 +196,11 @@ export default function SubscriptionAuditQuickJourney({ onComplete, onSkipToDash
                       <div>
                         <p className="font-display font-bold text-lg text-zinc-900 dark:text-zinc-50">{g.title}</p>
                         <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">{g.blurb}</p>
+                        {on ? (
+                          <p className="text-xs font-semibold text-violet-800 dark:text-violet-300 mt-2">
+                            Suggested trim: {recommendedTrimPercent(g.id)}%
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   </button>
@@ -185,7 +216,7 @@ export default function SubscriptionAuditQuickJourney({ onComplete, onSkipToDash
             stepIndex={2}
             totalSteps={TOTAL_STEPS}
             title="Estimated monthly recurring"
-            subtitle="Apps, streaming, cloud, gym—anything that hits your card on a schedule."
+            subtitle="Apps, streaming, cloud, gym — anything on autopay."
             onBack={back}
             onNext={next}
             nextDisabled={!canProceed()}
@@ -193,7 +224,7 @@ export default function SubscriptionAuditQuickJourney({ onComplete, onSkipToDash
             <div className="space-y-6">
               <p className="text-center text-4xl sm:text-5xl font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
                 ${a.estimatedMonthlyRecurring.toLocaleString("en-US", { maximumFractionDigits: 0 })}
-                <span className="text-xl font-semibold text-zinc-500">/mo</span>
+                <span className="text-lg font-semibold text-zinc-500">/mo</span>
               </p>
               <input
                 type="range"
@@ -202,17 +233,23 @@ export default function SubscriptionAuditQuickJourney({ onComplete, onSkipToDash
                 step={2}
                 value={Math.min(800, a.estimatedMonthlyRecurring)}
                 onChange={(e) => setField("estimatedMonthlyRecurring", Number(e.target.value))}
+                aria-label="Estimated monthly recurring spend"
+                aria-valuetext={`$${Number(a.estimatedMonthlyRecurring).toLocaleString()} per month`}
                 className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
               />
-              <input
-                type="number"
-                min={0}
-                max={5000}
-                step={5}
-                value={a.estimatedMonthlyRecurring}
-                onChange={(e) => setField("estimatedMonthlyRecurring", Number(e.target.value) || 0)}
-                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold tabular-nums text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-              />
+              <label className="block">
+                <span className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400">Exact amount</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={5000}
+                  step={5}
+                  value={a.estimatedMonthlyRecurring}
+                  onChange={(e) => setField("estimatedMonthlyRecurring", Number(e.target.value) || 0)}
+                  aria-label="Exact monthly recurring spend"
+                  className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2"
+                />
+              </label>
             </div>
           </WizardSlideShell>
         )}
@@ -223,13 +260,15 @@ export default function SubscriptionAuditQuickJourney({ onComplete, onSkipToDash
             stepIndex={3}
             totalSteps={TOTAL_STEPS}
             title="How many active subscriptions?"
-            subtitle="Rough count—including annual plans divided mentally (we’ll refine in the full audit)."
+            subtitle="Rough count — you'll name each one in the full audit."
             onBack={back}
             onNext={next}
             nextDisabled={!canProceed()}
           >
             <div className="space-y-6">
-              <p className="text-center text-5xl sm:text-6xl font-bold tabular-nums text-zinc-900 dark:text-zinc-50">{a.subscriptionCount}</p>
+              <p className="text-center text-4xl sm:text-5xl font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
+                {a.subscriptionCount}
+              </p>
               <input
                 type="range"
                 min={1}
@@ -237,8 +276,23 @@ export default function SubscriptionAuditQuickJourney({ onComplete, onSkipToDash
                 step={1}
                 value={a.subscriptionCount}
                 onChange={(e) => setField("subscriptionCount", Number(e.target.value))}
+                aria-label="Number of active subscriptions"
+                aria-valuetext={`${a.subscriptionCount} subscriptions`}
                 className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
               />
+              <label className="block">
+                <span className="text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400">Exact count</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={40}
+                  step={1}
+                  value={a.subscriptionCount}
+                  onChange={(e) => setField("subscriptionCount", Math.min(40, Math.max(1, Number(e.target.value) || 1)))}
+                  aria-label="Exact subscription count"
+                  className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2"
+                />
+              </label>
             </div>
           </WizardSlideShell>
         )}
@@ -248,17 +302,81 @@ export default function SubscriptionAuditQuickJourney({ onComplete, onSkipToDash
             seriesTitle={FACTS_DECK_SUBSCRIPTION_AUDIT_TEST}
             stepIndex={4}
             totalSteps={TOTAL_STEPS}
-            title="Ready to annualize the pain"
-            subtitle="Next: yearly cost, daily cost, and cut scenarios—then line items in the workspace."
+            title="Workspace style & trim target"
+            subtitle="Choose how you'll build the list in the full audit."
             onBack={back}
             onNext={finish}
             nextLabel="See my snapshot"
             variant="finish"
             nextDisabled={!canProceed()}
           >
-            <p className="text-center text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
-              This is awareness, not shame—small recurring charges are designed to be forgettable.
-            </p>
+            <div className="space-y-8">
+              <div>
+                <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">Trim target</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {[10, 15, 25].map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setField("targetTrimPercent", p)}
+                      className={`px-5 py-3 rounded-xl text-sm font-bold border-2 transition-colors ${
+                        a.targetTrimPercent === p
+                          ? "border-violet-700 bg-violet-700 text-white dark:border-violet-400 dark:bg-violet-500"
+                          : "border-zinc-200 text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-200"
+                      }`}
+                    >
+                      {p}%
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-4">
+                  <div className="flex justify-between text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-2">
+                    <span>Custom</span>
+                    <span className="tabular-nums">{a.targetTrimPercent}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={5}
+                    max={50}
+                    step={1}
+                    value={a.targetTrimPercent}
+                    onChange={(e) => setField("targetTrimPercent", Number(e.target.value))}
+                    aria-label="Custom trim target percentage"
+                    className="w-full h-3 accent-zinc-900 dark:accent-zinc-100 rounded-full"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">Workspace style</p>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {(
+                    [
+                      { id: "quick_estimate" as SubscriptionAuditMode, icon: Zap, blurb: "Keep a ballpark number" },
+                      { id: "line_item_audit" as SubscriptionAuditMode, icon: Layers, blurb: "Name every charge" },
+                    ] as const
+                  ).map(({ id, icon: Icon, blurb }) => {
+                    const on = a.mode === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setField("mode", id)}
+                        className={`text-left rounded-2xl border-2 p-4 transition-all ${
+                          on
+                            ? "border-violet-700 bg-violet-50 dark:border-violet-400 dark:bg-violet-950/40"
+                            : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-800"
+                        }`}
+                      >
+                        <Icon className={`h-5 w-5 mb-2 ${on ? "text-violet-700 dark:text-violet-400" : "text-zinc-500"}`} />
+                        <p className="font-bold text-sm">{MODE_LABEL[id]}</p>
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{blurb}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </WizardSlideShell>
         )}
       </div>

@@ -140,7 +140,15 @@ export default function AdminSettingsPage() {
           </p>
         </AdminPanel>
 
-        <AdminPanel title="Tools directory" description={`${siteTools.length} calculators on /tools`}>
+        <AdminPanel
+          title="Tools directory"
+          description={`${siteTools.length} calculators on /tools`}
+          action={
+            <Link href="/admin/tools" className={`text-xs font-semibold ${admin.link}`}>
+              Manage tools
+            </Link>
+          }
+        >
           <ul className="max-h-48 overflow-y-auto space-y-2">
             {siteTools.slice(0, 8).map((t) => (
               <li key={t.slug} className="flex items-center justify-between text-sm">

@@ -6,6 +6,9 @@ import AdvancedMortgageCalculator from "./AdvancedMortgageCalculator";
 import MortgageQuickJourney from "./mortgage/MortgageQuickJourney";
 import MortgageJourneyResults from "./mortgage/MortgageJourneyResults";
 import type { MortgageJourneyAnswers } from "./mortgage/mortgage-journey-types";
+import { computeJourneyMetrics } from "./mortgage/compute-journey-metrics";
+import { journeyToPersistSeed, saveMortgageState } from "./mortgage/mortgage-storage";
+import { MORTGAGE_SLUG, trackToolEvent } from "../../lib/tool-analytics-client";
 
 type Phase = "journey" | "results" | "dashboard";
 
@@ -35,7 +38,30 @@ function MortgageCalculatorEntryInner() {
     }
   }, [retakeTest, dashboardParam]);
 
+  useEffect(() => {
+    trackToolEvent(MORTGAGE_SLUG, "page_view", undefined, true);
+  }, []);
+
+  useEffect(() => {
+    if (phase === "results") {
+      trackToolEvent(MORTGAGE_SLUG, "results_view", undefined, true);
+    }
+  }, [phase]);
+
   const handleJourneyComplete = useCallback((a: MortgageJourneyAnswers) => {
+    const m = computeJourneyMetrics(a);
+    trackToolEvent(MORTGAGE_SLUG, "journey_complete", {
+      goal: a.goal,
+      homePrice: a.homePrice,
+      downPercent: a.downPercent,
+      rate: a.rate,
+      termYears: a.termYears,
+      ltv: m.ltv,
+      housingDtiPct: m.housingDtiPct,
+      pitiFirstMonth: Math.round(m.pitiFirstMonth),
+      needsPmi: m.needsPmi,
+    });
+    saveMortgageState(journeyToPersistSeed(a));
     setAnswers(a);
     setPhase("results");
     try {
@@ -46,15 +72,19 @@ function MortgageCalculatorEntryInner() {
   }, []);
 
   const handleSkip = useCallback(() => {
+    trackToolEvent(MORTGAGE_SLUG, "journey_skip", undefined, true);
+    trackToolEvent(MORTGAGE_SLUG, "dashboard_open", { source: "journey_skip" }, true);
     setPhase("dashboard");
     setAnswers(null);
   }, []);
 
   const handleOpenDashboard = useCallback(() => {
+    trackToolEvent(MORTGAGE_SLUG, "dashboard_open", { source: "results" }, true);
     setPhase("dashboard");
   }, []);
 
   const handleStartOver = useCallback(() => {
+    trackToolEvent(MORTGAGE_SLUG, "retake_click");
     setAnswers(null);
     setPhase("journey");
   }, []);
@@ -63,12 +93,14 @@ function MortgageCalculatorEntryInner() {
     () =>
       answers
         ? {
+            goal: answers.goal,
             homePrice: answers.homePrice,
             downPercent: answers.downPercent,
             rate: answers.rate,
             termYears: answers.termYears,
             extraMonthly: answers.extraMonthly,
             incomeMonthly: answers.incomeMonthly,
+            fromJourney: true as const,
           }
         : undefined,
     [answers]

@@ -1,4 +1,4 @@
-import type { CreditJourneyAnswers } from "./credit-journey-types";
+import type { CreditJourneyAnswers, CreditJourneyGoal } from "./credit-journey-types";
 
 function clamp(n: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, n));
@@ -55,4 +55,56 @@ export function computeCreditJourneyMetrics(a: CreditJourneyAnswers) {
   const score = roundScore(raw);
   const b = band(score);
   return { score, bandName: b.name, pts };
+}
+
+export function computeCreditReadinessScore(m: ReturnType<typeof computeCreditJourneyMetrics>): number {
+  return Math.round(((m.score - 300) / 550) * 100);
+}
+
+export function buildCreditTextSummary(
+  a: CreditJourneyAnswers,
+  m: ReturnType<typeof computeCreditJourneyMetrics>
+): string {
+  const goalLabel =
+    a.goal === "improve" ? "Improve score" : a.goal === "learn" ? "Learn factors" : "Exploring";
+  return [
+    "Facts Deck Credit Test — summary",
+    `Goal: ${goalLabel}`,
+    `Simulated score: ${m.score} (${m.bandName})`,
+    `Utilization ${a.utilizationPct}% | On-time ${a.onTimePct}%`,
+    `Avg age ${a.avgAgeYears} yr | Inquiries ${a.hardInquiries12m} | Types ${a.accountTypes}`,
+    `Factor points (illustrative): util ${m.pts.utilization} | pay ${m.pts.payment} | age ${m.pts.age} | inq ${m.pts.inquiries} | mix ${m.pts.mix}`,
+    `Readiness score: ${computeCreditReadinessScore(m)}/100`,
+  ].join("\n");
+}
+
+export type RelatedTool = {
+  slug: string;
+  name: string;
+  reason: string;
+};
+
+export function suggestRelatedTools(goal: CreditJourneyGoal, a: CreditJourneyAnswers): RelatedTool[] {
+  const out: RelatedTool[] = [];
+  const push = (slug: string, name: string, reason: string) => {
+    if (!out.some((t) => t.slug === slug)) out.push({ slug, name, reason });
+  };
+
+  const m = computeCreditJourneyMetrics(a);
+
+  if (a.utilizationPct >= 25 || goal === "improve") {
+    push("debt-payoff-planner", "Debt Payoff Planner", "Pay down revolving balances to lower utilization faster.");
+  }
+  if (a.utilizationPct >= 20 || goal === "improve") {
+    push("budget-planner", "Budget Planner", "Find room in your monthly plan to pay cards before statement close.");
+  }
+  if (m.score < 700) {
+    push("loan-calculator", "Loan Calculator", "See how rate bands might shift as your score band improves.");
+  }
+  if (a.hardInquiries12m >= 2) {
+    push("subscription-spend-audit", "Subscription Audit", "Trim recurring costs before opening new credit lines.");
+  }
+  push("emergency-fund-calculator", "Emergency Fund & Runway", "Avoid leaning on cards when cash flow gets tight.");
+
+  return out.slice(0, 4);
 }

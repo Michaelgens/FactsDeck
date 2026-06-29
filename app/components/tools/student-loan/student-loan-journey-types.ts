@@ -2,7 +2,7 @@
 
 export const FACTS_DECK_STUDENT_LOAN_TEST = "Facts Deck Student Loan Path Test";
 
-export const FACTS_DECK_STUDENT_LOAN_SNAPSHOT = "Facts Deck Student Loan Path Snapshot";
+export const FACTS_DECK_STUDENT_LOAN_SNAPSHOT = "Student Loan Path Snapshot";
 
 export type StudentLoanPathGoal = "standard" | "idr" | "compare" | "exploring";
 

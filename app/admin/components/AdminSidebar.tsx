@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -16,6 +16,8 @@ import {
   Send,
   LogOut,
   Settings,
+  Wrench,
+  LifeBuoy,
 } from "lucide-react";
 import { logoutAdmin } from "../../lib/admin-auth";
 import { admin } from "./admin-theme";
@@ -30,15 +32,19 @@ const navSections = [
   },
   {
     label: "Content",
-    items: [{ name: "Articles", href: "/admin/articles", icon: FileText }],
+    items: [
+      { name: "Articles", href: "/admin/articles", icon: FileText },
+      { name: "Tools", href: "/admin/tools", icon: Wrench },
+    ],
   },
   {
     label: "Marketing",
-    items: [{ name: "Funnel", href: "/admin/marketing/funnel", icon: Send }],
+    items: [{ name: "Email funnel", href: "/admin/marketing/funnel", icon: Send }],
   },
   {
     label: "Platform",
     items: [
+      { name: "Support", href: "/admin/support", icon: LifeBuoy, badgeKey: "support" as const },
       { name: "Users", href: "/admin/users", icon: Users },
       { name: "Settings", href: "/admin/settings", icon: Settings },
     ],
@@ -50,12 +56,47 @@ function isNavActive(pathname: string, href: string): boolean {
   if (href === "/admin/articles") {
     return pathname === "/admin/articles" || pathname.startsWith("/admin/articles/");
   }
+  if (href === "/admin/tools") {
+    return pathname === "/admin/tools" || pathname.startsWith("/admin/tools/");
+  }
+  if (href === "/admin/support") {
+    return pathname === "/admin/support" || pathname.startsWith("/admin/support/");
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ initialUnresolvedCount = 0 }: { initialUnresolvedCount?: number }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [unresolvedCount, setUnresolvedCount] = useState(initialUnresolvedCount);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setUnresolvedCount(initialUnresolvedCount);
+  }, [initialUnresolvedCount]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function poll() {
+      try {
+        const res = await fetch("/api/admin/support/counts", { cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { unresolved?: number };
+        if (!cancelled && typeof data.unresolved === "number") {
+          setUnresolvedCount(data.unresolved);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+
+    poll();
+    const id = window.setInterval(poll, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [pathname]);
 
   return (
     <aside
@@ -103,7 +144,7 @@ export default function AdminSidebar() {
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className={`flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl transition-all ${
+                      className={`relative flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl transition-all ${
                         isActive ? admin.navActive : admin.navItem
                       }`}
                       title={collapsed ? item.name : undefined}
@@ -111,7 +152,15 @@ export default function AdminSidebar() {
                       <Icon
                         className={`h-5 w-5 shrink-0 ${isActive ? admin.navIconActive : ""}`}
                       />
-                      {!collapsed && <span className="text-sm">{item.name}</span>}
+                      {!collapsed && <span className="text-sm flex-1">{item.name}</span>}
+                      {!collapsed && "badgeKey" in item && item.badgeKey === "support" && unresolvedCount > 0 ? (
+                        <span className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                          {unresolvedCount > 99 ? "99+" : unresolvedCount}
+                        </span>
+                      ) : null}
+                      {collapsed && "badgeKey" in item && item.badgeKey === "support" && unresolvedCount > 0 ? (
+                        <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" aria-label={`${unresolvedCount} unresolved tickets`} />
+                      ) : null}
                     </Link>
                   </li>
                 );
